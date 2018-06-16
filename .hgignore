@@ -1,0 +1,15 @@
+syntax: glob
+ccs_workspace/.jxbrowser-data
+ccs_workspace/.metadata
+ccs_workspace/qc15_screen_test/Debug/
+ccs_workspace/qc15_radiomcu/.launches
+ccs_workspace/qc15_radiomcu/Release
+ccs_workspace/qc15_radiomcu/.config
+ccs_workspace/qc15_radiomcu/Debug
+ccs_workspace/qc15_radiomcu/.xdchelp
+ccs_workspace/qc15_screen_test/.launches
+ccs_workspace/qc15_screen_test/Release
+ccs_workspace/qc15_screen_test/.config
+ccs_workspace/qc15_screen_test/.xdchelp
+ccs_workspace/qc15_main/Debug
+ccs_workspace/qc15_main/.launches
