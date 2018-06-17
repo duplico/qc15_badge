@@ -7,21 +7,12 @@
  * 3-clause BSD license; see license.md.
  */
 
-#include "rfm75.h"
+#include <string.h>
 #include <stdint.h>
-#include "driverlib.h"
-//#include "qc13.h"
-//#include "badge.h"
-//#include "leg_anims.h"
-//#include "metrics.h"
 
-// Radio (RFM75):
-// CE   P3.2 (or 1.2 for launchpad)
-// CSN  P1.3
-// SCK  P2.2
-// MOSI P1.6
-// MISO P1.7
-// IRQ  P3.1 (or 3.0 for launchpad)
+#include "driverlib.h"
+
+#include "rfm75.h"
 
 //CE   1.6 x
 //CSN  1.0 x
@@ -36,16 +27,12 @@
 #define CSN_LOW_START RFM75_CSN_OUT &= ~RFM75_CSN_PIN
 #define CSN_HIGH_END  RFM75_CSN_OUT |= RFM75_CSN_PIN
 
-// Target is the Launchpad+shield:
 #define CE_ACTIVATE P1OUT   |=  BIT6
 #define CE_DEACTIVATE P1OUT &= ~BIT6
 
 uint8_t rx_addr_p0[3] = {0xd6, 0xe7, 0x2a};
 uint8_t tx_addr[3] = {0xd6, 0xe7, 0x2a};
 
-uint8_t rfm75_retransmit_num = 0;
-uint32_t rfm75_seqnum = 0;
-uint32_t rfm75_prev_seqnum = 0xFFFFFFFF;
 
 // State values:
 #define RFM75_BOOT 0
@@ -60,24 +47,15 @@ uint32_t rfm75_prev_seqnum = 0xFFFFFFFF;
 
 uint8_t rfm75_state = RFM75_BOOT;
 
-
-
-
 /////////////////////
 /////////////////////
 //// TODO ///////////
 
-//#define RFM75_PAYLOAD_SIZE 10
 void delay_millis(unsigned long mils);
 
+rfbcpayload in_payload, out_payload, cascade_payload;
+
 /////////////////////
-
-
-
-
-
-
-
 
 ///////////////////////////////
 // Bank initialization values:
@@ -181,8 +159,7 @@ void rfm75_write_reg_buf(uint8_t reg, uint8_t *data, uint8_t data_len) {
 void rfm75_select_bank(uint8_t bank) {
     volatile uint8_t currbank = rfm75_get_status() & 0x80; // Get MSB, which is active bank.
     if ((currbank && (bank==0)) || ((currbank==0) && bank)) {
-        uint8_t switch_bank = 0x53;
-        send_rfm75_cmd(ACTIVATE_CMD, switch_bank);
+        send_rfm75_cmd(ACTIVATE_CMD, 0x53);
     }
 }
 
@@ -214,33 +191,18 @@ void rfm75_enter_prx() {
     rfm75_state = RFM75_RX_LISTEN;
 }
 
-//void rfm75_retx() {
-//    rfm75_retransmit_num = 0;
-//
-//    // Fill'er up:
-//    memcpy(payload_out, &cascade_payload, RFM75_PAYLOAD_SIZE);
-//
-//    rfm75_state = RFM75_TX_INIT;
-//    CE_DEACTIVATE;
-//    rfm75_select_bank(0);
-//    rfm75_write_reg(CONFIG, 0b01011110);
-//    // Clear interrupts: STATUS=BIT4|BIT5|BIT6
-//    rfm75_write_reg(STATUS, BIT4|BIT5|BIT6);
-//
-//    rfm75_state = RFM75_TX_FIFO;
-//    // Write the payload:
-//    send_rfm75_cmd_buf(WR_TX_PLOAD, payload_out, RFM75_PAYLOAD_SIZE);
-//    rfm75_state = RFM75_TX_SEND;
-//    CE_ACTIVATE;
-//    // Now we wait for an IRQ to let us know it's sent.
-//}
-
 void rfm75_tx() {
-    rfm75_retransmit_num = 0;
-
     // Fill'er up:
-//    memcpy(payload_out, &out_payload, RFM75_PAYLOAD_SIZE);
-
+    out_payload.proto_version = 0;
+    out_payload.badge_addr = 0;
+    out_payload.base_addr = 0xfd;
+    out_payload.ttl = 2;
+    out_payload.ink_id = 0x1a;
+    out_payload.flags = 0x24;
+    out_payload.seqnum = 41;
+    out_payload.crc16 = 28108;
+    memcpy(payload_out, &out_payload, RFM75_PAYLOAD_SIZE);
+//    memset(payload_out, 0xdc, RFM75_PAYLOAD_SIZE);
 
     rfm75_state = RFM75_TX_INIT;
     CE_DEACTIVATE;
@@ -266,7 +228,7 @@ void rfm75_init()
     EUSCI_B_SPI_initMasterParam ini = {0};
     ini.selectClockSource = EUSCI_B_SPI_CLOCKSOURCE_SMCLK;
     ini.clockSourceFrequency = CS_getSMCLK();
-    ini.desiredSpiClock = 4000000;
+    ini.desiredSpiClock = 1000000;
     ini.msbFirst = EUSCI_B_SPI_MSB_FIRST;
     ini.clockPhase = EUSCI_B_SPI_PHASE_DATA_CAPTURED_ONFIRST_CHANGED_ON_NEXT;
     ini.clockPolarity = EUSCI_B_SPI_CLOCKPOLARITY_INACTIVITY_LOW;
@@ -274,10 +236,6 @@ void rfm75_init()
 
     EUSCI_B_SPI_initMaster(EUSCI_B0_BASE, &ini);
     EUSCI_B_SPI_enable(EUSCI_B0_BASE);
-
-    rfm75_seqnum = 0;
-//    rfm75_seqnum |= ((uint32_t) my_conf.badge_id) << 24;
-    rfm75_prev_seqnum = 0xFFFFFFFF;
 
     // We're going totally synchronous on this; no interrupts at all.
 
@@ -357,9 +315,9 @@ void rfm75_init()
     rfm75_select_bank(0);
 
     // Enable our interrupts:
-    P3IES |= BIT1;
-    P3IFG &= ~BIT1;
-    P3IE |= BIT1;
+    P1IES |= BIT7;
+    P1IFG &= ~BIT7;
+    P1IE |= BIT7;
 
     // And we're off to see the wizard!
 
@@ -370,7 +328,7 @@ void rfm75_init()
     usci_b0_send_sync(FLUSH_TX);
     CSN_HIGH_END;
 
-//    rfm75_enter_prx();
+    rfm75_enter_prx();
     __no_operation();
 }
 
@@ -455,74 +413,55 @@ void rfm75_init()
 //    return 1;
 //}
 //
-//void rfm75_deferred_interrupt() {
-//    // RFM75 interrupt:
-//    uint8_t iv = rfm75_get_status();
-//
-//    if (iv & BIT5 && rfm75_state == RFM75_TX_SEND) { // TX interrupt
-//
-//        // We sent a thing.
-//        // The ISR already took us back to standby.
-//
-//        // Clear interrupt
-//        rfm75_write_reg(STATUS, BIT5);
-//        rfm75_state = RFM75_TX_DONE;
-//
-//        // Let's avoid amplification attacks, shall we?
-//        // If it's not to us, short circuit:
-//        if (payload_cascade || (rfm75_retransmit_num == RF_RESEND_COUNT)) {
-//            // Raise the I-just-sent-a-thing event
-//            radio_transmit_done();
-//            rfm75_seqnum++;
-//
-//            if (payload_cascade)
-//                payload_cascade = 0;
-//
-//            // Go back to listening.
-//            rfm75_enter_prx();
-//        } else {
-//            uint8_t seqnum = rfm75_retransmit_num + 1;
-//            rfm75_tx();
-//            rfm75_retransmit_num = seqnum;
-//        }
-//    }
-//
-//    if (iv & BIT6 && rfm75_state == RFM75_RX_LISTEN) { // RX interrupt
-//
-//        // We've received something.
-//        rfm75_state = RFM75_RX_READY;
-//        // Which pipe?
-//        // Read the FIFO. No need to flush it; deleted when read.
-//        read_rfm75_cmd_buf(RD_RX_PLOAD, payload_in, RFM75_PAYLOAD_SIZE);
-//        // Clear the interrupt.
-//        rfm75_write_reg(STATUS, BIT6);
-////        memcpy(&in_payload, &payload_in, RFM75_PAYLOAD_SIZE);
-//
-//        // There's one type of payloads that this is allowed to be:
-//        //     ==Broadcast==
-//        //   Handled in the handler...
-//        //   We also may need to repeat this type of message.
-//
+void rfm75_deferred_interrupt() {
+    // RFM75 interrupt:
+    uint8_t iv = rfm75_get_status();
+
+    if (iv & BIT5 && rfm75_state == RFM75_TX_SEND) { // TX interrupt
+
+        // We sent a thing.
+        // The ISR already took us back to standby.
+
+        // Clear interrupt
+        rfm75_write_reg(STATUS, BIT5);
+        rfm75_state = RFM75_TX_DONE;
+        rfm75_enter_prx();
+    }
+
+    if (iv & BIT6 && rfm75_state == RFM75_RX_LISTEN) { // RX interrupt
+
+        // We've received something.
+        rfm75_state = RFM75_RX_READY;
+        // Which pipe?
+        // Read the FIFO. No need to flush it; deleted when read.
+        read_rfm75_cmd_buf(RD_RX_PLOAD, payload_in, RFM75_PAYLOAD_SIZE);
+        // Clear the interrupt.
+        rfm75_write_reg(STATUS, BIT6);
+        memcpy(&in_payload, &payload_in, RFM75_PAYLOAD_SIZE);
+
+        // There's one type of payloads that this is allowed to be:
+        //     ==Broadcast==
+        //   Handled in the handler...
+        //   We also may need to repeat this type of message.
+
 //        if (radio_payload_validate(&in_payload))
 //            radio_broadcast_received(&in_payload);
-//
-//        // Payload is now allowed to go stale.
-//        // Assert CE: listen more.
-//        CE_ACTIVATE;
-//        rfm75_state = RFM75_RX_LISTEN;
-//    }
-//    if (payload_cascade && rfm75_state == RFM75_RX_LISTEN) {
-//
-//    }
-//}
-//
-//#pragma vector=PORT3_VECTOR
-//__interrupt void RFM_ISR(void)
-//{
-//    if (P3IV != 0x04) {
-//        return;
-//    }
-////    f_rfm75_interrupt = 1;
-//    CE_DEACTIVATE; // stop listening or sending.
+
+        // Payload is now allowed to go stale.
+        // Assert CE: listen more.
+        CE_ACTIVATE;
+        rfm75_state = RFM75_RX_LISTEN;
+    }
+}
+
+#pragma vector=PORT1_VECTOR
+__interrupt void RFM_ISR(void)
+{
+    if (P1IV != P1IV_P1IFG7) {
+        return;
+    }
+//    f_rfm75_interrupt = 1;
+    rfm75_deferred_interrupt(); // TODO
+    CE_DEACTIVATE; // stop listening or sending.
 //    __bic_SR_register_on_exit(SLEEP_BITS);
-//}
+}
