@@ -2,16 +2,17 @@ QC15 VALIDATION CHECKLIST
 =========================
 
 [x] Main MCU
+[x] Screw posts
 [x] LCD screens
 [x] LED controller and LEDs
 	[x] Individual lighting
 [x] SPI Flash basic communication
-	[ ] Detailed R/W
+	[x] Detailed R/W
 [x] Buttons
-[ ] IPC
+[x] IPC
 [x] Comm MCU
 [x] Radio
-	[ ] tx/rx
+	[x] tx/rx
 [x] XTal
 [x] Switch
 
@@ -19,7 +20,8 @@ Next Steps List
 ===============
 
 [x] LED articulation
-[ ] Basic IPC heartbeat test
-[ ] Non-modularized flash test
-[ ] Radio tx test
+[x] Basic IPC heartbeat test
+[x] IPC ping-pong test
+[x] Non-modularized flash test
+[x] Radio tx test
 
