@@ -139,7 +139,7 @@ void init_io() {
 
 
     // Flash (2018):
-    // CS#      P3.6 (idle high)
+    // CS#      P3.7 (idle high)
     // HOLD#    P3.3 (idle high)
     // WP#       J.3 (idle high)
     // CLK      3.6 (A1)
@@ -150,9 +150,9 @@ void init_io() {
     // HOLD# high normally
     // WP# high normally (write protect when low)
 
-    GPIO_setAsOutputPin(GPIO_PORT_P3, GPIO_PIN3 + GPIO_PIN6);
+    GPIO_setAsOutputPin(GPIO_PORT_P3, GPIO_PIN3 + GPIO_PIN7);
     GPIO_setAsOutputPin(GPIO_PORT_PJ, GPIO_PIN3);
-    P3OUT |= BIT6+BIT3; // Unheld, unselected
+    P3OUT |= BIT7+BIT3; // Unheld, unselected
     PJOUT |= BIT3;  // unprotected.
     // TODO use preprocessor defines for the above.
 
@@ -178,29 +178,8 @@ void init_io() {
     // IPC:
     // 2.0 A0_TX
     // 2.1 A0_RX
-    // 8-bit data
-    // Even parity
-    // MSB first
-    //
-
-    UCA0CTLW0 |= UCSWRST;
-
     GPIO_setAsPeripheralModuleFunctionOutputPin(GPIO_PORT_P2, GPIO_PIN0+GPIO_PIN1, GPIO_PRIMARY_MODULE_FUNCTION);
-    // USCI A0 is our IPC UART:
-    EUSCI_A_UART_initParam uart_param = {0};
-
-    uart_param.selectClockSource = EUSCI_A_UART_CLOCKSOURCE_ACLK;
-    uart_param.clockPrescalar = 3;
-    uart_param.firstModReg = 0;
-    uart_param.secondModReg = 92;
-    uart_param.parity = EUSCI_A_UART_NO_PARITY;
-    uart_param.msborLsbFirst = EUSCI_A_UART_LSB_FIRST;
-    uart_param.numberofStopBits = EUSCI_A_UART_ONE_STOP_BIT;
-    uart_param.uartMode = EUSCI_A_UART_MODE;
-    uart_param.overSampling = EUSCI_A_UART_LOW_FREQUENCY_BAUDRATE_GENERATION;
-
-
-    EUSCI_A_UART_init(EUSCI_A0_BASE, uart_param);
+    UCA0CTLW0 |= UCSWRST;
 }
 
 void delay_millis(unsigned long mils) {
@@ -210,13 +189,13 @@ void delay_millis(unsigned long mils) {
     }
 }
 
-void set_sr_out(uint8_t out) {
+void lcd111_sr_out(uint8_t out) {
     EUSCI_B_SPI_transmitData(EUSCI_B1_BASE, out);
     while (EUSCI_B_SPI_isBusy(EUSCI_B1_BASE));
         __no_operation(); // Spin while it sends.
 }
 
-void lcd_command(uint8_t lcd_id, uint8_t command) {
+void lcd111_command(uint8_t lcd_id, uint8_t command) {
     // Bring RS LOW for command and RW LOW for WRITE
     P6OUT &= ~BIT1;
     P6OUT &= ~BIT2;
@@ -225,7 +204,7 @@ void lcd_command(uint8_t lcd_id, uint8_t command) {
     // Bring EN high (must pulse for >230 ns)
     P6OUT |= (lcd_id ? BIT4 : BIT3);
     // Set valid data
-    set_sr_out(command);
+    lcd111_sr_out(command);
     // Bring EN low to read data
     P6OUT &= ~(lcd_id ? BIT4 : BIT3);
     // Hold data for >5ns
@@ -237,10 +216,10 @@ void lcd_command(uint8_t lcd_id, uint8_t command) {
     delay_millis(50);
 
     // Keep the whole bus HIGH in between cycles.
-    set_sr_out(0xff);
+    lcd111_sr_out(0xff);
 }
 
-void lcd_data(uint8_t lcd_id, uint8_t data) {
+void lcd111_data(uint8_t lcd_id, uint8_t data) {
     // Bring RS HIGH for data and RW LOW for WRITE
     P6OUT |= BIT1;
     P6OUT &= ~BIT2;
@@ -249,7 +228,7 @@ void lcd_data(uint8_t lcd_id, uint8_t data) {
     // Bring EN high (must pulse for >230 ns)
     P6OUT |= (lcd_id ? BIT4 : BIT3);
     // Set valid data
-    set_sr_out(data);
+    lcd111_sr_out(data);
     // Bring EN low to read data
     P6OUT &= ~(lcd_id ? BIT4 : BIT3);
     // Hold data for >5ns
@@ -261,35 +240,44 @@ void lcd_data(uint8_t lcd_id, uint8_t data) {
     delay_millis(1);
 
     // Keep the whole bus HIGH in between cycles.
-    set_sr_out(0xff);
+    lcd111_sr_out(0xff);
 }
 
-void init_lcd() {
-    set_sr_out(0xff);
+void lcd111_init() {
+    lcd111_sr_out(0xff);
     // Pulse reset LOW, for at least 10 ms.
     P6OUT &= ~BIT0;
     delay_millis(10);
     P6OUT |= BIT0;
     // Reset is HIGH. Wait for a moment for things to stabilize.
     delay_millis(50);
-    lcd_command(0, 0x1c); // Power control: on
-    lcd_command(0, 0x14); // Display control: on
-    lcd_command(0, 0x28); // Display lines: 2, no doubling
-    lcd_command(0, 0x4f); // Contrast: dark
-    lcd_command(0, 0xe0); // Data address: 0
+    lcd111_command(0, 0x1c); // Power control: on
+    lcd111_command(0, 0x14); // Display control: on
+    lcd111_command(0, 0x28); // Display lines: 2, no doubling
+    lcd111_command(0, 0x4f); // Contrast: dark
+    lcd111_command(0, 0xe0); // Data address: 0
 
-    lcd_command(1, 0x1c); // Power control: on
-    lcd_command(1, 0x14); // Display control: on
-    lcd_command(1, 0x28); // Display lines: 2, no doubling
-    lcd_command(1, 0x4f); // Contrast: dark
-    lcd_command(1, 0xe0); // Data address: 0
+    lcd111_command(1, 0x1c); // Power control: on
+    lcd111_command(1, 0x14); // Display control: on
+    lcd111_command(1, 0x28); // Display lines: 2, no doubling
+    lcd111_command(1, 0x4f); // Contrast: dark
+    lcd111_command(1, 0xe0); // Data address: 0
 }
 
-void lcd_text(uint8_t lcd_id, char *text) {
+void lcd111_text(uint8_t lcd_id, char *text) {
     uint8_t i=0;
     while (text[i])
-        lcd_data(lcd_id, text[i++]);
+        lcd111_data(lcd_id, text[i++]);
 }
+
+uint8_t led_values[24][3] = {
+    {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff},
+    {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff},
+    {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff},
+};
+
+uint8_t led_mapping[24][3][2] = {{{2, 15}, {2, 16}, {2, 17}}, {{1, 15}, {1, 16}, {1, 17}}, {{0, 15}, {0, 16}, {0, 17}}, {{2, 23}, {2, 24}, {2, 25}}, {{1, 23}, {1, 24}, {1, 25}}, {{0, 23}, {0, 24}, {0, 25}}, {{2, 18}, {2, 19}, {2, 20}}, {{1, 18}, {1, 19}, {1, 20}}, {{0, 18}, {0, 19}, {0, 20}}, {{2, 11}, {2, 10}, {2, 9}}, {{1, 11}, {1, 10}, {1, 9}}, {{0, 11}, {0, 10}, {0, 9}}, {{2, 6}, {2, 7}, {2, 8}}, {{1, 6}, {1, 7}, {1, 8}}, {{0, 6}, {0, 7}, {0, 8}}, {{2, 12}, {2, 13}, {2, 14}}, {{0, 12}, {0, 13}, {0, 14}}, {{1, 12}, {1, 13}, {1, 14}}, {{0, 0}, {0, 2}, {0, 1}}, {{1, 0}, {1, 2}, {1, 1}}, {{2, 0}, {2, 2}, {2, 1}}, {{2, 3}, {2, 5}, {2, 4}}, {{1, 3}, {1, 5}, {1, 4}}, {{0, 3}, {0, 5}, {0, 4}}};
+uint8_t led_col_mapping[3][28][2] = {{{18, 0}, {18, 2}, {18, 1}, {23, 0}, {23, 2}, {23, 1}, {14, 0}, {14, 1}, {14, 2}, {11, 2}, {11, 1}, {11, 0}, {16, 0}, {16, 1}, {16, 2}, {2, 0}, {2, 1}, {2, 2}, {8, 0}, {8, 1}, {8, 2}, {0, 0}, {0, 0}, {5, 0}, {5, 1}, {5, 2}, {0, 0}, {0, 0}}, {{19, 0}, {19, 2}, {19, 1}, {22, 0}, {22, 2}, {22, 1}, {13, 0}, {13, 1}, {13, 2}, {10, 2}, {10, 1}, {10, 0}, {17, 0}, {17, 1}, {17, 2}, {1, 0}, {1, 1}, {1, 2}, {7, 0}, {7, 1}, {7, 2}, {0, 0}, {0, 0}, {4, 0}, {4, 1}, {4, 2}, {0, 0}, {0, 0}}, {{20, 0}, {20, 2}, {20, 1}, {21, 0}, {21, 2}, {21, 1}, {12, 0}, {12, 1}, {12, 2}, {9, 2}, {9, 1}, {9, 0}, {15, 0}, {15, 1}, {15, 2}, {0, 0}, {0, 1}, {0, 2}, {6, 0}, {6, 1}, {6, 2}, {0, 0}, {0, 0}, {3, 0}, {3, 1}, {3, 2}, {0, 0}, {0, 0}}};
 
 #define HTCMD_WRITE_DISPLAY 0x80
 #define HTCMD_READ_DISPLAY  0x81
@@ -328,7 +316,7 @@ void ht_send_array(uint8_t txdat[], uint8_t len) {
         while (!UCB0IFG & UCTXIFG) // While TX is unavailable, spin.
             __no_operation(); // TODO: We should watch for a NACK here. TODO: Demeter
 
-        delay_millis(2); // TODO - figure this out.
+        __delay_cycles(500); // TODO - figure this out.
 
         UCB0IFG &= ~UCTXIFG; // Clear TX flag.
         UCB0TXBUF = txdat[i]; // write dat.
@@ -430,7 +418,7 @@ void init_ht16d35b() {
         for (uint8_t i=0; i<11; i++) {
             // tick tock tick tock
             P1OUT |= BIT7;
-            __delay_cycles(1000); // this is 5 kHz or so
+            __delay_cycles(100); // this is 50 kHz or so
             P1OUT &= ~BIT7;
         }
         GPIO_setAsPeripheralModuleFunctionOutputPin(GPIO_PORT_P1, GPIO_PIN7, GPIO_PRIMARY_MODULE_FUNCTION);
@@ -447,7 +435,7 @@ void init_ht16d35b() {
     // Set global brightness (HTCMD_GLOBAL_BRTNS)
     ht_send_two(HTCMD_GLOBAL_BRTNS, 0x0f); // 0x40 is the most
     // Set BW/Binary display mode. TODO: Make it gray
-    ht_send_two(HTCMD_BWGRAY_SEL, 0x01);
+    ht_send_two(HTCMD_BWGRAY_SEL, 0x00); // 0x01 = binary (LSB1=b/w; LSB0=gray)
     // Set column pin control for in-use cols (HTCMD_COM_PIN_CTL)
     ht_send_two(HTCMD_COM_PIN_CTL, 0b0000111); // comes through as 0b1111???
     // Set constant current ratio (HTCMD_I_RATIO)
@@ -456,7 +444,8 @@ void init_ht16d35b() {
     ht_send_two(HTCMD_COM_NUM, 0x02);
 
     // Set ROW pin control for in-use rows (HTCMD_ROW_PIN_CTL)
-    uint8_t row_ctl[] = {HTCMD_ROW_PIN_CTL, 0xff, 0xff, 0xff, 0xff};
+    // All rows are in use, except 27,26,22,21
+    uint8_t row_ctl[] = {HTCMD_ROW_PIN_CTL, 0b00111001, 0xff, 0xff, 0xff};
     // TODO: rows 21,22,26,27 are unused
     ht_send_array(row_ctl, 5);
     ht_send_two(HTCMD_SYS_OSC_CTL, 0b10); // Activate oscillator.
@@ -464,7 +453,6 @@ void init_ht16d35b() {
     // Check conf: TODO: POST
     ht_read_reg((uint8_t *) ht_status_reg);
     __no_operation();
-
 
     uint8_t all_on_bw[] = { HTCMD_WRITE_DISPLAY, 0, // 2 bytes
         0xff, 0xff, 0xff, 0xff,
@@ -475,12 +463,56 @@ void init_ht16d35b() {
         0xff, 0xff, 0xff, 0xff,
         0xff, 0xff, 0xff, 0xff, // (28 bytes of 1 - 28x8x1)
     };
-    ht_send_array(all_on_bw, 30);
+//    ht_send_array(all_on_bw, 30);
 
     ht_send_two(HTCMD_SYS_OSC_CTL, 0b11); // Activate oscillator & display.
 
     //////////////////////////////////////////////////////////////////////
 
+}
+
+void led_send_bw() {
+    uint8_t light_array[30] = {HTCMD_WRITE_DISPLAY, 0, 0};
+    uint8_t col;
+    uint8_t row;
+    uint8_t bit;
+
+    for (uint8_t led=0;led<24;led++) {
+        for (uint8_t channel=0; channel<3; channel++) {
+            col = led_mapping[led][channel][0];
+            row = led_mapping[led][channel][1];
+            // MSB is com0
+            bit = 0b00000001 << (7-col);
+            if (led_values[led][channel])
+                light_array[row+2] |= bit; // set 0b1
+            else
+                light_array[row+2] &= ~bit; // set 0b0
+        }
+    }
+
+    ht_send_array(light_array, 30);
+}
+
+void led_send_gray() {
+    // the array, in this case, is:
+    // COM0,ROW0 ... ROW27
+    // COM1,ROW0 ...
+
+    // So we only need to write the first three COMs.
+
+    uint8_t light_array[30] = {HTCMD_WRITE_DISPLAY, 0x00, 0};
+
+    for (uint8_t col=0; col<3; col++) {
+        light_array[1] = 0x20*col;
+        for (uint8_t row=0; row<28; row++) {
+            uint8_t led_num = led_col_mapping[col][row][0];
+            uint8_t rgb_num = led_col_mapping[col][row][1];
+
+            light_array[row+2] = led_values[led_num][rgb_num];
+        }
+
+        ht_send_array(light_array, 30);
+    }
 }
 
 void light_channel(uint8_t ch) {
@@ -497,30 +529,126 @@ void light_channel(uint8_t ch) {
     ht_send_array(light_array, 30);
 }
 
+void init_ipc() {
+    // USCI A0 is our IPC UART:
+
+    // 8-bit data
+    // No parity
+    // 1 stop
+    // (8N1)
+    // LSB first
+
+    EUSCI_A_UART_initParam uart_param = {0};
+
+    uart_param.selectClockSource = EUSCI_A_UART_CLOCKSOURCE_SMCLK; // 1 MHz
+    uart_param.overSampling = EUSCI_A_UART_OVERSAMPLING_BAUDRATE_GENERATION; // 1
+    uart_param.clockPrescalar = 6;
+    uart_param.firstModReg = 8;
+    uart_param.secondModReg = 0x20; // 1/6/8/0x20 = 9600 @ 1 MHz
+    uart_param.parity = EUSCI_A_UART_NO_PARITY;
+    uart_param.msborLsbFirst = EUSCI_A_UART_LSB_FIRST;
+    uart_param.numberofStopBits = EUSCI_A_UART_ONE_STOP_BIT;
+    uart_param.uartMode = EUSCI_A_UART_MODE;
+
+    EUSCI_A_UART_init(EUSCI_A0_BASE, &uart_param);
+    EUSCI_A_UART_enable(EUSCI_A0_BASE);
+}
+
+//void test_flash() {
+//    // Flash (2018):
+//    // CS#      P3.6 (idle high)
+//    // HOLD#    P3.3 (idle high)
+//    // WP#       J.3 (idle high)
+//    // CLK      3.6 (A1)
+//    // SOMI     3.5 (A1)
+//    // SIMO     3.4 (A1)
+//
+//    // CS# high normally
+//    // HOLD# high normally
+//    // WP# high normally (write protect when low)
+//
+//    GPIO_setAsOutputPin(GPIO_PORT_P3, GPIO_PIN6+GPIO_PIN3);
+//    GPIO_setAsOutputPin(GPIO_PORT_PJ, GPIO_PIN3);
+//    P3OUT |= BIT6+BIT3;
+//    PJOUT |= BIT3;
+//
+//    GPIO_setAsPeripheralModuleFunctionOutputPin(GPIO_PORT_P3, GPIO_PIN4+GPIO_PIN5+GPIO_PIN6, GPIO_PRIMARY_MODULE_FUNCTION);
+//
+//    // Now, set up the SPI.
+//    // Flash (2018):
+//    // CLK      3.6 (A1)
+//    // SOMI     3.5 (A1)
+//    // SIMO     3.4 (A1)
+//
+//    EUSCI_A_SPI_initMasterParam ucaparam = {0};
+//    ucaparam.clockPhase= EUSCI_A_SPI_PHASE_DATA_CAPTURED_ONFIRST_CHANGED_ON_NEXT;
+//    ucaparam.clockPolarity = EUSCI_A_SPI_CLOCKPOLARITY_INACTIVITY_LOW;
+//    ucaparam.msbFirst = EUSCI_A_SPI_MSB_FIRST;
+//    ucaparam.spiMode = EUSCI_A_SPI_3PIN;
+//    ucaparam.selectClockSource = EUSCI_A_SPI_CLOCKSOURCE_SMCLK;
+//    ucaparam.clockSourceFrequency = CS_getSMCLK();
+//    ucaparam.desiredSpiClock = 100000;
+//
+//    EUSCI_A_SPI_disable(EUSCI_A1_BASE); // set WRST
+//    EUSCI_A_SPI_initMaster(EUSCI_A1_BASE, &ucaparam); // init
+//    EUSCI_A_SPI_enable(EUSCI_A1_BASE); // clear WRST
+//
+//    UCA1IFG &= ~UCRXIFG; // Clear any RXIFG.
+//
+//    P3OUT |= BIT6;
+//    // Send 0x9f
+//    while (!(UCA1IFG & UCTXIFG)); // wait for tx availabile
+//    UCA1TXBUF = 0x9f;
+//    while (!(UCA1IFG & UCRXIFG)); // wait for rx data available
+//    UCA1IFG &= ~UCRXIFG; // ignore it.
+//
+//
+//
+//    // Read three bytes.
+//
+//}
+
 void main (void)
 {
     WDT_A_hold(WDT_A_BASE);
     init_clocks();
     volatile uint8_t s;
     init_io();
-    init_lcd();
+    lcd111_init();
     init_ht16d35b();
     init_flash();
+    init_ipc();
 
-    lcd_text(0, "TEST test");
-    lcd_text(1, "SCREEN2 test");
+    lcd111_text(0, "TEST test");
+    lcd111_text(1, "SCREEN2 test");
 
     uint8_t led_on = 0;
 
-    while (1) {
-        delay_millis(25);
-        light_channel(led_on);
-        led_on = (led_on + 1) % 224;
+//    GPIO_setAsInputPin(GPIO_PORT_P2, GPIO_PIN1); // 2.1 "RX"
 
-        P1OUT ^= (BIT6 + BIT7);
-        P7OUT ^= (BIT2 + BIT3 + BIT4);
-        if ((P9IN & 0xf0) != 0xf0) {
-            __no_operation();
-        }
+
+    uint8_t all_on_bw[] = { HTCMD_WRITE_DISPLAY, 0, // 2 bytes
+        0xff, 0xff, 0xff, 0xff,
+        0xff, 0xff, 0xff, 0xff,
+        0xff, 0xff, 0xff, 0xff,
+        0xff, 0xff, 0xff, 0xff,
+        0xff, 0xff, 0xff, 0xff,
+        0xff, 0xff, 0xff, 0xff,
+        0xff, 0xff, 0xff, 0xff, // (28 bytes of 1 - 28x8x1)
+    };
+
+    uint8_t all_off_bw[] = { HTCMD_WRITE_DISPLAY, 0, // 2 bytes
+        0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, // (28 bytes of 1 - 28x8x1)
+    };
+//    ht_send_array(all_off_bw, 30);
+    led_send_gray();
+
+    while (1) {
     }
 }

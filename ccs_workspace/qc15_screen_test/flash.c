@@ -62,13 +62,13 @@ void flash_begin() {
     // TODO: don't busy wait.
     while (flash_state & FLASH_STATE_HOLD);
     // CS#      P3.6 (idle high)
-    P3OUT &= ~BIT6; // CS low, select
+    P3OUT &= ~BIT7; // CS low, select
 }
 
 void flash_end() {
     // TODO:
     while (flash_state & FLASH_STATE_HOLD);
-    P3OUT |= BIT6; // CS high, deselect
+    P3OUT |= BIT7; // CS high, deselect
 
 }
 
@@ -229,7 +229,7 @@ void init_flash() {
     // HOLD# high normally
     // WP# high normally (write protect when low)
 
-//    flash_post();
+    flash_post();
 
 //    volatile uint8_t initial_status = flash_get_status();
 
