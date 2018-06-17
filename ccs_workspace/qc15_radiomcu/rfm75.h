@@ -10,8 +10,18 @@
 
 #include <stdint.h>
 
-//#define RFM75_PAYLOAD_SIZE sizeof(rfbcpayload)
-#define RFM75_PAYLOAD_SIZE 10
+typedef struct {
+    uint8_t proto_version;
+    uint8_t badge_addr, base_addr; // base_addr is event_id, basically.
+    uint8_t ttl;
+    uint8_t ink_id;
+    uint8_t flags;
+    uint32_t seqnum;
+    uint16_t crc16;
+} rfbcpayload;
+
+#define RFM75_PAYLOAD_SIZE sizeof(rfbcpayload)
+//#define RFM75_PAYLOAD_SIZE 12
 
 //************************FSK COMMAND and REGISTER****************************************//
 // SPI(RFM75) commands

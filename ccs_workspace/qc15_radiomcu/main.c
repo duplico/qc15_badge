@@ -30,10 +30,9 @@
 
 uint16_t status;
 
-// TODO: Determine startup clock config.
 void delay_millis(unsigned long mils) {
     while (mils) {
-        __delay_cycles(5000);
+        __delay_cycles(1000);
         mils--;
     }
 }
@@ -46,30 +45,13 @@ void init_io() {
 //     * P1.1 radio CLK (peripheral)
 //     * P1.2 radio SIMO (peripheral)
 //     * P1.3 radio SOMI (peripheral)
-//     * P1.4 IPC RX
-//     * P1.5 IPC TX
+//     * P1.4 IPC TX
+//     * P1.5 IPC RX
     GPIO_setAsPeripheralModuleFunctionInputPin(
         GPIO_PORT_P1,
         GPIO_PIN4 + GPIO_PIN5,
         GPIO_PRIMARY_MODULE_FUNCTION
         );
-
-    EUSCI_A_UART_initParam param = {0};
-    param.selectClockSource = EUSCI_A_UART_CLOCKSOURCE_ACLK;
-    param.clockPrescalar = 3;
-    param.firstModReg = 0;
-    param.secondModReg = 92;
-    param.parity = EUSCI_A_UART_NO_PARITY;
-    param.msborLsbFirst = EUSCI_A_UART_LSB_FIRST;
-    param.numberofStopBits = EUSCI_A_UART_ONE_STOP_BIT;
-    param.uartMode = EUSCI_A_UART_MODE;
-    param.overSampling = EUSCI_A_UART_LOW_FREQUENCY_BAUDRATE_GENERATION;
-
-    if (STATUS_FAIL == EUSCI_A_UART_init(EUSCI_A0_BASE, &param)) {
-        return;
-    }
-
-    EUSCI_A_UART_enable(EUSCI_A0_BASE);
 
 //     * P1.6 radio EN
 //     * P1.7 radio IRQ
@@ -94,9 +76,13 @@ void main (void)
 
     init_io(); // TODO: harmonize the idiom for the init fns
 
+    // On boot, the clock system is as follows:
+    // * MCLK and SMCLK -> DCOCLKDIV (divided DCO) (1 MHz)
+    // * ACLK           -> REFO (32k internal oscillator)
+
     //Initializes the XT1 crystal oscillator with no timeout
     //In case of failure, code hangs here.
-    //For time-out instead of code hang use CS_turnOnXT1LFWithTimeout()
+    //For time-out instead of code hang use CS_turnOnXT1LFWithTimeout() // TODO
     CS_turnOnXT1LF(
         CS_XT1_DRIVE_0
         );
@@ -114,16 +100,42 @@ void main (void)
     SFR_enableInterrupt(SFR_OSCILLATOR_FAULT_INTERRUPT);
 
     rfm75_init();
-    rfm75_post();
+//    rfm75_post();
+
+    __bis_SR_register(GIE);
 
     while (1) {
-        if (P2IN & BIT2) {
-            // switch is HIGH:
-            __no_operation();
-        }
-        delay_millis(500);
+        rfm75_tx();
+        delay_millis(1000);
     }
 
+
+    EUSCI_A_UART_initParam uart_param = {0};
+
+    uart_param.selectClockSource = EUSCI_A_UART_CLOCKSOURCE_SMCLK; // 1 MHz
+    uart_param.overSampling = EUSCI_A_UART_OVERSAMPLING_BAUDRATE_GENERATION; // 1
+    uart_param.clockPrescalar = 6;
+    uart_param.firstModReg = 8;
+    uart_param.secondModReg = 0x20; // 1/6/8/0x20 = 9600 @ 1 MHz
+    uart_param.parity = EUSCI_A_UART_NO_PARITY;
+    uart_param.msborLsbFirst = EUSCI_A_UART_LSB_FIRST;
+    uart_param.numberofStopBits = EUSCI_A_UART_ONE_STOP_BIT;
+    uart_param.uartMode = EUSCI_A_UART_MODE;
+
+    EUSCI_A_UART_init(EUSCI_A0_BASE, &uart_param);
+    EUSCI_A_UART_enable(EUSCI_A0_BASE);
+
+//    GPIO_setAsOutputPin(GPIO_PORT_P1, GPIO_PIN4); // "TX"
+    uint8_t msg = 0;
+
+    while (1) {
+//        if (UCA0IFG & UCRXIFG) {
+//            msg = UCA0RXBUF;
+//            while (!(UCA0IFG & UCTXIFG)); // wait for TX buffer availability
+//            UCA0TXBUF = msg;
+//        }
+//        delay_millis(1);
+    }
 
     //Enter LPM3 w/ interrupts
     __bis_SR_register(LPM3_bits + GIE);
