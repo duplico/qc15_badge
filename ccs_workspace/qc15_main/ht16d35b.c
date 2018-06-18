@@ -68,7 +68,6 @@ void ht16d_init_io() {
     EUSCI_B_I2C_setSlaveAddress(EUSCI_B0_BASE, 0b1101000); //0b110100X
 
     EUSCI_B_I2C_initMaster(EUSCI_B0_BASE, &param);
-    EUSCI_B_I2C_enable(EUSCI_B0_BASE);
 }
 
 void ht_send_array(uint8_t txdat[], uint8_t len) {
@@ -178,7 +177,7 @@ void ht16d_init() {
     //  USEG
     //  Matrix masking
 
-    //////////////////////////////////////////////////////////////////////
+    EUSCI_B_I2C_enable(EUSCI_B0_BASE);
 
     // Check for a power-on fault...
     if (UCB0STATW & UCBBUSY) {
