@@ -84,7 +84,19 @@ void main (void)
 
     lcd111_text(0, "Test 0");
     lcd111_text(1, "Test 1");
-    led_send_gray();
 
-    while (1);
+    while (1) {
+        led_all_one_color_ring_only(255, 0, 0);
+        delay_millis(250);
+        led_all_one_color_ring_only(255, 8, 0x00);
+        delay_millis(250);
+        led_all_one_color_ring_only(255, 32, 0x00);
+        delay_millis(250);
+        led_all_one_color_ring_only(0, 64, 0);
+        delay_millis(250);
+        led_all_one_color_ring_only(0, 0, 128);
+        delay_millis(250);
+        led_all_one_color_ring_only(128, 0, 128);
+        delay_millis(250);
+    }
 }

@@ -34,9 +34,31 @@
 // Master LED value and translation buffers:
 
 uint8_t led_values[24][3] = {
-    {0xff, 0x00, 0xff}, {0xff, 0x00, 0xff}, {0xff, 0x00, 0xff}, {0xff, 0xa0, 0xff}, {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff},
-    {0xff, 0x00, 0xff}, {0xff, 0x00, 0xff}, {0xff, 0x00, 0xff}, {0xff, 0x0a, 0xff}, {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff},
-    {0xff, 0x00, 0xff}, {0xff, 0x00, 0xff}, {0xff, 0x00, 0xff}, {0xff, 0x00, 0xff}, {0xff, 0xff, 0xff}, {0xff, 0xff, 0xff},
+    {0xe4, 0x03, 0x03}, // Red
+    {0xe4, 0x03, 0x03}, // Red
+    {0xe4, 0x03, 0x03}, // Red
+    {0xff, 0x8c, 0x00}, // Orange
+    {0xff, 0x8c, 0x00}, // Orange
+    {0xff, 0x8c, 0x00}, // Orange
+    {0xff, 0xed, 0x00}, // Yellow
+    {0xff, 0xed, 0x00}, // Yellow
+    {0xff, 0xed, 0x00}, // Yellow
+    {0x00, 0x80, 0x26}, // Green
+    {0x00, 0x80, 0x26}, // Green
+    {0x00, 0x80, 0x26}, // Green
+    {0x00, 0x4d, 0xff}, // Blue
+    {0x00, 0x4d, 0xff}, // Blue
+    {0x00, 0x4d, 0xff}, // Blue
+    {0x75, 0x07, 0x87}, // Purple
+    {0x75, 0x07, 0x87}, // Purple
+    {0x75, 0x07, 0x87}, // Purple
+    // next
+    {255, 0, 0}, // Red
+    {255, 20, 0}, // Orange
+    {255, 60, 0}, // Yellow
+    {0, 64, 0}, // Green
+    {0, 0, 128}, // Blue
+    {128, 0, 96}, // Purple
 };
 
 uint8_t led_mapping[24][3][2] = {{{2, 15}, {2, 16}, {2, 17}}, {{1, 15}, {1, 16}, {1, 17}}, {{0, 15}, {0, 16}, {0, 17}}, {{2, 23}, {2, 24}, {2, 25}}, {{1, 23}, {1, 24}, {1, 25}}, {{0, 23}, {0, 24}, {0, 25}}, {{2, 18}, {2, 19}, {2, 20}}, {{1, 18}, {1, 19}, {1, 20}}, {{0, 18}, {0, 19}, {0, 20}}, {{2, 11}, {2, 10}, {2, 9}}, {{1, 11}, {1, 10}, {1, 9}}, {{0, 11}, {0, 10}, {0, 9}}, {{2, 6}, {2, 7}, {2, 8}}, {{1, 6}, {1, 7}, {1, 8}}, {{0, 6}, {0, 7}, {0, 8}}, {{2, 12}, {2, 13}, {2, 14}}, {{0, 12}, {0, 13}, {0, 14}}, {{1, 12}, {1, 13}, {1, 14}}, {{0, 0}, {0, 2}, {0, 1}}, {{1, 0}, {1, 2}, {1, 1}}, {{2, 0}, {2, 2}, {2, 1}}, {{2, 3}, {2, 5}, {2, 4}}, {{1, 3}, {1, 5}, {1, 4}}, {{0, 3}, {0, 5}, {0, 4}}};
@@ -225,6 +247,7 @@ void ht16d_init() {
     ht_read_reg((uint8_t *) ht_status_reg);
     __no_operation();
 
+    // TODO: don't turn on display until we've sent it colors.
     ht_send_two(HTCMD_SYS_OSC_CTL, 0b11); // Activate oscillator & display.
 }
 
@@ -271,6 +294,82 @@ void led_send_gray() {
         ht_send_array(light_array, 30);
     }
 }
+
+// TODO: struct for colors, like always, you nitwit.
+
+void led_all_one_color(uint8_t r, uint8_t g, uint8_t b) {
+    // the array, in this case, is:
+    // COM0,ROW0 ... ROW27
+    // COM1,ROW0 ...
+
+    // So we only need to write the first three COMs.
+
+    uint8_t light_array[30] = {HTCMD_WRITE_DISPLAY, 0x00, 0};
+
+    for (uint8_t col=0; col<3; col++) {
+        light_array[1] = 0x20*col;
+        for (uint8_t row=0; row<28; row++) {
+            uint8_t led_num = led_col_mapping[col][row][0];
+            uint8_t rgb_num = led_col_mapping[col][row][1];
+
+            switch (rgb_num) {
+                case 0:
+                    //red
+                    light_array[row+2] = r>>2;
+                    break;
+                case 1:
+                    //green
+                    light_array[row+2] = g>>2;
+                    break;
+                case 2:
+                    //blue
+                    light_array[row+2] = b>>2;
+                    break;
+            }
+        }
+
+        ht_send_array(light_array, 30);
+    }
+}
+
+void led_all_one_color_ring_only(uint8_t r, uint8_t g, uint8_t b) {
+    // the array, in this case, is:
+    // COM0,ROW0 ... ROW27
+    // COM1,ROW0 ...
+
+    // So we only need to write the first three COMs.
+
+    uint8_t light_array[30] = {HTCMD_WRITE_DISPLAY, 0x00, 0};
+
+    for (uint8_t col=0; col<3; col++) {
+        light_array[1] = 0x20*col;
+        for (uint8_t row=0; row<28; row++) {
+            uint8_t led_num = led_col_mapping[col][row][0];
+            uint8_t rgb_num = led_col_mapping[col][row][1];
+            if (led_num > 17) {
+                light_array[row+2] = led_values[led_num][rgb_num]>>2;
+            } else {
+                switch (rgb_num) {
+                    case 0:
+                        //red
+                        light_array[row+2] = r>>2;
+                        break;
+                    case 1:
+                        //green
+                        light_array[row+2] = g>>2;
+                        break;
+                    case 2:
+                        //blue
+                        light_array[row+2] = b>>2;
+                        break;
+                }
+            }
+        }
+
+        ht_send_array(light_array, 30);
+    }
+}
+
 
 void light_channel(uint8_t ch) {
     uint8_t light_array[30] = {HTCMD_WRITE_DISPLAY, 0, 0};
