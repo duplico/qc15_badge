@@ -10,7 +10,7 @@
 #include <string.h>
 #include <stdint.h>
 
-#include "driverlib.h"
+#include <driverlib.h>
 
 #include "rfm75.h"
 
