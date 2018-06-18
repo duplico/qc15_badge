@@ -56,7 +56,6 @@ void lcd111_sr_init_io() {
     p.clockSourceFrequency = CS_getACLK();
     p.desiredSpiClock = 10000; // TODO
     EUSCI_B_SPI_initMaster(EUSCI_B1_BASE, &p);
-    EUSCI_B_SPI_enable(EUSCI_B1_BASE);
 }
 
 void lcd111_init_io() {
@@ -134,7 +133,13 @@ void lcd111_data(uint8_t lcd_id, uint8_t data) {
     lcd111_sr_out(0xff);
 }
 
+void lcd111_sr_init() {
+    // EUSCI_B_SPI_enable(EUSCI_B1_BASE);
+    UCB1CTLW0 &= ~UCSWRST;
+}
+
 void lcd111_init() {
+    lcd111_sr_init();
     lcd111_sr_out(0xff);
     // Pulse reset LOW, for at least 10 ms.
     P6OUT &= ~BIT0;

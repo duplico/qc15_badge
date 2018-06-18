@@ -192,7 +192,10 @@ void flash_wake() {
     __delay_cycles(30);
 }
 
-uint8_t flash_post() {
+uint8_t s25flash_post() {
+    // TODO: Check the correct RDID on the flash:
+    flash_rdid();
+
     volatile uint8_t status;
     volatile uint8_t initial_status = flash_get_status();
 
@@ -211,14 +214,9 @@ uint8_t flash_post() {
     return 0;
 }
 
-void init_flash() {
-    // Flash: (OLD)
-    // CS#          P1.1
-    // HOLD#   P1.0
-    // WP#          P3.0
-
+void s25flash_init_io() {
     // Flash (2018):
-    // CS#      P3.6 (idle high)
+    // CS#      P3.7 (idle high)
     // HOLD#    P3.3 (idle high)
     // WP#       J.3 (idle high)
     // CLK      3.6 (A1)
@@ -229,15 +227,41 @@ void init_flash() {
     // HOLD# high normally
     // WP# high normally (write protect when low)
 
-    flash_post();
+    GPIO_setAsOutputPin(GPIO_PORT_P3, GPIO_PIN3 + GPIO_PIN7);
+    GPIO_setAsOutputPin(GPIO_PORT_PJ, GPIO_PIN3);
+    P3OUT |= BIT7+BIT3; // Unheld, unselected
+    PJOUT |= BIT3;  // unprotected.
+    // TODO use preprocessor defines for the above.
 
-//    volatile uint8_t initial_status = flash_get_status();
+    GPIO_setAsPeripheralModuleFunctionOutputPin(GPIO_PORT_P3, GPIO_PIN4 + GPIO_PIN5 + GPIO_PIN6, GPIO_PRIMARY_MODULE_FUNCTION);
 
-    flash_rdid();
-    flash_rdid();
-//    flash_wr_en();
-//    volatile uint8_t status = flash_get_status();
-//    flash_rdid();
+    EUSCI_A_SPI_initMasterParam ucaparam = {0};
+    ucaparam.clockPhase= EUSCI_A_SPI_PHASE_DATA_CAPTURED_ONFIRST_CHANGED_ON_NEXT;
+    ucaparam.clockPolarity = EUSCI_A_SPI_CLOCKPOLARITY_INACTIVITY_LOW;
+    ucaparam.msbFirst = EUSCI_A_SPI_MSB_FIRST;
+    ucaparam.spiMode = EUSCI_A_SPI_3PIN;
+    ucaparam.selectClockSource = EUSCI_A_SPI_CLOCKSOURCE_SMCLK;
+    ucaparam.clockSourceFrequency = CS_getSMCLK();
+    ucaparam.desiredSpiClock = 100000; // TODO
 
-//    flash_wr_en();
+    EUSCI_A_SPI_initMaster(EUSCI_A1_BASE, &ucaparam);
+}
+
+void s25flash_init() {
+    // Flash: (OLD)
+    // CS#          P1.1
+    // HOLD#   P1.0
+    // WP#          P3.0
+
+    // Flash (2018):
+    // CS#      P3.6 (idle high, low to select)
+    // HOLD#    P3.3 (idle high, low to hold)
+    // WP#       J.3 (idle high, low to protect)
+    // CLK      3.6 (A1)
+    // SOMI     3.5 (A1)
+    // SIMO     3.4 (A1)
+
+    // TODO: implement WP
+
+    EUSCI_A_SPI_enable(EUSCI_A1_BASE);
 }
