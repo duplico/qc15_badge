@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>qc15_radiomcu</name>
+	<name>rfm75_msp430</name>
 	<comment></comment>
 	<projects>
-		<project>rfm75_msp430</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
