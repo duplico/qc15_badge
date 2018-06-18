@@ -74,7 +74,7 @@ void main (void)
     //Stop watchdog timer
     WDT_A_hold(WDT_A_BASE);
 
-    init_io(); // TODO: harmonize the idiom for the init fns
+    init_io();
 
     // On boot, the clock system is as follows:
     // * MCLK and SMCLK -> DCOCLKDIV (divided DCO) (1 MHz)
@@ -82,7 +82,7 @@ void main (void)
 
     //Initializes the XT1 crystal oscillator with no timeout
     //In case of failure, code hangs here.
-    //For time-out instead of code hang use CS_turnOnXT1LFWithTimeout() // TODO
+    //For time-out instead of code hang use CS_turnOnXT1LFWithTimeout()
     CS_turnOnXT1LF(
         CS_XT1_DRIVE_0
         );

@@ -5,7 +5,6 @@
  *      Author: george
  */
 
-// TODO
 #define CLOCK_FREQ_KHZ 8000
 
 void delay_millis(unsigned long mils) {
