@@ -5,9 +5,12 @@
  *      Author: george
  */
 
+// TODO
+#define CLOCK_FREQ_KHZ 8000
+
 void delay_millis(unsigned long mils) {
     while (mils) {
-        __delay_cycles(5000);
+        __delay_cycles(CLOCK_FREQ_KHZ);
         mils--;
     }
 }
