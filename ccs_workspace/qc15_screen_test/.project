@@ -24,4 +24,11 @@
 		<nature>org.eclipse.cdt.core.ccnature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>driverlib/MSP430FR5xx_6xx</name>
+			<type>2</type>
+			<locationURI>PARENT-1-WORKSPACE_LOC/driverlib/MSP430FR5xx_6xx</locationURI>
+		</link>
+	</linkedResources>
 </projectDescription>
