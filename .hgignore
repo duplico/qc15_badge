@@ -13,3 +13,7 @@ ccs_workspace/qc15_screen_test/.config
 ccs_workspace/qc15_screen_test/.xdchelp
 ccs_workspace/qc15_main/Debug
 ccs_workspace/qc15_main/.launches
+ccs_workspace/rfm75_msp430/Debug
+ccs_workspace/rfm75_msp430/.xdchelp
+ccs_workspace/rfm75_msp430/.config
+ccs_workspace/rfm75_msp430/.launches
