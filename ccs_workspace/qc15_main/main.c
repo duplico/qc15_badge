@@ -4,9 +4,8 @@
 #include <driverlib.h>
 #include <s25flash.h>
 
-// TODO: Create:
 //#include "qc15.h"
-// TODO: Create a conf.h
+
 #include "util.h"
 
 #include "lcd111.h"
@@ -65,7 +64,6 @@ void init_io() {
 }
 
 void init() {
-    // TODO: Enable WDT
     WDT_A_hold(WDT_A_BASE);
 
     init_clocks();

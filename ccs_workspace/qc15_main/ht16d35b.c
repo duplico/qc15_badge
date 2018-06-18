@@ -112,9 +112,9 @@ void ht_send_array(uint8_t txdat[], uint8_t len) {
     for (uint8_t i=0; i<len; i++) {
         // Wait for the TX buffer to become available again.
         while (!UCB0IFG & UCTXIFG) // While TX is unavailable, spin.
-            __no_operation(); // TODO: We should watch for a NACK here. TODO: Demeter
+            __no_operation();
 
-        __delay_cycles(500); // TODO - figure this out.
+        __delay_cycles(500);
 
         UCB0IFG &= ~UCTXIFG; // Clear TX flag.
         UCB0TXBUF = txdat[i]; // write dat.
@@ -144,7 +144,7 @@ void ht_read_reg(uint8_t reg[]) {
     UCB0CTLW0 |=  UCTXSTT; // Send a START.
 
     while (!UCB0IFG & UCTXIFG) // Wait for the TX buffer to become available.
-        __no_operation(); // TODO: We should watch for a NACK here???
+        __no_operation();
     while (UCB0CTLW0 & UCTXSTT); // Wait for the address to finish sending.
 
     // Stage HTCMD_READ_STATUS to send.
@@ -152,9 +152,7 @@ void ht_read_reg(uint8_t reg[]) {
 
     // Wait for TX to complete.
     while (!UCB0IFG & UCTXIFG) // While TX is unavailable, spin.
-            __no_operation(); // TODO: We should watch for a NACK here. TODO: Demeter
-    // TODO: We need to wait for it to actually COMPLETE, not just become available.
-    //  For now, this delay is a stand-in for that.
+            __no_operation();
     delay_millis(1);
 
     // Time to receive
@@ -228,10 +226,10 @@ void ht16d_init() {
 
     // Set global brightness (HTCMD_GLOBAL_BRTNS)
     ht_send_two(HTCMD_GLOBAL_BRTNS, 0x0f); // 0x40 is the most
-    // Set BW/Binary display mode. TODO: Make it gray
+    // Set BW/Binary display mode.
     ht_send_two(HTCMD_BWGRAY_SEL, 0x00); // 0x01 = binary (LSB1=b/w; LSB0=gray)
     // Set column pin control for in-use cols (HTCMD_COM_PIN_CTL)
-    ht_send_two(HTCMD_COM_PIN_CTL, 0b0000111); // comes through as 0b1111???
+    ht_send_two(HTCMD_COM_PIN_CTL, 0b0000111);
     // Set constant current ratio (HTCMD_I_RATIO)
     ht_send_two(HTCMD_I_RATIO, 0b0000); // This seems to be the max.
     // Set columns to 3 (0--2), and HIGH SCAN mode (HTCMD_COM_NUM)
@@ -243,11 +241,6 @@ void ht16d_init() {
     ht_send_array(row_ctl, 5);
     ht_send_two(HTCMD_SYS_OSC_CTL, 0b10); // Activate oscillator.
 
-    // Check conf: TODO: POST
-    ht_read_reg((uint8_t *) ht_status_reg);
-    __no_operation();
-
-    // TODO: don't turn on display until we've sent it colors.
     ht_send_two(HTCMD_SYS_OSC_CTL, 0b11); // Activate oscillator & display.
 }
 
@@ -294,8 +287,6 @@ void led_send_gray() {
         ht_send_array(light_array, 30);
     }
 }
-
-// TODO: struct for colors, like always, you nitwit.
 
 void led_all_one_color(uint8_t r, uint8_t g, uint8_t b) {
     // the array, in this case, is:

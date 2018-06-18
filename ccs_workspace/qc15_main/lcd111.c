@@ -54,7 +54,7 @@ void lcd111_sr_init_io() {
     p.spiMode = EUSCI_B_SPI_3PIN;
     p.selectClockSource = EUSCI_B_SPI_CLOCKSOURCE_ACLK;
     p.clockSourceFrequency = CS_getACLK();
-    p.desiredSpiClock = 10000; // TODO
+    p.desiredSpiClock = 10000;
     EUSCI_B_SPI_initMaster(EUSCI_B1_BASE, &p);
 }
 
@@ -81,7 +81,7 @@ void lcd111_init_io() {
 
 void lcd111_sr_out(uint8_t out) {
     EUSCI_B_SPI_transmitData(EUSCI_B1_BASE, out);
-    while (EUSCI_B_SPI_isBusy(EUSCI_B1_BASE)); // TODO: wrong thing to wait on.
+    while (EUSCI_B_SPI_isBusy(EUSCI_B1_BASE));
         __no_operation(); // Spin while it sends.
 }
 
@@ -90,7 +90,7 @@ void lcd111_command(uint8_t lcd_id, uint8_t command) {
     P6OUT &= ~BIT1;
     P6OUT &= ~BIT2;
     // 40 nsec delay required, here. (at 5 MHz, each cycle is 20ns)
-    __delay_cycles(2); // TODO
+    __delay_cycles(2);
     // Bring EN high (must pulse for >230 ns)
     P6OUT |= (lcd_id ? BIT4 : BIT3);
     // Set valid data
@@ -103,7 +103,7 @@ void lcd111_command(uint8_t lcd_id, uint8_t command) {
     // Hold on for a moment while it works
     //  We can't read, in this configuration, so we can't
     //  poll the busy signal.
-    delay_millis(50); // TODO - make async
+    delay_millis(50);
 
     // Keep the whole bus HIGH in between cycles.
     lcd111_sr_out(0xff);
