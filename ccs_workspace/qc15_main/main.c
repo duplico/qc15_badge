@@ -1,7 +1,7 @@
 #include <stdint.h>
 
 #include <msp430fr5972.h>
-#include "driverlib.h"
+#include <driverlib.h>
 
 //#include "qc15.h"
 #include "util.h"
