@@ -18,3 +18,7 @@ ccs_workspace/rfm75_msp430/.xdchelp
 ccs_workspace/rfm75_msp430/.config
 ccs_workspace/rfm75_msp430/.launches
 ccs_workspace/RemoteSystemsTempFiles
+ccs_workspace/rfm75_oob_test_detector/.launches
+ccs_workspace/rfm75_oob_test_detector/Debug
+ccs_workspace/rfm75_oob_test_transmitter/Debug
+ccs_workspace/rfm75_oob_test_transmitter/.launches
