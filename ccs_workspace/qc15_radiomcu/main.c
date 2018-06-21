@@ -55,7 +55,7 @@ void init_io() {
 
 //     * P1.6 radio EN
 //     * P1.7 radio IRQ
-    P1SEL0 = 0b00111110; // MSB
+    P1SEL0 = 0b00111110; // MSB // TODO: is this right?
     P1SEL1 = 0b00000000; // LSB
     P1DIR |= BIT6+BIT0;
     P1DIR &= ~BIT7;
