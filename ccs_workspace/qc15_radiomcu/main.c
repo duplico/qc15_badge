@@ -127,6 +127,7 @@ void main (void)
     //Stop watchdog timer
     WDT_A_hold(WDT_A_BASE);
     init_io();
+    init_clocks();
 
     rfm75_init();
 
