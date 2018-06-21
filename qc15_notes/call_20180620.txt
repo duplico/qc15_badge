@@ -1,0 +1,33 @@
+2880 character message
+ 180 characters per badge
+   6 30-character segments per badge
+   
+   
+Characters -> 30x characters = part -> 6x parts = segment -> all segments = file
+   
+These are contiguous. Think of the message as a long 1D character array.
+
+Characters in each part are not necessarily decrypted sequentially.
+
+ISSUE: How to resolve ambiguous / dual matches for light part character unlock events????
+
+Either: fire one priority-wise, or fire all. Prefer: prioritization.
+
+Base station - event attendance.
+
+Modes:
+
+    * Emotion - all LEDs the same
+    ** Alert!! is an emotion ?
+    
+    All changes in emotion mode should be gradual shifts
+    
+    * Decoration
+    
+    
+Animation types--
+
+    * Solid
+    * Vertical chase
+    * maybe ALERT
+    * MAYBE other customs
