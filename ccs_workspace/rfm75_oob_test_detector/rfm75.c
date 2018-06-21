@@ -3,6 +3,8 @@
  *
  * Queercon 13 radio driver for the HopeRF RFM75.
  *
+ * NB: This is a TEMPORARY HACK, and will be replaced.
+ *
  * (c) 2018 George Louthan
  * 3-clause BSD license; see license.md.
  */
