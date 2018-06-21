@@ -139,7 +139,6 @@ void main (void)
         delay_millis(1000);
     }
 
-
     EUSCI_A_UART_initParam uart_param = {0};
 
     uart_param.selectClockSource = EUSCI_A_UART_CLOCKSOURCE_SMCLK; // 1 MHz
