@@ -1,7 +1,7 @@
 /*
  * rfm75.c
  *
- * Queercon 13 radio driver for the HopeRF RFM75.
+ * Queercon 15 radio driver for the HopeRF RFM75.
  *
  * (c) 2018 George Louthan
  * 3-clause BSD license; see license.md.
@@ -14,55 +14,29 @@
 
 #include "rfm75.h"
 
-//CE   1.6 x
-//CSN  1.0 x
-//SCK  1.1 x
-//MOSI 1.2 x
-//MISO 1.3 x
-//IRQ  1.7 x
-
-#define RFM75_CSN_OUT P1OUT
-#define RFM75_CSN_PIN  GPIO_PIN0
-
+// Handy generic pin twiddling:
 #define CSN_LOW_START RFM75_CSN_OUT &= ~RFM75_CSN_PIN
 #define CSN_HIGH_END  RFM75_CSN_OUT |= RFM75_CSN_PIN
 
-#define CE_ACTIVATE P1OUT   |=  BIT6
-#define CE_DEACTIVATE P1OUT &= ~BIT6
+#define CE_ACTIVATE RFM75_CE_OUT |= RFM75_CE_PIN
+#define CE_DEACTIVATE RFM75_CE_OUT &= ~RFM75_CE_PIN
+
+// Local vars and buffers:
+rfbcpayload in_payload, out_payload, cascade_payload;
 
 uint8_t rx_addr_p0[3] = {0xd6, 0xe7, 0x2a};
 uint8_t tx_addr[3] = {0xd6, 0xe7, 0x2a};
-
-
-// State values:
-#define RFM75_BOOT 0
-#define RFM75_RX_INIT 1
-#define RFM75_RX_LISTEN 2
-#define RFM75_RX_READY 3
-#define RFM75_TX_INIT 4
-#define RFM75_TX_READY 5
-#define RFM75_TX_FIFO 6
-#define RFM75_TX_SEND 7
-#define RFM75_TX_DONE 8
+uint8_t payload_in[RFM75_PAYLOAD_SIZE] = {0};
+uint8_t payload_out[RFM75_PAYLOAD_SIZE] = {0};
 
 uint8_t rfm75_state = RFM75_BOOT;
 
-/////////////////////
-/////////////////////
-//// TODO ///////////
-
-void delay_millis(unsigned long mils);
-
-rfbcpayload in_payload, out_payload, cascade_payload;
-
-/////////////////////
+volatile uint8_t f_rfm75_interrupt = 0;
 
 ///////////////////////////////
 // Bank initialization values:
 
 #define BANK0_INITS 17
-
-//Bank0 register initialization value
 const uint8_t bank0_init_data[BANK0_INITS][2] = {
         { CONFIG, 0b00001111 }, //
         { 0x01, 0b00000000 }, //No auto-ack
@@ -86,26 +60,21 @@ const uint8_t bank0_init_data[BANK0_INITS][2] = {
         { 0x1d, 0b00000000 } // 00000 | DPL | ACK | DYN_ACK
 };
 
-uint8_t payload_in[RFM75_PAYLOAD_SIZE] = {0};
-uint8_t payload_out[RFM75_PAYLOAD_SIZE] = {0};
-
-uint8_t usci_b0_recv_sync(uint8_t data) {
-    EUSCI_A_SPI_transmitData(EUSCI_B0_BASE, data);
-    while (!EUSCI_B_SPI_getInterruptStatus(EUSCI_B0_BASE,
-            EUSCI_B_SPI_TRANSMIT_INTERRUPT));
-    while (!EUSCI_B_SPI_getInterruptStatus(EUSCI_B0_BASE,
-            EUSCI_B_SPI_RECEIVE_INTERRUPT));
-    return EUSCI_B_SPI_receiveData(EUSCI_B0_BASE);
+uint8_t rfm75spi_recv_sync(uint8_t data) {
+    while (!(RFM75_UCxIFG & UCTXIFG));
+    RFM75_UCxTXBUF = data;
+    while (!(RFM75_UCxIFG & UCRXIFG));
+    return RFM75_UCxRXBUF;
 }
 
-void usci_b0_send_sync(uint8_t data) {
-    usci_b0_recv_sync(data);
+void rfm75spi_send_sync(uint8_t data) {
+    rfm75spi_recv_sync(data);
 }
 
 uint8_t rfm75_get_status() {
     uint8_t recv;
     CSN_LOW_START;
-    recv = usci_b0_recv_sync(NOP_NOP);
+    recv = rfm75spi_recv_sync(NOP_NOP);
     CSN_HIGH_END;
     return recv;
 }
@@ -113,26 +82,26 @@ uint8_t rfm75_get_status() {
 uint8_t send_rfm75_cmd(uint8_t cmd, uint8_t data) {
     uint8_t ret;
     CSN_LOW_START;
-    usci_b0_send_sync(cmd);
-    ret = usci_b0_recv_sync(data);
+    rfm75spi_send_sync(cmd);
+    ret = rfm75spi_recv_sync(data);
     CSN_HIGH_END;
     return ret;
 }
 
 void send_rfm75_cmd_buf(uint8_t cmd, uint8_t *data, uint8_t data_len) {
     CSN_LOW_START;
-    usci_b0_send_sync(cmd);
+    rfm75spi_send_sync(cmd);
     for (uint8_t i=1; i<=data_len; i++) {
-        usci_b0_send_sync(data[data_len-i]);
+        rfm75spi_send_sync(data[data_len-i]);
     }
     CSN_HIGH_END;
 }
 
 void read_rfm75_cmd_buf(uint8_t cmd, uint8_t *data, uint8_t data_len) {
     CSN_LOW_START;
-    usci_b0_send_sync(cmd);
+    rfm75spi_send_sync(cmd);
     for (uint8_t i=1; i<=data_len; i++) {
-        data[data_len-i] = usci_b0_recv_sync(0xab);
+        data[data_len-i] = rfm75spi_recv_sync(0xab);
     }
     CSN_HIGH_END;
 }
@@ -140,8 +109,8 @@ void read_rfm75_cmd_buf(uint8_t cmd, uint8_t *data, uint8_t data_len) {
 uint8_t rfm75_read_byte(uint8_t cmd) {
     cmd &= 0b00011111;
     CSN_LOW_START;
-    usci_b0_send_sync(cmd);
-    uint8_t recv = usci_b0_recv_sync(0xff);
+    rfm75spi_send_sync(cmd);
+    uint8_t recv = rfm75spi_recv_sync(0xff);
     CSN_HIGH_END;
     return recv;
 }
@@ -179,9 +148,13 @@ uint8_t rfm75_post() {
 void rfm75_enter_prx() {
     rfm75_state = RFM75_RX_INIT;
     CE_DEACTIVATE;
-    // Power up & PRX: CONFIG=0b01101011
+    // Power up & enter PRX (Primary RX)
     rfm75_select_bank(0);
-    rfm75_write_reg(CONFIG, 0b00111111);
+    rfm75_write_reg(CONFIG, CONFIG_MASK_TX_DS + CONFIG_MASK_TX_DS +
+                            CONFIG_MASK_MAX_RT + CONFIG_EN_CRC +
+                            CONFIG_CRCO_2BYTE + CONFIG_PWR_UP +
+                            CONFIG_PRIM_RX);
+
     // Clear interrupts: STATUS=BIT4|BIT5|BIT6
     rfm75_write_reg(STATUS, BIT4|BIT5|BIT6);
 
@@ -238,8 +211,7 @@ void rfm75_init()
     EUSCI_B_SPI_enable(EUSCI_B0_BASE);
 
     // We're going totally synchronous on this; no interrupts at all.
-
-    delay_millis(150); // Delay more than 50ms.
+    __delay_cycles(150000); // Delay more than 50ms.
 
     // Setup GPIO:
     // CSN (1.0):
@@ -322,114 +294,30 @@ void rfm75_init()
     // And we're off to see the wizard!
 
     CSN_LOW_START;
-    usci_b0_send_sync(FLUSH_RX);
+    rfm75spi_send_sync(FLUSH_RX);
     CSN_HIGH_END;
     CSN_LOW_START;
-    usci_b0_send_sync(FLUSH_TX);
+    rfm75spi_send_sync(FLUSH_TX);
     CSN_HIGH_END;
 
     rfm75_enter_prx();
     __no_operation();
 }
 
-//uint8_t radio_payload_validate(rfbcpayload *payload) {
-////    // bad src ID
-////    if (!(payload->badge_addr < BADGES_IN_SYSTEM || payload->badge_addr == DEDICATED_BASE_ID)) {
-////        return 0;
-////    }
-////
-////    // ink id overflow when ink is requested
-////    if ((payload->flags & RFBC_INK) && (payload->ink_id >= LEG_ANIM_COUNT) && (payload->ink_id != LEG_ANIM_NONE)) {
-////        return 0;
-////    }
-////
-////    // bad ink id and ink flag set
-////    if (payload->ink_id == LEG_ANIM_NONE && (payload->flags & RFBC_INK)) {
-////        return 0;
-////    }
-////
-////    // both badge and event set
-////    if (payload->flags & RFBC_BEACON && payload->flags & RFBC_EVENT) {
-////        return 0;
-////    }
-////
-////    // double-ink set without ink set
-////    if (payload->flags & (RFBC_INK | RFBC_DINK) == RFBC_DINK) {
-////        return 0;
-////    }
-////
-////    // event flag when base_addr overflows
-////    if (payload->flags & RFBC_EVENT && payload->base_addr >= EVENTS_IN_SYSTEM) {
-////        return 0;
-////    }
-////
-////    // incoming ID is same as local ID, and it's not from a base.
-////    if (payload->badge_addr == my_conf.badge_id && payload->base_addr == NOT_A_BASE) {
-////        return 0;
-////    }
-////
-////    // handler on duty but source isn't a handler
-////    if (payload->flags & RFBC_HANDLER_ON_DUTY && !is_handler(payload->badge_addr)) {
-////        return 0;
-////    }
-////
-////    // If it's a hat offer...
-////    if (payload->flags & RFBC_HATOFFER) {
-////        if (payload->badge_addr != my_conf.badge_id)
-////            return 0; // it wasn't for me.
-////        if (!(payload->base_addr == BASE_BTALK || payload->base_addr == BASE_BPOOL || payload->base_addr == BASE_BKARAOKE || payload->base_addr == BASE_BSATMIX))
-////            return 0; // wrong base
-////        if (payload->ink_id > 22 || payload->ink_id < 17)
-////            return 0; // not an appropriate hat
-////    }
-////
-////    // CRC it.
-////    CRC_setSeed(CRC_BASE, RFM75_CRC_SEED);
-////    for (uint8_t i = 0; i < sizeof(rfbcpayload) - 2; i++) {
-////        CRC_set8BitData(CRC_BASE, ((uint8_t *) payload)[i]);
-////    }
-////
-////    if (payload->crc16 != CRC_getResult(CRC_BASE)) {
-////        // Bad CRC
-////        return 0;
-////    }
-////
-////    if (payload->ttl && payload->badge_addr != my_conf.badge_id && payload->crc16 != cascade_payload.crc16) {
-////        memcpy(&cascade_payload, payload, sizeof(rfbcpayload));
-////        payload_cascade = 1;
-////        cascade_payload.ttl--;
-////
-////        CRC_setSeed(CRC_BASE, RFM75_CRC_SEED);
-////        for (uint8_t i = 0; i < sizeof(rfbcpayload) - 2; i++) {
-////            CRC_set8BitData(CRC_BASE, ((uint8_t *) &cascade_payload)[i]);
-////        }
-////        cascade_payload.crc16 = CRC_getResult(CRC_BASE);
-////    }
-////
-////
-////
-////    rfm75_prev_seqnum = payload->seqnum;
-////    // CRC checks out.
-//    return 1;
-//}
-//
 void rfm75_deferred_interrupt() {
     // RFM75 interrupt:
     uint8_t iv = rfm75_get_status();
 
     if (iv & BIT5 && rfm75_state == RFM75_TX_SEND) { // TX interrupt
-
         // We sent a thing.
         // The ISR already took us back to standby.
-
-        // Clear interrupt
+        // Clear interrupt, return to PRX
         rfm75_write_reg(STATUS, BIT5);
         rfm75_state = RFM75_TX_DONE;
         rfm75_enter_prx();
     }
 
     if (iv & BIT6 && rfm75_state == RFM75_RX_LISTEN) { // RX interrupt
-
         // We've received something.
         rfm75_state = RFM75_RX_READY;
         // Which pipe?
@@ -441,11 +329,6 @@ void rfm75_deferred_interrupt() {
 
         // There's one type of payloads that this is allowed to be:
         //     ==Broadcast==
-        //   Handled in the handler...
-        //   We also may need to repeat this type of message.
-
-//        if (radio_payload_validate(&in_payload))
-//            radio_broadcast_received(&in_payload);
 
         // Payload is now allowed to go stale.
         // Assert CE: listen more.
@@ -460,8 +343,8 @@ __interrupt void RFM_ISR(void)
     if (P1IV != P1IV_P1IFG7) {
         return;
     }
-//    f_rfm75_interrupt = 1;
-    rfm75_deferred_interrupt(); // TODO
+    f_rfm75_interrupt = 1;
+    rfm75_deferred_interrupt();
     CE_DEACTIVATE; // stop listening or sending.
-//    __bic_SR_register_on_exit(SLEEP_BITS);
+    LPM4_EXIT; // We may not be this sleepy, but this'll wake us regardless.
 }

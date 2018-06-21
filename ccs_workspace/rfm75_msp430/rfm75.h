@@ -23,7 +23,23 @@ typedef struct {
 } rfbcpayload;
 
 #define RFM75_PAYLOAD_SIZE sizeof(rfbcpayload)
-//#define RFM75_PAYLOAD_SIZE 12
+
+// Pin and peripheral configurations:
+
+#define RFM75_UCxIFG UCB0IFG
+#define RFM75_UCxTXBUF UCB0TXBUF
+#define RFM75_UCxRXBUF UCB0RXBUF
+#define RFM75_UCxCTLW0 UCB0CTLW0
+#define RFM75_UCxBRW UCB0BRW
+
+#define RFM75_CSN_OUT P1OUT
+#define RFM75_CSN_PIN GPIO_PIN0
+#define RFM75_CE_OUT P1OUT
+#define RFM75_CE_PIN BIT6
+
+#define RFM75_USCI_PORT GPIO_PORT_P1
+#define RFM75_USCI_PINS (GPIO_PIN1+GPIO_PIN2+GPIO_PIN3)
+
 
 //************************FSK COMMAND and REGISTER****************************************//
 // SPI(RFM75) commands
@@ -67,6 +83,15 @@ typedef struct {
 #define FIFO_STATUS     0x17  // 'FIFO Status Register' register address
 #define PAYLOAD_WIDTH   0x1f  // 'payload length of 256 bytes modes register address
 
+#define CONFIG_MASK_RX_DR BIT6
+#define CONFIG_MASK_TX_DS BIT5
+#define CONFIG_MASK_MAX_RT BIT4
+#define CONFIG_EN_CRC BIT3
+#define CONFIG_CRCO_1BYTE 0x00
+#define CONFIG_CRCO_2BYTE BIT2
+#define CONFIG_PWR_UP BIT1
+#define CONFIG_PRIM_RX BIT0
+
 //interrupt status
 #define STATUS_RX_DR    0x40
 #define STATUS_TX_DS    0x20
@@ -84,11 +109,23 @@ typedef struct {
 
 #define RFM75_CRC_SEED 0x31C0
 
+// State values:
+#define RFM75_BOOT 0
+#define RFM75_RX_INIT 1
+#define RFM75_RX_LISTEN 2
+#define RFM75_RX_READY 3
+#define RFM75_TX_INIT 4
+#define RFM75_TX_READY 5
+#define RFM75_TX_FIFO 6
+#define RFM75_TX_SEND 7
+#define RFM75_TX_DONE 8
+
 void rfm75_init();
 uint8_t rfm75_post();
 void rfm75_deferred_interrupt();
 void rfm75_tx();
 
 extern uint32_t rfm75_seqnum;
+extern volatile uint8_t f_rfm75_interrupt;
 
 #endif /* RFM75_H_ */
