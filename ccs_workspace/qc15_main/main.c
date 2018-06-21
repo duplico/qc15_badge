@@ -14,32 +14,47 @@
 #include "ipc.h"
 
 void init_clocks() {
-    /*
-     * On power-on, the following defaults apply in the clock system:
-     *  - LFXT selected as oscillator source for LFXTCLK (not populated)
-     *  - ACLK: undivided, LFXTCLK
-     *  - MCLK: DCOCLK (/8)
-     *  - SMCLK:DCOCLK (/8)
-     *  - LFXIN/LFXOUT are GPIO and LFXT is disabled
-     */
 
-    /*
-     * Available sources:
-     *  - LFXTCLK (not available)
-     *  - VLOCLK (very low power (100 nA), 10-kHz)
-     *  - DCOCLK (selectable DCO)
-     *  - MODCLK (low-power (25 uA), 5 MHz)
-     *  - LFMODCLK (MODCLK/128, 39 kHz)
-     *  - HFXTCLK (not available)
-     */
+    // CLOCK SOURCES
+    // =============
+
+    // Fixed sources:
+    //      VLO      10k Very low power low-frequency oscillator
+    //      MODOSC   5M  for MODCLK
+    //      LFMODCLK (MODCLK/128, 39 kHz)
+
+    // Configurable sources:
+    //      DCO  (Digitally-controlled oscillator) (16 MHz)
 
     CS_setDCOFreq(1, 4); // Set DCO to 16 MHz
 
-    CS_initClockSignal(CS_ACLK, CS_LFMODOSC_SELECT, CS_CLOCK_DIVIDER_1); // 39k
-    // NB: If MCLK is over 8 MHz we have to mess around with FRAM wait states.
-    //     I'd rather not do that.
+    //      LFXT (Low frequency external crystal) - unused
+    //      HFXT (High frequency external crystal) - unused
+
+    // SYSTEM CLOCKS
+    // =============
+
+    // MCLK (8 MHz)
+    //  Defaults to DCOCLK /8
+    //  Available sources are HFXT, DCO, LFXT, VLO, or external digital clock.
+    //   If it's above 8 MHz, we need to configure FRAM wait-states.
+    //   Set to 8 MHz (DCO /2)
     CS_initClockSignal(CS_MCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_2); // 8 M
-    CS_initClockSignal(CS_SMCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_8); // 1 M
+
+    // SMCLK (1 MHz)
+    //  Defaults to DCOCLK /8
+    //  Same sources available as MCLK.
+    //      NB: This is different from the SMCLK behavior of the FR2xxx series,
+    //          which can only source SMCLK from a divided MCLK.
+    //  We'll use DCO /16
+    CS_initClockSignal(CS_SMCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_16); // 1 M
+
+    // MODCLK (5 MHz)
+    //  This comes from MODOSC. It's fixed.
+
+    // ACLK
+    //  Uses LFMODOSC, which is ~ 39k (MODCLK /128).
+    CS_initClockSignal(CS_ACLK, CS_LFMODOSC_SELECT, CS_CLOCK_DIVIDER_1); // 39k
 }
 
 void init_io() {
