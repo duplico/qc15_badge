@@ -41,67 +41,96 @@ void init_io() {
     // The magic FRAM make-it-work command:
     PMM_unlockLPM5();
 
-//     * P1.0 radio CS (GPIO)
-//     * P1.1 radio CLK (peripheral)
-//     * P1.2 radio SIMO (peripheral)
-//     * P1.3 radio SOMI (peripheral)
-//     * P1.4 IPC TX
-//     * P1.5 IPC RX
-    GPIO_setAsPeripheralModuleFunctionInputPin(
-        GPIO_PORT_P1,
-        GPIO_PIN4 + GPIO_PIN5,
-        GPIO_PRIMARY_MODULE_FUNCTION
-        );
+    // Radio IO is all set inside the radio driver. For now.
 
-//     * P1.6 radio EN
-//     * P1.7 radio IRQ
-    P1SEL0 = 0b00111110; // MSB // TODO: is this right?
-    P1SEL1 = 0b00000000; // LSB
-    P1DIR |= BIT6+BIT0;
-    P1DIR &= ~BIT7;
-//     * P2.0 XTAL
-//     * P2.1 XTAL
-//     * P2.2 switch (needs pull-UP, active low) (right is high)
+    // Port 1:
+    // -------
+    // * P1.0 RFM CSN (GPIO)    (configured in radio driver)
+    // * P1.1 RFM CLK (Primary) (configured in radio driver)
+    // * P1.2 RFM MO  (Primary) (configured in radio driver)
+    // * P1.3 RFM MI  (Primary) (configured in radio driver)
+    // * P1.4 IPC TX  (Primary)
+    // * P1.5 IPC RX  (Primary)
+    // * P1.6 RFM CE  (GPIO)    (configured in radio driver)
+    // * P1.7 RFM IRQ (GPIO in) (configured in radio driver)
+
+    // IPC TX/RX
+    P1SEL0 |= BIT4+BIT5;
+    P1SEL0 &= ~(BIT4+BIT5); // unneeded but whatever.
+
+    // Port 2:
+    // -------
+    // * P2.0 LFXT (Primary)
+    // * P2.1 LFXT (Primary)
+    // * P2.2 PWSW (GPIO in w/ pull-up) (right/down is HIGH)
+    //
+    //   These are all the usable GPIO pins on the device.
+
     P2SEL1 = 0b011; // MSB
     P2SEL0 = 0b000; // LSB
     P2DIR &= ~BIT2; // Switch pin set to input.
-    P2REN |= BIT2; // Switch resistor enable
-    P2OUT |= BIT2; // Switch resistor pull UP direction
+    P2REN |= BIT2;  // Switch resistor enable
+    P2OUT |= BIT2;  // Switch resistor pull UP direction
+}
+
+void init_clocks() {
+    // CLOCK SOURCES
+    // =============
+
+    // Fixed sources:
+    //      REFO     32k Integrated 32 kHz RC oscillator
+    //      VLO      10k Very low power low-frequency oscillator
+    //      MODOSC   5M  for MODCLK
+
+    // Configurable sources:
+    // DCO  (Digitally-controlled oscillator)
+    //  This defaults to 16 MHz. We'll keep this.
+
+    // LFXT (Low frequency external crystal)
+    CS_turnOnXT1LF(
+            CS_XT1_DRIVE_0
+    );
+
+    CS_initClockSignal(
+            CS_ACLK,
+            CS_XT1CLK_SELECT,
+            CS_CLOCK_DIVIDER_1
+    );
+
+    //clear all OSC fault flag
+    CS_clearAllOscFlagsWithTimeout(1000);
+    // TODO: OSC flags in POST routine, please.
+
+    // SYSTEM CLOCKS
+    // =============
+
+    // MCLK (1 MHz)
+    //  All sources but MODOSC are available at up to /128
+    //  Initializes to DCOCLKDIV (divided DCO) (1 MHz)
+    //  This is fine.
+
+    // SMCLK
+    //  Derived from MCLK with divider up to /8
+    //  Initializes to MCLK/1, which we'll keep.
+
+    // MODCLK (5 MHz)
+    //  This comes from MODOSC
+
+    // ACLK
+    //  Initializes to REFO, which is ~ 32k.
+    //  This is OK, but we'd rather have it connected to our watch crystal,
+    //   which will give us a more precise 32k signal.
 }
 
 void main (void)
 {
     //Stop watchdog timer
     WDT_A_hold(WDT_A_BASE);
-
     init_io();
 
-    // On boot, the clock system is as follows:
-    // * MCLK and SMCLK -> DCOCLKDIV (divided DCO) (1 MHz)
-    // * ACLK           -> REFO (32k internal oscillator)
-
-    //Initializes the XT1 crystal oscillator with no timeout
-    //In case of failure, code hangs here.
-    //For time-out instead of code hang use CS_turnOnXT1LFWithTimeout()
-    CS_turnOnXT1LF(
-        CS_XT1_DRIVE_0
-        );
-
-    CS_initClockSignal(
-        CS_ACLK,
-        CS_XT1CLK_SELECT,
-        CS_CLOCK_DIVIDER_1
-        );
-
-	//clear all OSC fault flag
-	CS_clearAllOscFlagsWithTimeout(1000);
-
-	//Enable oscillator fault interrupt
-    SFR_enableInterrupt(SFR_OSCILLATOR_FAULT_INTERRUPT);
-
     rfm75_init();
-//    rfm75_post();
 
+    // Set the global interrupt enable:
     __bis_SR_register(GIE);
 
     while (1) {
@@ -142,15 +171,4 @@ void main (void)
 
     //For debugger
     __no_operation();
-}
-
-#pragma vector=UNMI_VECTOR
-__interrupt
-void NMI_ISR(void)
-{
-  do {
-    // If it still can't clear the oscillator fault flags after the timeout,
-    // trap and wait here.
-    status = CS_clearAllOscFlagsWithTimeout(1000);
-  } while(status != 0);
 }
