@@ -31,11 +31,11 @@
 //#define RFMUCxCTLW0 UCB0CTLW0
 //#define RFMUCxBRW UCB0BRW
 
-#define RFMUCxIFG UCA0IFG
-#define RFMUCxTXBUF UCA0TXBUF
-#define RFMUCxRXBUF UCA0RXBUF
-#define RFMUCxCTLW0 UCA0CTLW0
-#define RFMUCxBRW UCA0BRW
+#define RFM75_UCxIFG UCA0IFG
+#define RFM75_UCxTXBUF UCA0TXBUF
+#define RFM75_UCxRXBUF UCA0RXBUF
+#define RFM75_UCxCTLW0 UCA0CTLW0
+#define RFM75_UCxBRW UCA0BRW
 
 #define RFM75_CSN_OUT P1OUT
 #define RFM75_CSN_PIN  GPIO_PIN0
@@ -106,21 +106,21 @@ const uint8_t bank0_init_data[BANK0_INITS][2] = {
 uint8_t payload_in[RFM75_PAYLOAD_SIZE] = {0};
 uint8_t payload_out[RFM75_PAYLOAD_SIZE] = {0};
 
-uint8_t usci_b0_recv_sync(uint8_t data) {
-    while (!(RFMUCxIFG & UCTXIFG));
-    RFMUCxTXBUF = data;
-    while (!(RFMUCxIFG & UCRXIFG));
-    return RFMUCxRXBUF;
+uint8_t rfm75spi_recv_sync(uint8_t data) {
+    while (!(RFM75_UCxIFG & UCTXIFG));
+    RFM75_UCxTXBUF = data;
+    while (!(RFM75_UCxIFG & UCRXIFG));
+    return RFM75_UCxRXBUF;
 }
 
-void usci_b0_send_sync(uint8_t data) {
-    usci_b0_recv_sync(data);
+void rfm75spi_send_sync(uint8_t data) {
+    rfm75spi_recv_sync(data);
 }
 
 uint8_t rfm75_get_status() {
     uint8_t recv;
     CSN_LOW_START;
-    recv = usci_b0_recv_sync(NOP_NOP);
+    recv = rfm75spi_recv_sync(NOP_NOP);
     CSN_HIGH_END;
     return recv;
 }
@@ -128,26 +128,26 @@ uint8_t rfm75_get_status() {
 uint8_t send_rfm75_cmd(uint8_t cmd, uint8_t data) {
     uint8_t ret;
     CSN_LOW_START;
-    usci_b0_send_sync(cmd);
-    ret = usci_b0_recv_sync(data);
+    rfm75spi_send_sync(cmd);
+    ret = rfm75spi_recv_sync(data);
     CSN_HIGH_END;
     return ret;
 }
 
 void send_rfm75_cmd_buf(uint8_t cmd, uint8_t *data, uint8_t data_len) {
     CSN_LOW_START;
-    usci_b0_send_sync(cmd);
+    rfm75spi_send_sync(cmd);
     for (uint8_t i=1; i<=data_len; i++) {
-        usci_b0_send_sync(data[data_len-i]);
+        rfm75spi_send_sync(data[data_len-i]);
     }
     CSN_HIGH_END;
 }
 
 void read_rfm75_cmd_buf(uint8_t cmd, uint8_t *data, uint8_t data_len) {
     CSN_LOW_START;
-    usci_b0_send_sync(cmd);
+    rfm75spi_send_sync(cmd);
     for (uint8_t i=1; i<=data_len; i++) {
-        data[data_len-i] = usci_b0_recv_sync(0xab);
+        data[data_len-i] = rfm75spi_recv_sync(0xab);
     }
     CSN_HIGH_END;
 }
@@ -155,8 +155,8 @@ void read_rfm75_cmd_buf(uint8_t cmd, uint8_t *data, uint8_t data_len) {
 uint8_t rfm75_read_byte(uint8_t cmd) {
     cmd &= 0b00011111;
     CSN_LOW_START;
-    usci_b0_send_sync(cmd);
-    uint8_t recv = usci_b0_recv_sync(0xff);
+    rfm75spi_send_sync(cmd);
+    uint8_t recv = rfm75spi_recv_sync(0xff);
     CSN_HIGH_END;
     return recv;
 }
@@ -247,15 +247,15 @@ void rfm75_init()
 
     // Setup USCI.
 
-    RFMUCxCTLW0 |= UCSWRST;
+    RFM75_UCxCTLW0 |= UCSWRST;
 
-    RFMUCxBRW = (uint16_t)(CS_getSMCLK() / 1000000); // set clock scaler
+    RFM75_UCxBRW = (uint16_t)(CS_getSMCLK() / 1000000); // set clock scaler
 
     // clear control word:
-    RFMUCxCTLW0 &= ~(UCCKPH + UCCKPL + UC7BIT + UCMSB +
+    RFM75_UCxCTLW0 &= ~(UCCKPH + UCCKPL + UC7BIT + UCMSB +
                 UCMST + UCMODE_3 + UCSYNC + UCSSEL_3);
 
-    RFMUCxCTLW0 |=    UCSSEL__SMCLK + // use SMCLK
+    RFM75_UCxCTLW0 |=    UCSSEL__SMCLK + // use SMCLK
                     UCMSB + //MSB first
                     UCCKPH + // mode 01 or whatever
                     UCMODE_0 + // 3-pin
@@ -263,7 +263,7 @@ void rfm75_init()
                     UCSYNC; // synchronous mode.
 
     // and enable!
-    RFMUCxCTLW0 &= ~UCSWRST;
+    RFM75_UCxCTLW0 &= ~UCSWRST;
 //
 //    EUSCI_B_SPI_initMasterParam ini = {0};
 //    ini.selectClockSource = EUSCI_B_SPI_CLOCKSOURCE_SMCLK;
@@ -363,10 +363,10 @@ void rfm75_init()
     // And we're off to see the wizard!
 
     CSN_LOW_START;
-    usci_b0_send_sync(FLUSH_RX);
+    rfm75spi_send_sync(FLUSH_RX);
     CSN_HIGH_END;
     CSN_LOW_START;
-    usci_b0_send_sync(FLUSH_TX);
+    rfm75spi_send_sync(FLUSH_TX);
     CSN_HIGH_END;
 
     rfm75_enter_prx();
