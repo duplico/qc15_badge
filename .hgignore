@@ -22,3 +22,4 @@ ccs_workspace/rfm75_oob_test_detector/.launches
 ccs_workspace/rfm75_oob_test_detector/Debug
 ccs_workspace/rfm75_oob_test_transmitter/Debug
 ccs_workspace/rfm75_oob_test_transmitter/.launches
+ccs_workspace/qc15_base/Debug

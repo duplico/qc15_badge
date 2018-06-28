@@ -11,6 +11,7 @@
 #define RFM75_H_
 
 #include <stdint.h>
+#include <msp430.h>
 
 typedef struct {
     uint8_t proto_version;
@@ -25,6 +26,8 @@ typedef struct {
 #define RFM75_PAYLOAD_SIZE sizeof(rfbcpayload)
 
 // Pin and peripheral configurations:
+
+#ifndef RFM75_OVERRIDE_DEFAULTS
 
 #define RFM75_UCxIFG UCB0IFG
 #define RFM75_UCxTXBUF UCB0TXBUF
@@ -42,6 +45,20 @@ typedef struct {
 #define RFM75_USCI_PORT GPIO_PORT_P1
 #define RFM75_USCI_PINS (GPIO_PIN1+GPIO_PIN2+GPIO_PIN3)
 
+#define RFM75_IRQ_DIR P1DIR
+#define RFM75_IRQ_REN P1REN
+#define RFM75_IRQ_SEL0 P1SEL0
+#define RFM75_IRQ_SEL1 P1SEL1
+#define RFM75_IRQ_IES P1IES
+#define RFM75_IRQ_IFG P1IFG
+#define RFM75_IRQ_IE P1IE
+#define RFM75_IRQ_PIN BIT7
+
+#define RFMISR_VECTOR PORT1_VECTOR
+#define RFMxIV P1IV
+#define RFMxIV_PxIFGx P1IV_P1IFG7
+
+#endif
 
 //************************FSK COMMAND and REGISTER****************************************//
 // SPI(RFM75) commands
@@ -124,7 +141,7 @@ typedef struct {
 
 void rfm75_init();
 uint8_t rfm75_post();
-void rfm75_deferred_interrupt();
+uint8_t rfm75_deferred_interrupt();
 void rfm75_tx();
 
 extern uint32_t rfm75_seqnum;
