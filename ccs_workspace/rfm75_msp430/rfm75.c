@@ -22,8 +22,8 @@
 #define CE_DEACTIVATE RFM75_CE_OUT &= ~RFM75_CE_PIN
 
 // Local vars and buffers:
-uint8_t rx_addr_p0[3] = {0xd6, 0xe7, 0x2a};
-uint8_t rx_addr_p1[3] = {0xaa, 0xaa, 0xaa};
+uint8_t rx_addr_p0[3] = {0, 100, 0};
+uint8_t rx_addr_p1[3] = {0xff, 0xff, 0xee};
 uint8_t payload_in[RFM75_PAYLOAD_SIZE] = {0};
 uint8_t payload_out[RFM75_PAYLOAD_SIZE] = {0};
 
@@ -36,7 +36,7 @@ volatile uint8_t f_rfm75_interrupt = 0;
 
 #define BANK0_INITS 17
 const uint8_t bank0_init_data[BANK0_INITS][2] = {
-        { CONFIG, 0b00001111 }, //
+        { CONFIG, 0xff }, //
         { 0x01, 0b00000000 }, //No auto-ack
         { 0x02, BIT0+BIT1 }, //Enable RX pipe 0 and 1
         { 0x03, 0b00000001 }, //RX/TX address field width 3byte
@@ -104,7 +104,7 @@ void read_rfm75_cmd_buf(uint8_t cmd, uint8_t *data, uint8_t data_len) {
     CSN_HIGH_END;
 }
 
-uint8_t rfm75_read_byte(uint8_t cmd) {
+uint8_t rfm75_read_reg(uint8_t cmd) {
     cmd &= 0b00011111;
     CSN_LOW_START;
     rfm75spi_send_sync(cmd);
@@ -195,6 +195,7 @@ void rfm75_io_init() {
     CSN_HIGH_END; // initialize deselected.
     // CE (1.6):
     RFM75_CE_DIR |= RFM75_CE_PIN;
+    CE_DEACTIVATE; // initialize deactivated.
     // IRQ (1.7):
     RFM75_IRQ_DIR &= ~RFM75_IRQ_PIN;
     RFM75_IRQ_REN &= ~RFM75_IRQ_PIN;
@@ -234,12 +235,34 @@ void rfm75_init()
     // Let's start with bank 0:
     rfm75_select_bank(0);
 
+    // Because we want the option of using dynamic ACKs, and possibly dynamic
+    //  packet lengths as well, we need to determine whether this radio has
+    //  had its FEATURE register ACTIVATED (by sending the ACTIVATE command
+    //  followed by 0x73.)
+    // But since a restart of our code does not necessarily mean that the radio
+    //  has been restarted by a power cycle, and because the ACTIVATE command
+    //  is a toggle,
+    uint8_t test_feature_reg = 0;
+    test_feature_reg = rfm75_read_reg(FEATURE);
+    rfm75_write_reg(FEATURE, test_feature_reg ^ 0b00000111); // flip all the bits.
+    if (rfm75_read_reg(FEATURE) == test_feature_reg) {
+        // In spite of trying to flip these, bits, they stayed the same.
+        // Therefore, it needs to be ACTIVATED.
+        send_rfm75_cmd(ACTIVATE_CMD, 0x73);
+    } else {
+        // else we're already ACTIVATED.
+        // no need to run any command.
+        // (and the FEATURE register will be configured in the master bank0
+        //  config for loop, so there's no need to try to undo our bit flips
+        //  here.)
+    }
+
     for(uint8_t i=0;i<BANK0_INITS;i++)
         rfm75_write_reg(bank0_init_data[i][0], bank0_init_data[i][1]);
 
     // Next fill address buffers
-    rfm75_write_reg_buf(RX_ADDR_P0, rx_addr_p0, 3);
-    rfm75_write_reg_buf(RX_ADDR_P1, rx_addr_p1, 3);
+    rfm75_write_reg_buf(RX_ADDR_P0, rx_addr_p1, 3);
+    rfm75_write_reg_buf(RX_ADDR_P1, rx_addr_p0, 3);
     rfm75_write_reg_buf(TX_ADDR, rx_addr_p0, 3);
 
     // OK, that's bank 0 done. Next is bank 1.
@@ -321,7 +344,9 @@ uint8_t rfm75_deferred_interrupt() {
     if (iv & BIT6 && rfm75_state == RFM75_RX_LISTEN) { // RX interrupt
         // We've received something.
         rfm75_state = RFM75_RX_READY;
-        // TODO: Which pipe? (broadcast or unicast)
+        // Which pipe? (broadcast or unicast)
+        uint8_t pipe = 0;
+        pipe = (iv & 0b1110) ? 1 : 0;
 
         // Read the FIFO. No need to flush it; it's deleted when read.
         read_rfm75_cmd_buf(RD_RX_PLOAD, payload_in, RFM75_PAYLOAD_SIZE);
@@ -330,6 +355,7 @@ uint8_t rfm75_deferred_interrupt() {
 
         // There's one type of payloads that this is allowed to be:
         //     ==Broadcast==
+        //     ===Unicast===
 
         // Payload is now allowed to go stale.
         // Assert CE: listen more.
