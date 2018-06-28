@@ -160,10 +160,12 @@ void rfm75_enter_prx() {
     CE_DEACTIVATE;
     // Power up & enter PRX (Primary RX)
     rfm75_select_bank(0);
-    rfm75_write_reg(CONFIG, CONFIG_MASK_TX_DS + CONFIG_MASK_TX_DS +
-                            CONFIG_MASK_MAX_RT + CONFIG_EN_CRC +
-                            CONFIG_CRCO_2BYTE + CONFIG_PWR_UP +
-                            CONFIG_PRIM_RX);
+//    rfm75_write_reg(CONFIG, CONFIG_MASK_RX_DR + CONFIG_MASK_TX_DS +
+//                            CONFIG_MASK_MAX_RT + CONFIG_EN_CRC +
+//                            CONFIG_CRCO_2BYTE + CONFIG_PWR_UP +
+//                            CONFIG_PRIM_RX);
+    rfm75_write_reg(CONFIG, 0b00111111);
+
 
     // Clear interrupts: STATUS=BIT4|BIT5|BIT6
     rfm75_write_reg(STATUS, BIT4|BIT5|BIT6);
@@ -212,11 +214,10 @@ void rfm75_io_init() {
     // CE (1.6):
     RFM75_CE_DIR |= RFM75_CE_PIN;
     // IRQ (1.7):
-    // TODO: Parameterize this?
-    P1DIR &= ~BIT7;
-    P1REN &= ~BIT7;
-    P1SEL0 &= ~BIT7;
-    P1SEL1 &= ~BIT7;
+    RFM75_IRQ_DIR &= ~RFM75_IRQ_PIN;
+    RFM75_IRQ_REN &= ~RFM75_IRQ_PIN;
+    RFM75_IRQ_SEL0 &= ~RFM75_IRQ_PIN;
+    RFM75_IRQ_SEL1 &= ~RFM75_IRQ_PIN;
     // Pins for the USCI:
     GPIO_setAsPeripheralModuleFunctionOutputPin(RFM75_USCI_PORT,
                                                 RFM75_USCI_PINS,
@@ -316,17 +317,18 @@ void rfm75_init()
     CSN_HIGH_END;
 
     // Enable our interrupts:
-    P1IES |= BIT7;
-    P1IFG &= ~BIT7;
-    P1IE |= BIT7;
+    RFM75_IRQ_IES |= RFM75_IRQ_PIN;
+    RFM75_IRQ_IFG &= ~RFM75_IRQ_PIN;
+    RFM75_IRQ_IE |= RFM75_IRQ_PIN;
 
     // And we're off to see the wizard!
     rfm75_enter_prx();
 }
 
-void rfm75_deferred_interrupt() {
+uint8_t rfm75_deferred_interrupt() {
     // RFM75 interrupt:
     uint8_t iv = rfm75_get_status();
+    uint8_t ret = 0x00;
 
     if (iv & BIT5 && rfm75_state == RFM75_TX_SEND) { // TX interrupt
         // We sent a thing.
@@ -336,6 +338,8 @@ void rfm75_deferred_interrupt() {
         rfm75_state = RFM75_TX_DONE;
         // Return to PRX mode:
         rfm75_enter_prx();
+        // It's a TX, so return 0b01:
+        ret |= 0b01;
     }
 
     if (iv & BIT6 && rfm75_state == RFM75_RX_LISTEN) { // RX interrupt
@@ -356,13 +360,16 @@ void rfm75_deferred_interrupt() {
         // Assert CE: listen more.
         CE_ACTIVATE;
         rfm75_state = RFM75_RX_LISTEN;
+        ret |= 0b10;
     }
+    return ret;
 }
 
 #pragma vector=PORT1_VECTOR
-__interrupt void RFM_ISR(void)
+__interrupt
+void RFM_ISR(void)
 {
-    if (P1IV != P1IV_P1IFG7) {
+    if (P1IV != RFMxIV_PxIFGx) {
         return;
     }
     f_rfm75_interrupt = 1;

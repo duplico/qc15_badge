@@ -39,15 +39,12 @@ void init_io() {
     // The magic FRAM make-it-work command:
     PMM_unlockLPM5();
 
-    P1DIR |= BIT1; // Green LED
-    P1OUT &= ~BIT1;
-
-//     * P2.5 radio EN
-//     * P2.6 radio IRQ
+    P2DIR |= BIT2; // Green LED
+    P2OUT &= ~BIT2;
 }
 
 void main (void)
-{
+ {
     //Stop watchdog timer
     WDT_A_hold(WDT_A_BASE);
 
@@ -71,14 +68,14 @@ void main (void)
             if (rfm75_deferred_interrupt() & 0b10) {
                 // it was an rx:
                 // light some shit up!
-                P1OUT |= BIT1;
+                P2OUT |= BIT2;
                 millis = 0;
             }
         }
 
         if (millis == 1000) {
-            P1OUT &= ~BIT1;
 //            rfm75_tx();
+            P2OUT &= ~BIT2;
             millis = 0;
         }
 
