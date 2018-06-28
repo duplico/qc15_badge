@@ -22,8 +22,6 @@
 #define CE_DEACTIVATE RFM75_CE_OUT &= ~RFM75_CE_PIN
 
 // Local vars and buffers:
-rfbcpayload in_payload, out_payload, cascade_payload;
-
 uint8_t rx_addr_p0[3] = {0xd6, 0xe7, 0x2a};
 uint8_t tx_addr[3] = {0xd6, 0xe7, 0x2a};
 uint8_t payload_in[RFM75_PAYLOAD_SIZE] = {0};
@@ -40,7 +38,7 @@ volatile uint8_t f_rfm75_interrupt = 0;
 const uint8_t bank0_init_data[BANK0_INITS][2] = {
         { CONFIG, 0b00001111 }, //
         { 0x01, 0b00000000 }, //No auto-ack
-        { 0x02, 0b00000001 }, //Enable RX pipe 0 and 1
+        { 0x02, 0b00000001 }, //Enable RX pipe 1
         { 0x03, 0b00000001 }, //RX/TX address field width 3byte
         { 0x04, 0b00000000 }, //no auto-RT
         { 0x05, 0x53 }, //channel: 2400 + LS 7 bits of this field = channel (2.483)
@@ -159,12 +157,11 @@ void rfm75_enter_prx() {
     rfm75_state = RFM75_RX_INIT;
     CE_DEACTIVATE;
     // Power up & enter PRX (Primary RX)
-    rfm75_select_bank(0);
-//    rfm75_write_reg(CONFIG, CONFIG_MASK_RX_DR + CONFIG_MASK_TX_DS +
-//                            CONFIG_MASK_MAX_RT + CONFIG_EN_CRC +
-//                            CONFIG_CRCO_2BYTE + CONFIG_PWR_UP +
-//                            CONFIG_PRIM_RX);
-    rfm75_write_reg(CONFIG, 0b00111111);
+    rfm75_select_bank(0); // TODO: We don't need all these.
+    rfm75_write_reg(CONFIG, CONFIG_MASK_TX_DS +
+                    CONFIG_MASK_MAX_RT + CONFIG_EN_CRC +
+                    CONFIG_CRCO_2BYTE + CONFIG_PWR_UP +
+                    CONFIG_PRIM_RX);
 
 
     // Clear interrupts: STATUS=BIT4|BIT5|BIT6
@@ -177,17 +174,6 @@ void rfm75_enter_prx() {
 }
 
 void rfm75_tx() {
-    // Fill'er up:
-    out_payload.proto_version = 0;
-    out_payload.badge_addr = 0;
-    out_payload.base_addr = 0xfd;
-    out_payload.ttl = 2;
-    out_payload.ink_id = 0x1a;
-    out_payload.flags = 0x24;
-    out_payload.seqnum = 41;
-    out_payload.crc16 = 28108;
-    memcpy(payload_out, &out_payload, RFM75_PAYLOAD_SIZE);
-
     rfm75_state = RFM75_TX_INIT;
     CE_DEACTIVATE;
     rfm75_select_bank(0);
@@ -204,10 +190,6 @@ void rfm75_tx() {
 }
 
 void rfm75_io_init() {
-    // TODO: Make the decision about whether the IO will be configured
-    //       entirely in the application, or whether we need to do it
-    //       here, in the driver, in which case we need to further
-    //       parameterize the IRQ pin.
     // CSN
     RFM75_CSN_DIR |= RFM75_CSN_PIN;
     CSN_HIGH_END; // initialize deselected.
@@ -243,9 +225,6 @@ void rfm75_io_init() {
 
 void rfm75_init()
 {
-    // TODO: I have no idea why the below was there. Confirm it works w/o it:
-    //    __delay_cycles(150000); // Delay more than 50ms.
-
     rfm75_io_init();
 
     // We're going totally synchronous on this; no interrupts at all.
@@ -351,7 +330,6 @@ uint8_t rfm75_deferred_interrupt() {
         read_rfm75_cmd_buf(RD_RX_PLOAD, payload_in, RFM75_PAYLOAD_SIZE);
         // Clear the interrupt flag on the radio module.
         rfm75_write_reg(STATUS, BIT6);
-        memcpy(&in_payload, &payload_in, RFM75_PAYLOAD_SIZE);
 
         // There's one type of payloads that this is allowed to be:
         //     ==Broadcast==
