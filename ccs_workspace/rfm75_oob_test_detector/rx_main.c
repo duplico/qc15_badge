@@ -54,7 +54,7 @@ void main (void)
     // * MCLK and SMCLK -> DCOCLKDIV (divided DCO) (1 MHz)
     // * ACLK           -> REFO (32k internal oscillator)
 
-    rfm75_init();
+    rfm75_init(35);
     rfm75_post();
 
     __bis_SR_register(GIE);

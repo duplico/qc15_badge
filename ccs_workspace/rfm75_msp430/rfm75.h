@@ -130,10 +130,10 @@
 #define RFM75_TX_SEND 7
 #define RFM75_TX_DONE 8
 
-void rfm75_init();
+void rfm75_init(uint16_t unicast_address);
 uint8_t rfm75_post();
 uint8_t rfm75_deferred_interrupt();
-void rfm75_tx();
+void rfm75_tx(uint16_t addr);
 
 extern uint32_t rfm75_seqnum;
 extern volatile uint8_t f_rfm75_interrupt;
