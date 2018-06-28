@@ -52,7 +52,7 @@ void main (void)
     // * MCLK and SMCLK -> DCOCLKDIV (divided DCO) (1 MHz)
     // * ACLK           -> REFO (32k internal oscillator)
 
-    rfm75_init();
+    rfm75_init(25);
     rfm75_post();
 
     __bis_SR_register(GIE);
@@ -60,8 +60,9 @@ void main (void)
     while (1) {
         // check for attached radio.
         if (rfm75_post()) {
-            rfm75_init();
-            rfm75_tx();
+            rfm75_init(25);
+//            rfm75_tx(0xffff);
+            rfm75_tx(0xffff);
             delay_millis(200);
         }
 

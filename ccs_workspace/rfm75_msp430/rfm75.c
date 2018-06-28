@@ -22,8 +22,13 @@
 #define CE_DEACTIVATE RFM75_CE_OUT &= ~RFM75_CE_PIN
 
 // Local vars and buffers:
-uint8_t rx_addr_p0[3] = {0, 100, 0};
-uint8_t rx_addr_p1[3] = {0xff, 0xff, 0xee};
+uint16_t rfm75_unicast_addr = 0;
+uint16_t rfm75_broadcast_addr = 0xffff;
+#define UNICAST_LSB 0
+#define BROADCAST_LSB 0xEE
+
+uint8_t rx_addr_p0[3] = {UNICAST_LSB, 100, 0};
+uint8_t rx_addr_p1[3] = {BROADCAST_LSB, 0xff, 0xff};
 uint8_t payload_in[RFM75_PAYLOAD_SIZE] = {0};
 uint8_t payload_out[RFM75_PAYLOAD_SIZE] = {0};
 
@@ -173,11 +178,31 @@ void rfm75_enter_prx() {
     rfm75_state = RFM75_RX_LISTEN;
 }
 
-void rfm75_tx() {
+void rfm75_tx(uint16_t addr) {
     rfm75_state = RFM75_TX_INIT;
+
     CE_DEACTIVATE;
     rfm75_select_bank(0);
     rfm75_write_reg(CONFIG, 0b01011110);
+
+    // Setup our destination address:
+
+//    uint8_t tx_addr[3] = {0};
+//
+//    if (addr == rfm75_broadcast_addr) {
+//        // broadcast!
+//        tx_addr[0] = BROADCAST_LSB;
+//        rfm75_write_reg_buf(TX_ADDR, rx_addr_p1, 3); // default to broadcast
+//    } else {
+//        // unicast!
+//        tx_addr[0] = UNICAST_LSB;
+//    }
+//
+//    tx_addr[1] = addr & 0xff;
+//    tx_addr[2] = (addr & 0xff00) >> 8; // MSB
+//
+//    rfm75_write_reg_buf(TX_ADDR, tx_addr, 3);
+
     // Clear interrupts: STATUS=BIT4|BIT5|BIT6
     rfm75_write_reg(STATUS, BIT4|BIT5|BIT6);
 
@@ -224,7 +249,7 @@ void rfm75_io_init() {
 
 }
 
-void rfm75_init()
+void rfm75_init(uint16_t unicast_address)
 {
     rfm75_io_init();
 
@@ -260,10 +285,14 @@ void rfm75_init()
     for(uint8_t i=0;i<BANK0_INITS;i++)
         rfm75_write_reg(bank0_init_data[i][0], bank0_init_data[i][1]);
 
-    // Next fill address buffers
-    rfm75_write_reg_buf(RX_ADDR_P0, rx_addr_p1, 3);
-    rfm75_write_reg_buf(RX_ADDR_P1, rx_addr_p0, 3);
-    rfm75_write_reg_buf(TX_ADDR, rx_addr_p0, 3);
+    // Setup addresses:
+    rfm75_unicast_addr = unicast_address;
+    rx_addr_p0[0] = UNICAST_LSB;
+    rx_addr_p0[1] = rfm75_unicast_addr & 0xff;
+    rx_addr_p0[2] = (rfm75_unicast_addr & 0xff00) >> 8; // MSB
+    rfm75_write_reg_buf(RX_ADDR_P0, rx_addr_p0, 3);
+    rfm75_write_reg_buf(RX_ADDR_P1, rx_addr_p1, 3);
+    rfm75_write_reg_buf(TX_ADDR, rx_addr_p1, 3); // default to broadcast
 
     // OK, that's bank 0 done. Next is bank 1.
 
