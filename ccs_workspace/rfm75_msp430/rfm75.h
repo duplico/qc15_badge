@@ -91,6 +91,7 @@
 #define RX_PW_P5        0x16  // 'RX payload width, pipe5' register address
 #define FIFO_STATUS     0x17  // 'FIFO Status Register' register address
 #define PAYLOAD_WIDTH   0x1f  // 'payload length of 256 bytes modes register address
+#define FEATURE         0x1d
 
 #define CONFIG_MASK_RX_DR BIT6
 #define CONFIG_MASK_TX_DS BIT5

@@ -3,6 +3,7 @@
 	<name>rfm75_oob_test_transmitter</name>
 	<comment></comment>
 	<projects>
+		<project>rfm75_msp430</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
