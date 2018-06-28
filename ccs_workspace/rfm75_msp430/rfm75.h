@@ -13,7 +13,7 @@
 #include <stdint.h>
 #include <msp430.h>
 
-#define RFM75_PAYLOAD_SIZE 32
+#define RFM75_PAYLOAD_SIZE 12
 
 // Pin and peripheral configurations:
 
