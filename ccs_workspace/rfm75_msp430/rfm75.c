@@ -135,6 +135,14 @@ void rfm75_select_bank(uint8_t bank) {
     }
 }
 
+void set_unicast_addr(uint16_t addr) {
+    rx_addr_p0[0] = UNICAST_LSB;
+    rx_addr_p0[1] = addr & 0xff;
+    rx_addr_p0[2] = (addr & 0xff00) >> 8; // MSB
+    rfm75_write_reg_buf(RX_ADDR_P0, rx_addr_p0, 3);
+}
+
+
 uint8_t rfm75_post() {
     volatile uint8_t bank_one = rfm75_get_status() & 0x80; // Get MSB, which is active bank.
     send_rfm75_cmd(ACTIVATE_CMD, 0x53);
@@ -162,6 +170,7 @@ void rfm75_enter_prx() {
     rfm75_state = RFM75_RX_INIT;
     CE_DEACTIVATE;
     // Power up & enter PRX (Primary RX)
+    set_unicast_addr(rfm75_unicast_addr);
     rfm75_select_bank(0); // TODO: We don't need all these.
     rfm75_write_reg(CONFIG, CONFIG_MASK_TX_DS +
                     CONFIG_MASK_MAX_RT + CONFIG_EN_CRC +
@@ -187,21 +196,24 @@ void rfm75_tx(uint16_t addr) {
 
     // Setup our destination address:
 
-//    uint8_t tx_addr[3] = {0};
-//
-//    if (addr == rfm75_broadcast_addr) {
-//        // broadcast!
-//        tx_addr[0] = BROADCAST_LSB;
-//        rfm75_write_reg_buf(TX_ADDR, rx_addr_p1, 3); // default to broadcast
-//    } else {
-//        // unicast!
-//        tx_addr[0] = UNICAST_LSB;
-//    }
-//
-//    tx_addr[1] = addr & 0xff;
-//    tx_addr[2] = (addr & 0xff00) >> 8; // MSB
-//
-//    rfm75_write_reg_buf(TX_ADDR, tx_addr, 3);
+    uint8_t tx_addr[3] = {0};
+
+    if (addr == rfm75_broadcast_addr) {
+        // broadcast!
+        tx_addr[0] = BROADCAST_LSB;
+        rfm75_write_reg_buf(TX_ADDR, rx_addr_p1, 3); // default to broadcast
+    } else {
+        // unicast!
+        // Since we're going to listen for ACKs, we need to change our P0 ADDR
+        //  to be the same as the destination address.
+        set_unicast_addr(addr);
+        tx_addr[0] = UNICAST_LSB;
+    }
+
+    tx_addr[1] = addr & 0xff;
+    tx_addr[2] = (addr & 0xff00) >> 8; // MSB
+
+    rfm75_write_reg_buf(TX_ADDR, tx_addr, 3);
 
     // Clear interrupts: STATUS=BIT4|BIT5|BIT6
     rfm75_write_reg(STATUS, BIT4|BIT5|BIT6);
@@ -287,10 +299,6 @@ void rfm75_init(uint16_t unicast_address)
 
     // Setup addresses:
     rfm75_unicast_addr = unicast_address;
-    rx_addr_p0[0] = UNICAST_LSB;
-    rx_addr_p0[1] = rfm75_unicast_addr & 0xff;
-    rx_addr_p0[2] = (rfm75_unicast_addr & 0xff00) >> 8; // MSB
-    rfm75_write_reg_buf(RX_ADDR_P0, rx_addr_p0, 3);
     rfm75_write_reg_buf(RX_ADDR_P1, rx_addr_p1, 3);
     rfm75_write_reg_buf(TX_ADDR, rx_addr_p1, 3); // default to broadcast
 

@@ -62,7 +62,7 @@ void main (void)
         if (rfm75_post()) {
             rfm75_init(25);
 //            rfm75_tx(0xffff);
-            rfm75_tx(0xffff);
+            rfm75_tx(35);
             delay_millis(200);
         }
 
