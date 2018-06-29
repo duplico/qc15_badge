@@ -101,6 +101,7 @@
 #define CONFIG_CRCO_2BYTE BIT2
 #define CONFIG_PWR_UP BIT1
 #define CONFIG_PRIM_RX BIT0
+#define CONFIG_PRIM_TX 0x00
 
 //interrupt status
 #define STATUS_RX_DR    0x40
