@@ -423,7 +423,11 @@ void RFM_ISR(void)
     }
     f_rfm75_interrupt = 1;
     if (rfm75_state != RFM75_RX_LISTEN) {
-        CE_DEACTIVATE; // stop listening or sending.
+        CE_DEACTIVATE; // stop sending, or whatever.
+        // If we're listening, we don't need to do this.
+        //  But if we MIGHT be sending, then there's the possibility that
+        //  we could do bad things to the transceiver by holding CE high
+        //  for too long (I think?)
     }
     LPM4_EXIT; // We may not be THIS sleepy, but this'll wake us from anything.
 }
