@@ -42,10 +42,10 @@ volatile uint8_t f_rfm75_interrupt = 0;
 #define BANK0_INITS 17
 const uint8_t bank0_init_data[BANK0_INITS][2] = {
         { CONFIG, 0xff }, //
-        { 0x01, BIT0 }, // Auto-ack for pipe0 (unicast)
+        { 0x01, BIT0+BIT1 }, // Auto-ack for pipe0 (unicast)
         { 0x02, BIT0+BIT1 }, //Enable RX pipe 0 and 1
         { 0x03, 0b00000001 }, //RX/TX address field width 3byte
-        { 0x04, 0b00000001 }, //no auto-RT // TODO
+        { 0x04, 0b00000100 }, //auto-RT // TODO
         { 0x05, 0x53 }, //channel: 2400 + LS 7 bits of this field = channel (2.483)
         { 0x06, 0b00000111 }, //air data rate-1M,out power max, setup LNA gain high.
         { 0x07, 0b01110000 }, // Clear interrupt flags
@@ -305,7 +305,6 @@ void rfm75_init(uint16_t unicast_address)
     // Setup addresses:
     rfm75_unicast_addr = unicast_address;
     rfm75_write_reg_buf(RX_ADDR_P1, rx_addr_p1, 3);
-    rfm75_write_reg_buf(TX_ADDR, rx_addr_p1, 3); // default to broadcast
 
     // OK, that's bank 0 done. Next is bank 1.
 
