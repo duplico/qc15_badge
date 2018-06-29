@@ -42,7 +42,7 @@ volatile uint8_t f_rfm75_interrupt = 0;
 #define BANK0_INITS 17
 const uint8_t bank0_init_data[BANK0_INITS][2] = {
         { CONFIG, 0xff }, //
-        { 0x01, 0}, //BIT0 }, // Auto-ack for pipe0 (unicast)
+        { 0x01, BIT0 }, // Auto-ack for pipe0 (unicast)
         { 0x02, BIT0+BIT1 }, //Enable RX pipe 0 and 1
         { 0x03, 0b00000001 }, //RX/TX address field width 3byte
         { 0x04, 0b00000000 }, //no auto-RT // TODO
@@ -193,7 +193,11 @@ void rfm75_tx(uint16_t addr) {
 
     CE_DEACTIVATE;
     rfm75_select_bank(0);
-    rfm75_write_reg(CONFIG, 0b01011110);
+
+    rfm75_write_reg(CONFIG, CONFIG_MASK_RX_DR +
+                            CONFIG_EN_CRC + CONFIG_CRCO_2BYTE +
+                            CONFIG_PWR_UP + CONFIG_PRIM_TX);
+//                    0b01011110);
 
     // Setup our destination address:
 
@@ -209,7 +213,7 @@ void rfm75_tx(uint16_t addr) {
         //  to be the same as the destination address.
         set_unicast_addr(addr);
         tx_addr[0] = UNICAST_LSB;
-//        wr_cmd = WR_TX_PLOAD; // request an ACK.
+        wr_cmd = WR_TX_PLOAD; // request an ACK.
     }
 
     tx_addr[1] = addr & 0xff;
