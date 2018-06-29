@@ -422,6 +422,8 @@ void RFM_ISR(void)
         return;
     }
     f_rfm75_interrupt = 1;
-    CE_DEACTIVATE; // stop listening or sending.
+    if (rfm75_state != RFM75_RX_LISTEN) {
+        CE_DEACTIVATE; // stop listening or sending.
+    }
     LPM4_EXIT; // We may not be THIS sleepy, but this'll wake us from anything.
 }
