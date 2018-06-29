@@ -23,7 +23,7 @@
 
 // Local vars and buffers:
 uint16_t rfm75_unicast_addr = 0;
-uint16_t rfm75_broadcast_addr = 0xffff;
+const uint16_t rfm75_broadcast_addr = 0xffff;
 #define UNICAST_LSB 0
 #define BROADCAST_LSB 0xEE
 
@@ -42,10 +42,10 @@ volatile uint8_t f_rfm75_interrupt = 0;
 #define BANK0_INITS 17
 const uint8_t bank0_init_data[BANK0_INITS][2] = {
         { CONFIG, 0xff }, //
-        { 0x01, 0b00000000 }, //No auto-ack
+        { 0x01, 0}, //BIT0 }, // Auto-ack for pipe0 (unicast)
         { 0x02, BIT0+BIT1 }, //Enable RX pipe 0 and 1
         { 0x03, 0b00000001 }, //RX/TX address field width 3byte
-        { 0x04, 0b00000000 }, //no auto-RT
+        { 0x04, 0b00000000 }, //no auto-RT // TODO
         { 0x05, 0x53 }, //channel: 2400 + LS 7 bits of this field = channel (2.483)
         { 0x06, 0b00000111 }, //air data rate-1M,out power max, setup LNA gain high.
         { 0x07, 0b01110000 }, // Clear interrupt flags
@@ -60,7 +60,7 @@ const uint8_t bank0_init_data[BANK0_INITS][2] = {
         { 0x16, 0 }, //Number of bytes in RX payload in data pipe5 - disable
         { 0x17, 0 },
         { 0x1c, 0x00 }, // No dynamic packet length
-        { 0x1d, 0b00000000 } // 00000 | DPL | ACK | DYN_ACK
+        { 0x1d, 0b00000001 } // 00000 | DPL | ACK_PAYLOAD | DYN_ACK
 };
 
 uint8_t rfm75spi_recv_sync(uint8_t data) {
@@ -189,6 +189,7 @@ void rfm75_enter_prx() {
 
 void rfm75_tx(uint16_t addr) {
     rfm75_state = RFM75_TX_INIT;
+    uint8_t wr_cmd = WR_TX_PLOAD_NOACK;
 
     CE_DEACTIVATE;
     rfm75_select_bank(0);
@@ -208,6 +209,7 @@ void rfm75_tx(uint16_t addr) {
         //  to be the same as the destination address.
         set_unicast_addr(addr);
         tx_addr[0] = UNICAST_LSB;
+//        wr_cmd = WR_TX_PLOAD; // request an ACK.
     }
 
     tx_addr[1] = addr & 0xff;
@@ -220,7 +222,7 @@ void rfm75_tx(uint16_t addr) {
 
     rfm75_state = RFM75_TX_FIFO;
     // Write the payload:
-    send_rfm75_cmd_buf(WR_TX_PLOAD, payload_out, RFM75_PAYLOAD_SIZE);
+    send_rfm75_cmd_buf(wr_cmd, payload_out, RFM75_PAYLOAD_SIZE);
     rfm75_state = RFM75_TX_SEND;
     CE_ACTIVATE;
     // Now we wait for an IRQ to let us know it's sent.
@@ -365,6 +367,13 @@ uint8_t rfm75_deferred_interrupt() {
     // RFM75 interrupt:
     uint8_t iv = rfm75_get_status();
     uint8_t ret = 0x00;
+
+    if (iv & BIT4) { // no ACK interrupt
+        // Clear the interrupt flag on the radio module:
+        rfm75_write_reg(STATUS, BIT5);
+        __no_operation();
+        ret |= 0b100;
+    }
 
     if (iv & BIT5 && rfm75_state == RFM75_TX_SEND) { // TX interrupt
         // We sent a thing.

@@ -59,7 +59,7 @@
 #define FLUSH_TX                0xE1  // Define flush TX register command
 #define FLUSH_RX                0xE2  // Define flush RX register command
 #define REUSE_TX_PL             0xE3  // Define reuse TX payload register command
-#define W_TX_PAYLOAD_NOACK_CMD  0xb0
+#define WR_TX_PLOAD_NOACK       0xb0
 #define W_ACK_PAYLOAD_CMD       0xa8
 #define ACTIVATE_CMD            0x50
 #define R_RX_PL_WID_CMD         0x60

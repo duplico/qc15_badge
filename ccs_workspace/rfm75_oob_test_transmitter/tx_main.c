@@ -61,8 +61,7 @@ void main (void)
         // check for attached radio.
         if (rfm75_post()) {
             rfm75_init(25);
-//            rfm75_tx(0xffff);
-            rfm75_tx(35);
+            rfm75_tx(0xffff);
             delay_millis(200);
         }
 
