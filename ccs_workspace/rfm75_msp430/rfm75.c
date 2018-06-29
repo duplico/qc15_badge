@@ -45,7 +45,7 @@ const uint8_t bank0_init_data[BANK0_INITS][2] = {
         { 0x01, BIT0 }, // Auto-ack for pipe0 (unicast)
         { 0x02, BIT0+BIT1 }, //Enable RX pipe 0 and 1
         { 0x03, 0b00000001 }, //RX/TX address field width 3byte
-        { 0x04, 0b00000000 }, //no auto-RT // TODO
+        { 0x04, 0b00000001 }, //no auto-RT // TODO
         { 0x05, 0x53 }, //channel: 2400 + LS 7 bits of this field = channel (2.483)
         { 0x06, 0b00000111 }, //air data rate-1M,out power max, setup LNA gain high.
         { 0x07, 0b01110000 }, // Clear interrupt flags
@@ -206,7 +206,6 @@ void rfm75_tx(uint16_t addr) {
     if (addr == rfm75_broadcast_addr) {
         // broadcast!
         tx_addr[0] = BROADCAST_LSB;
-        rfm75_write_reg_buf(TX_ADDR, rx_addr_p1, 3); // default to broadcast
     } else {
         // unicast!
         // Since we're going to listen for ACKs, we need to change our P0 ADDR
