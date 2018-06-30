@@ -86,7 +86,8 @@ void main (void)
             csecs++;
 
             if (csecs == 200) {
-                rfm75_tx(0xffff);
+//                rfm75_tx(0xffff); // broadcast (no acks)
+                rfm75_tx(35); // unicast (acked)
                 csecs = 0;
             }
 
