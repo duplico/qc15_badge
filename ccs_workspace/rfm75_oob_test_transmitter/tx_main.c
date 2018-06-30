@@ -25,6 +25,7 @@
 #include "rfm75.h"
 
 uint16_t status;
+volatile uint8_t f_time_loop;
 
 void delay_millis(unsigned long mils) {
     while (mils) {
@@ -52,38 +53,66 @@ void main (void)
     // * MCLK and SMCLK -> DCOCLKDIV (divided DCO) (1 MHz)
     // * ACLK           -> REFO (32k internal oscillator)
 
+    // We need timer A3 for our loop below.
+    Timer_A_initUpModeParam timer_param = {0};
+    timer_param.clockSource = TIMER_A_CLOCKSOURCE_SMCLK; // 1 MHz
+    // We want this to go every 10 ms, so at 100 Hz (every 10,000 ticks @ 1MHz)
+    //  (a centisecond clock!)
+    timer_param.clockSourceDivider = TIMER_A_CLOCKSOURCE_DIVIDER_1; // /1
+    timer_param.timerPeriod = 10000;
+    timer_param.timerInterruptEnable_TAIE = TIMER_A_TAIE_INTERRUPT_DISABLE;
+    timer_param.captureCompareInterruptEnable_CCR0_CCIE = TIMER_A_CCIE_CCR0_INTERRUPT_ENABLE;
+    timer_param.timerClear = TIMER_A_SKIP_CLEAR;
+    timer_param.startTimer = false;
+
     rfm75_init(25);
     rfm75_post();
+
+    Timer_A_initUpMode(TIMER_A1_BASE, &timer_param);
+    Timer_A_startCounter(TIMER_A1_BASE, TIMER_A_UP_MODE);
+
+    uint16_t csecs=0;
+    uint16_t light_on=0;
 
     __bis_SR_register(GIE);
 
     while (1) {
-        // check for attached radio.
-        if (rfm75_post()) {
-            rfm75_init(25);
-//            rfm75_tx(0xffff);
-            rfm75_tx(35);
-            delay_millis(200);
+        // TODO: We can abort, or something, if the radio fails to post.
+        if (f_time_loop) {
+            // always remember to clear the flag.
+            f_time_loop = 0;
+
+            // it's been 1 centisecond.
+            csecs++;
+
+            if (csecs == 200) {
+                rfm75_tx(0xffff);
+                csecs = 0;
+            }
+
+            if (light_on) {
+                light_on--;
+            } else {
+                P2OUT &= ~BIT2;
+            }
         }
 
         if (f_rfm75_interrupt) {
             f_rfm75_interrupt = 0;
             if (rfm75_deferred_interrupt() & 0b01) {
                 P2OUT |= BIT2;
-                delay_millis(50);
-                P2OUT &= ~BIT2;
+                light_on = 5;
             }
         }
+        __bis_SR_register(LPM0_bits);
     }
 }
 
-#pragma vector=UNMI_VECTOR
+// 0xFFF4 Timer1_A3 CC0
+#pragma vector=TIMER1_A0_VECTOR
 __interrupt
-void NMI_ISR(void)
-{
-  do {
-    // If it still can't clear the oscillator fault flags after the timeout,
-    // trap and wait here.
-    status = CS_clearAllOscFlagsWithTimeout(1000);
-  } while(status != 0);
+void TIMER_ISR() {
+    // All we have here is TA0CCR0 CCIFG0
+    f_time_loop = 1;
+    LPM0_EXIT;
 }
