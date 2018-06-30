@@ -55,9 +55,6 @@ void main (void)
     // * MCLK and SMCLK -> DCOCLKDIV (divided DCO) (1 MHz)
     // * ACLK           -> REFO (32k internal oscillator)
 
-    rfm75_init(35);
-    rfm75_post();
-
     // We need timer A3 for our loop below.
     Timer_A_initUpModeParam timer_param = {0};
     timer_param.clockSource = TIMER_A_CLOCKSOURCE_SMCLK; // 1 MHz
@@ -70,7 +67,7 @@ void main (void)
     timer_param.timerClear = TIMER_A_SKIP_CLEAR;
     timer_param.startTimer = false;
 
-    rfm75_init(25);
+    rfm75_init(35);
     rfm75_post();
 
     Timer_A_initUpMode(TIMER_A1_BASE, &timer_param);
