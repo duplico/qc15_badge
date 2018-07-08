@@ -23,3 +23,4 @@ ccs_workspace/rfm75_oob_test_detector/Debug
 ccs_workspace/rfm75_oob_test_transmitter/Debug
 ccs_workspace/rfm75_oob_test_transmitter/.launches
 ccs_workspace/qc15_base/Debug
+ccs_workspace/msp430fr2433_uart_test
