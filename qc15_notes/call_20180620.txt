@@ -1,6 +1,6 @@
-2880 character message
- 180 characters per badge
-   6 30-character segments per badge
+7680 character message
+ 480 characters per badge
+   6 80-character segments per badge
    
    
 Characters -> 30x characters = part -> 6x parts = segment -> all segments = file

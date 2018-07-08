@@ -12,16 +12,6 @@
 #include "rfm75.h"
 
 typedef struct {
-    uint8_t proto_version;
-    uint8_t badge_addr, base_addr; // base_addr is event_id, basically.
-    uint8_t ttl;
-    uint8_t ink_id;
-    uint8_t flags;
-    uint32_t seqnum;
-    uint16_t crc16;
-} rfbcpayload;
-
-typedef struct {
     uint16_t badge_id;
     uint8_t proto_version;
     uint8_t msg_type;
@@ -41,10 +31,11 @@ typedef struct { // Connect payload (unicast)
 
 typedef struct { // Progress report payload (unicast to base)
     uint8_t part_id;
-    uint32_t part_data;
+    uint8_t part_data[10]; // 80 bits per segment
 } radio_progress_payload;
 
 rfm75_rx_callback_fn radio_rx_done;
 rfm75_tx_callback_fn radio_tx_done;
+void radio_init();
 
 #endif /* RADIO_H_ */
