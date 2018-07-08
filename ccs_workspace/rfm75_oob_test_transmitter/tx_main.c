@@ -24,8 +24,12 @@
 
 #include "rfm75.h"
 
-uint16_t status;
+uint16_t light_on=0;
 volatile uint8_t f_time_loop;
+uint8_t out_payload[RFM75_PAYLOAD_SIZE] = {0};
+
+rfm75_rx_callback_fn radio_rx_done;
+rfm75_tx_callback_fn radio_tx_done;
 
 void delay_millis(unsigned long mils) {
     while (mils) {
@@ -40,6 +44,20 @@ void init_io() {
 
     P2DIR |= BIT2;
     P2OUT &= ~BIT2;
+}
+
+void radio_rx_done(uint8_t* data, uint8_t len, uint8_t pipe) {
+
+}
+
+void radio_tx_done(uint8_t ack) {
+    // ack is true if (a) an ackable message was acked, or
+    //  (b) a non-ackable message was successfully sent.
+    //  In either case, signal success:
+    if (ack) {
+        P2OUT |= BIT2;
+        light_on = 5;
+    }
 }
 
 void main (void)
@@ -65,14 +83,13 @@ void main (void)
     timer_param.timerClear = TIMER_A_SKIP_CLEAR;
     timer_param.startTimer = false;
 
-    rfm75_init(25);
+    rfm75_init(25, &radio_rx_done, &radio_tx_done);
     rfm75_post();
 
     Timer_A_initUpMode(TIMER_A1_BASE, &timer_param);
     Timer_A_startCounter(TIMER_A1_BASE, TIMER_A_UP_MODE);
 
     uint16_t csecs=0;
-    uint16_t light_on=0;
 
     __bis_SR_register(GIE);
 
@@ -86,8 +103,8 @@ void main (void)
             csecs++;
 
             if (csecs == 200) {
-//                rfm75_tx(0xffff); // broadcast (no acks)
-                rfm75_tx(35); // unicast (acked)
+//                rfm75_tx(0xffff, out_payload, RFM75_PAYLOAD_SIZE); // broadcast (no acks)
+                rfm75_tx(35, out_payload, RFM75_PAYLOAD_SIZE); // unicast (acked)
                 csecs = 0;
             }
 
@@ -100,10 +117,7 @@ void main (void)
 
         if (f_rfm75_interrupt) {
             f_rfm75_interrupt = 0;
-            if (rfm75_deferred_interrupt() & 0b01) {
-                P2OUT |= BIT2;
-                light_on = 5;
-            }
+            rfm75_deferred_interrupt();
         }
         __bis_SR_register(LPM0_bits);
     }

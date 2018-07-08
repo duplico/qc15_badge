@@ -131,10 +131,13 @@
 #define RFM75_TX_SEND 7
 #define RFM75_TX_DONE 8
 
-void rfm75_init(uint16_t unicast_address);
+typedef void rfm75_rx_callback_fn(uint8_t* data, uint8_t len, uint8_t pipe);
+typedef void rfm75_tx_callback_fn(uint8_t ack);
+
+void rfm75_init(uint16_t unicast_address, rfm75_rx_callback_fn *rx_callback, rfm75_tx_callback_fn *tx_callback);
 uint8_t rfm75_post();
 uint8_t rfm75_deferred_interrupt();
-void rfm75_tx(uint16_t addr);
+void rfm75_tx(uint16_t addr, uint8_t* data, uint8_t len);
 
 extern uint32_t rfm75_seqnum;
 extern volatile uint8_t f_rfm75_interrupt;

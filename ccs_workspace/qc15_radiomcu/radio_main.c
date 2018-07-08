@@ -28,7 +28,7 @@
 
 #include "rfm75.h"
 
-uint16_t status;
+volatile uint8_t f_time_loop = 0;
 
 void delay_millis(unsigned long mils) {
     while (mils) {
@@ -56,7 +56,7 @@ void init_io() {
 
     // IPC TX/RX
     P1SEL0 |= BIT4+BIT5;
-    P1SEL0 &= ~(BIT4+BIT5); // unneeded but whatever.
+    P1SEL1 &= ~(BIT4+BIT5); // unneeded but whatever.
 
     // Port 2:
     // -------
@@ -122,21 +122,20 @@ void init_clocks() {
     //   which will give us a more precise 32k signal.
 }
 
-void ipc_init() {
-    EUSCI_A_UART_initParam uart_param = {0};
-
-    uart_param.selectClockSource = EUSCI_A_UART_CLOCKSOURCE_SMCLK; // 1 MHz
-    uart_param.overSampling = EUSCI_A_UART_OVERSAMPLING_BAUDRATE_GENERATION; // 1
-    uart_param.clockPrescalar = 6;
-    uart_param.firstModReg = 8;
-    uart_param.secondModReg = 0x20; // 1/6/8/0x20 = 9600 @ 1 MHz
-    uart_param.parity = EUSCI_A_UART_NO_PARITY;
-    uart_param.msborLsbFirst = EUSCI_A_UART_LSB_FIRST;
-    uart_param.numberofStopBits = EUSCI_A_UART_ONE_STOP_BIT;
-    uart_param.uartMode = EUSCI_A_UART_MODE;
-
-    EUSCI_A_UART_init(EUSCI_A0_BASE, &uart_param);
-    EUSCI_A_UART_enable(EUSCI_A0_BASE);
+void timer_init() {
+    // We need timer A3 for our loop below.
+    Timer_A_initUpModeParam timer_param = {0};
+    timer_param.clockSource = TIMER_A_CLOCKSOURCE_SMCLK; // 1 MHz
+    // We want this to go every 10 ms, so at 100 Hz (every 10,000 ticks @ 1MHz)
+    //  (a centisecond clock!)
+    timer_param.clockSourceDivider = TIMER_A_CLOCKSOURCE_DIVIDER_1; // /1
+    timer_param.timerPeriod = 10000;
+    timer_param.timerInterruptEnable_TAIE = TIMER_A_TAIE_INTERRUPT_DISABLE;
+    timer_param.captureCompareInterruptEnable_CCR0_CCIE = TIMER_A_CCIE_CCR0_INTERRUPT_ENABLE;
+    timer_param.timerClear = TIMER_A_SKIP_CLEAR;
+    timer_param.startTimer = false;
+    Timer_A_initUpMode(TIMER_A1_BASE, &timer_param);
+    Timer_A_startCounter(TIMER_A1_BASE, TIMER_A_UP_MODE);
 }
 
 void main (void)
@@ -145,35 +144,34 @@ void main (void)
     WDT_A_hold(WDT_A_BASE);
     init_io();
     init_clocks();
-
     ipc_init();
-    rfm75_init();
 
-    // Set the global interrupt enable:
+    // TODO: Wait to load my configuration over IPC-serial.
+
+    timer_init();
+    radio_init();
+
     __bis_SR_register(GIE);
 
     while (1) {
-        rfm75_tx();
-        delay_millis(1000);
+        if (f_rfm75_interrupt) {
+            f_rfm75_interrupt = 0;
+            rfm75_deferred_interrupt();
+        }
+
+        if (f_time_loop) {
+            // centisecond.
+        }
+
+        __bis_SR_register(LPM0_bits);
     }
+}
 
-
-
-//    GPIO_setAsOutputPin(GPIO_PORT_P1, GPIO_PIN4); // "TX"
-    uint8_t msg = 0;
-
-    while (1) {
-//        if (UCA0IFG & UCRXIFG) {
-//            msg = UCA0RXBUF;
-//            while (!(UCA0IFG & UCTXIFG)); // wait for TX buffer availability
-//            UCA0TXBUF = msg;
-//        }
-//        delay_millis(1);
-    }
-
-    //Enter LPM3 w/ interrupts
-    __bis_SR_register(LPM3_bits + GIE);
-
-    //For debugger
-    __no_operation();
+// 0xFFF4 Timer1_A3 CC0
+#pragma vector=TIMER1_A0_VECTOR
+__interrupt
+void TIMER_ISR() {
+    // All we have here is TA0CCR0 CCIFG0
+    f_time_loop = 1;
+    LPM0_EXIT;
 }
