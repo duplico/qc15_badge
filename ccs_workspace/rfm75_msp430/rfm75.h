@@ -14,6 +14,9 @@
 #include <msp430.h>
 
 #define RFM75_PAYLOAD_SIZE 12
+#define UNICAST_LSB 0
+#define BROADCAST_LSB 0xEE
+#define RFM75_BROADCAST_ADDR 0xffff
 
 // Pin and peripheral configurations:
 
@@ -137,7 +140,7 @@ typedef void rfm75_tx_callback_fn(uint8_t ack);
 void rfm75_init(uint16_t unicast_address, rfm75_rx_callback_fn *rx_callback, rfm75_tx_callback_fn *tx_callback);
 uint8_t rfm75_post();
 uint8_t rfm75_deferred_interrupt();
-void rfm75_tx(uint16_t addr, uint8_t* data, uint8_t len);
+void rfm75_tx(uint16_t addr, uint8_t noack, uint8_t* data, uint8_t len);
 
 extern uint32_t rfm75_seqnum;
 extern volatile uint8_t f_rfm75_interrupt;
