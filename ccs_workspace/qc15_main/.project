@@ -26,6 +26,21 @@
 	</natures>
 	<linkedResources>
 		<link>
+			<name>ipc.c</name>
+			<type>1</type>
+			<locationURI>WORKSPACE_LOC/qc15_common/ipc.c</locationURI>
+		</link>
+		<link>
+			<name>ipc.h</name>
+			<type>1</type>
+			<locationURI>WORKSPACE_LOC/qc15_common/ipc.h</locationURI>
+		</link>
+		<link>
+			<name>qc15.h</name>
+			<type>1</type>
+			<locationURI>WORKSPACE_LOC/qc15_common/qc15.h</locationURI>
+		</link>
+		<link>
 			<name>driverlib/MSP430FR5xx_6xx</name>
 			<type>2</type>
 			<locationURI>PARENT-1-WORKSPACE_LOC/driverlib/MSP430FR5xx_6xx</locationURI>
