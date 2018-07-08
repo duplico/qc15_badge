@@ -122,23 +122,7 @@ void init_clocks() {
     //   which will give us a more precise 32k signal.
 }
 
-void main (void)
-{
-    //Stop watchdog timer
-    WDT_A_hold(WDT_A_BASE);
-    init_io();
-    init_clocks();
-
-    rfm75_init();
-
-    // Set the global interrupt enable:
-    __bis_SR_register(GIE);
-
-    while (1) {
-        rfm75_tx();
-        delay_millis(1000);
-    }
-
+void ipc_init() {
     EUSCI_A_UART_initParam uart_param = {0};
 
     uart_param.selectClockSource = EUSCI_A_UART_CLOCKSOURCE_SMCLK; // 1 MHz
@@ -153,6 +137,27 @@ void main (void)
 
     EUSCI_A_UART_init(EUSCI_A0_BASE, &uart_param);
     EUSCI_A_UART_enable(EUSCI_A0_BASE);
+}
+
+void main (void)
+{
+    //Stop watchdog timer
+    WDT_A_hold(WDT_A_BASE);
+    init_io();
+    init_clocks();
+
+    ipc_init();
+    rfm75_init();
+
+    // Set the global interrupt enable:
+    __bis_SR_register(GIE);
+
+    while (1) {
+        rfm75_tx();
+        delay_millis(1000);
+    }
+
+
 
 //    GPIO_setAsOutputPin(GPIO_PORT_P1, GPIO_PIN4); // "TX"
     uint8_t msg = 0;

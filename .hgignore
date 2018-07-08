@@ -23,3 +23,8 @@ ccs_workspace/rfm75_oob_test_detector/Debug
 ccs_workspace/rfm75_oob_test_transmitter/Debug
 ccs_workspace/rfm75_oob_test_transmitter/.launches
 ccs_workspace/qc15_base/Debug
+ccs_workspace/qc15_base/.launches/qc15_base.launch
+ccs_workspace/.project
+ccs_workspace/qc15_base/.cproject.orig
+ccs_workspace/rfm75_msp430/.cproject.orig
+.project
