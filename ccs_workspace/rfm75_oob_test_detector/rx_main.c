@@ -28,6 +28,10 @@
 
 uint16_t status;
 volatile uint8_t f_time_loop;
+volatile uint16_t csecs=0;
+
+rfm75_rx_callback_fn radio_rx_done;
+rfm75_tx_callback_fn radio_tx_done;
 
 void delay_millis(unsigned long mils) {
     while (mils) {
@@ -42,6 +46,17 @@ void init_io() {
 
     P2DIR |= BIT2; // Green LED
     P2OUT &= ~BIT2;
+}
+
+void radio_rx_done(uint8_t* data, uint8_t len, uint8_t pipe) {
+    // it was an rx:
+    // light some shit up!
+    P2OUT |= BIT2;
+    csecs = 100;
+}
+
+void radio_tx_done(uint8_t ack) {
+
 }
 
 void main (void)
@@ -67,39 +82,27 @@ void main (void)
     timer_param.timerClear = TIMER_A_SKIP_CLEAR;
     timer_param.startTimer = false;
 
-    rfm75_init(35);
+    rfm75_init(35, &radio_rx_done, &radio_tx_done);
     rfm75_post();
 
     Timer_A_initUpMode(TIMER_A1_BASE, &timer_param);
     Timer_A_startCounter(TIMER_A1_BASE, TIMER_A_UP_MODE);
-
-    uint16_t csecs=0;
 
     __bis_SR_register(GIE);
 
     while (1) {
         if (f_rfm75_interrupt) {
             f_rfm75_interrupt = 0;
-
-            if (rfm75_deferred_interrupt() & 0b10) {
-                // it was an rx:
-                // light some shit up!
-                P2OUT |= BIT2;
-                csecs = 100;
-            }
+            rfm75_deferred_interrupt();
         }
-
 
         if (f_time_loop) {
             // centisecond.
-            if (csecs) {
-                csecs--;
-            } else {
+            if (!csecs) {
                 // turn some shit off
                 P2OUT &= ~BIT2;
             }
         }
-
         __bis_SR_register(LPM0_bits);
     }
 }
@@ -110,5 +113,8 @@ __interrupt
 void TIMER_ISR() {
     // All we have here is TA0CCR0 CCIFG0
     f_time_loop = 1;
+    if (csecs) {
+        csecs--;
+    }
     LPM0_EXIT;
 }
