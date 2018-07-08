@@ -36,6 +36,10 @@ uint8_t rfm75_state = RFM75_BOOT;
 
 volatile uint8_t f_rfm75_interrupt = 0;
 
+// Function pointers for callbacks:
+rfm75_rx_callback_fn* rx_done;
+rfm75_tx_callback_fn* tx_done;
+
 ///////////////////////////////
 // Bank initialization values:
 
@@ -142,7 +146,6 @@ void set_unicast_addr(uint16_t addr) {
     rfm75_write_reg_buf(RX_ADDR_P0, rx_addr_p0, 3);
 }
 
-
 uint8_t rfm75_post() {
     volatile uint8_t bank_one = rfm75_get_status() & 0x80; // Get MSB, which is active bank.
     send_rfm75_cmd(ACTIVATE_CMD, 0x53);
@@ -171,7 +174,6 @@ void rfm75_enter_prx() {
     CE_DEACTIVATE;
     // Power up & enter PRX (Primary RX)
     set_unicast_addr(rfm75_unicast_addr);
-    rfm75_select_bank(0); // TODO: We don't need all these.
     rfm75_write_reg(CONFIG, CONFIG_MASK_TX_DS +
                     CONFIG_MASK_MAX_RT + CONFIG_EN_CRC +
                     CONFIG_CRCO_2BYTE + CONFIG_PWR_UP +
@@ -187,12 +189,11 @@ void rfm75_enter_prx() {
     rfm75_state = RFM75_RX_LISTEN;
 }
 
-void rfm75_tx(uint16_t addr) {
+void rfm75_tx(uint16_t addr, uint8_t* data, uint8_t len) {
     rfm75_state = RFM75_TX_INIT;
     uint8_t wr_cmd = WR_TX_PLOAD_NOACK;
 
     CE_DEACTIVATE;
-    rfm75_select_bank(0);
 
     rfm75_write_reg(CONFIG, CONFIG_MASK_RX_DR +
                             CONFIG_EN_CRC + CONFIG_CRCO_2BYTE +
@@ -225,7 +226,8 @@ void rfm75_tx(uint16_t addr) {
 
     rfm75_state = RFM75_TX_FIFO;
     // Write the payload:
-    send_rfm75_cmd_buf(wr_cmd, payload_out, RFM75_PAYLOAD_SIZE);
+    // TODO: Assert len == RFM75_PAYLOAD_SIZE
+    send_rfm75_cmd_buf(wr_cmd, data, len);
     rfm75_state = RFM75_TX_SEND;
     CE_ACTIVATE;
     // Now we wait for an IRQ to let us know it's sent.
@@ -266,9 +268,12 @@ void rfm75_io_init() {
 
 }
 
-void rfm75_init(uint16_t unicast_address)
+void rfm75_init(uint16_t unicast_address, rfm75_rx_callback_fn* rx_callback, rfm75_tx_callback_fn* tx_callback)
 {
-    rfm75_io_init();
+    rfm75_io_init(); // TODO: Disable the interrupt here.
+
+    rx_done = rx_callback;
+    tx_done = tx_callback;
 
     // We're going totally synchronous on this; no interrupts at all.
     // We'll wait on the interrupt enables though, until after we've set up
@@ -375,6 +380,11 @@ uint8_t rfm75_deferred_interrupt() {
         rfm75_write_reg(STATUS, BIT5);
         __no_operation();
         ret |= 0b100;
+
+        // Complete the TX state machine activity:
+        rfm75_state = RFM75_TX_DONE;
+        // Return to PRX mode:
+        rfm75_enter_prx();
     }
 
     if (iv & BIT5 && rfm75_state == RFM75_TX_SEND) { // TX interrupt
@@ -389,24 +399,35 @@ uint8_t rfm75_deferred_interrupt() {
         ret |= 0b01;
     }
 
+    // Determine whether we need to send a TX callback, which covers
+    //  all the cases of (a) we sent a non-ackable message,
+    //  (b) we sent an ackable message that was acked, and
+    //  (c) we sent an ackable message that was NOT acked.
+    if (ret & 0b101) { // TX or NOACK.
+        // We pass TRUE if we did NOT receive a NOACK flag from
+        //  the radio module (meaning EITHER, it was ACKed, OR
+        //  we did not request an ACK).
+        tx_done(!(ret & 0b100));
+    }
+
     if (iv & BIT6 && rfm75_state == RFM75_RX_LISTEN) { // RX interrupt
         // We've received something.
         rfm75_state = RFM75_RX_READY;
-        // Which pipe? (broadcast or unicast)
-        uint8_t pipe = 0;
-        pipe = (iv & 0b1110) ? 1 : 0;
 
         // Read the FIFO. No need to flush it; it's deleted when read.
         read_rfm75_cmd_buf(RD_RX_PLOAD, payload_in, RFM75_PAYLOAD_SIZE);
-        // Clear the interrupt flag on the radio module.
+
+        // Invoke the registered callback function.
+        rx_done(payload_in, RFM75_PAYLOAD_SIZE,
+                (iv & 0b1110) >> 1); // This is the pipe ID
+
+        // After rx_done returns (and ONLY after it returns), the
+        //  payload_in is stale and is allowed to be overwritten.
+
+        // So now we can tell the radio module that we're done with it:
+        //  Clear the interrupt flag on the module...
         rfm75_write_reg(STATUS, BIT6);
-
-        // There's one type of payloads that this is allowed to be:
-        //     ==Broadcast==
-        //     ===Unicast===
-
-        // Payload is now allowed to go stale.
-        // Assert CE: listen more.
+        //  ... and assert CE, to listen more.
         CE_ACTIVATE;
         rfm75_state = RFM75_RX_LISTEN;
         ret |= 0b10;

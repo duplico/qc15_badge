@@ -57,6 +57,14 @@ void init_clocks() {
     CS_initClockSignal(CS_ACLK, CS_LFMODOSC_SELECT, CS_CLOCK_DIVIDER_1); // 39k
 }
 
+void init_ipc_io() {
+    // IPC:
+    // 2.0 A0_TX
+    // 2.1 A0_RX
+    GPIO_setAsPeripheralModuleFunctionOutputPin(GPIO_PORT_P2, GPIO_PIN0+GPIO_PIN1, GPIO_PRIMARY_MODULE_FUNCTION);
+    UCA0CTLW0 |= UCSWRST;
+}
+
 void init_io() {
     // The magic make-it-work command.
     //  Otherwise everything is stuck in high-impedance forever.
@@ -65,7 +73,8 @@ void init_io() {
     lcd111_init_io();
     ht16d_init_io();
     s25flash_init_io();
-    ipc_init_io();
+    init_ipc_io();
+
 
     // Screw post inputs with pull-ups
     P7DIR &= ~(GPIO_PIN2+GPIO_PIN3+GPIO_PIN4); // inputs
