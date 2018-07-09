@@ -1,13 +1,46 @@
+/*
+ * base_main.c
+ *
+ *  Created on: Jun 15, 2018
+ *      Author: @Aradis
+ */
+
 #include <stdint.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include "driverlib.h"
 #include <msp430fr2433.h>
+
+#include "radio.h"
+#include "ipc.h"
+#include "rfm75.h"
 
 void delay_millis(unsigned long mils) {
     while (mils) {
         __delay_cycles(1000);
         mils--;
     }
+}
+
+void delay_nanos(unsigned long nanos) {
+    while (nanos) {
+        __delay_cycles(1);
+        nanos--;
+    }
+}
+
+void led_on() {
+    P1OUT |= BIT0;
+}
+
+void led_off() {
+    P1OUT &= ~BIT0;
+}
+
+void led_flash() {
+    led_on();
+    delay_millis(10);
+    led_off();
 }
 
 void init_io() {
@@ -37,34 +70,34 @@ void serial_init() {
     UCA0BR1 = 0x00;
     UCA0MCTLW = 0x1100 | UCOS16 | UCBRF_8;
     UCA0CTLW0 &= ~UCSWRST;                    // Initialize eUSCI
-
-    // Equivalent Driverlib config (with alternative UCBRSx of 0x20):
-
-//    EUSCI_A_UART_initParam uart_param = {0};
-//
-//    uart_param.selectClockSource = EUSCI_A_UART_CLOCKSOURCE_SMCLK; // 1 MHz
-//    uart_param.overSampling = EUSCI_A_UART_OVERSAMPLING_BAUDRATE_GENERATION; // 1
-//    uart_param.clockPrescalar = 6;
-//    uart_param.firstModReg = 8;
-//    uart_param.secondModReg = 0x20; // 1/6/8/0x20 = 9600 @ 1 MHz
-//    uart_param.parity = EUSCI_A_UART_NO_PARITY;
-//    uart_param.msborLsbFirst = EUSCI_A_UART_LSB_FIRST;
-//    uart_param.numberofStopBits = EUSCI_A_UART_ONE_STOP_BIT;
-//    uart_param.uartMode = EUSCI_A_UART_MODE;
-//
-//    EUSCI_A_UART_init(EUSCI_A0_BASE, &uart_param);
-//    EUSCI_A_UART_enable(EUSCI_A0_BASE);
 }
 
-void send_char(char charToSend) {
-    EUSCI_A_UART_transmitData(EUSCI_A0_BASE, charToSend);
-    delay_millis(10);
+void send_char(char char_to_send) {
+    EUSCI_A_UART_transmitData(EUSCI_A0_BASE, char_to_send);
+    delay_nanos(170);
 }
 
-void send_string(char * stringToSend, int length) {
+void send_string(unsigned char * string_to_send, int length) {
     for (unsigned int i = length; i > 0; i--) {
-        send_char(stringToSend[length-i]);
+        send_char(string_to_send[length-i]);
     }
+}
+
+void send_progress_payload(radio_progress_payload payload) {
+    send_string(&payload.part_id, 1);
+    send_char(',');
+    send_string(payload.part_data, 10);
+    send_char(0x00);
+}
+
+radio_progress_payload create_payload(uint8_t part_id, uint8_t part_data[10]) {
+    radio_progress_payload payload;
+    payload.part_id = part_id;
+    memcpy(payload.part_data, part_data, 10);
+//    for (int i = 10; i > 0; i--) {
+//        payload.part_data[10-i] = part_data[10-i];
+//    }
+    return payload;
 }
 
 void main (void) {
@@ -73,14 +106,16 @@ void main (void) {
     // On boot, the clock system is as follows:
     // * MCLK and SMCLK -> DCOCLKDIV (divided DCO) (1 MHz)
     // * ACLK           -> REFO (32k internal oscillator)
-    char message[] = "HELLO WORLD";
+    // char message[] = "HELLO WORLD";
     init_io();
     serial_init();
-
+    unsigned char * payload_msg = "HELLOWORLD";
+    radio_progress_payload payload = create_payload('A', payload_msg);
 
     while (1) {
-        unsigned int length = (int) (sizeof(message) / sizeof(message[0]));
-        send_string(message, length);
-        send_char(',');
+//        unsigned int length = (int) (sizeof(message) / sizeof(message[0]));
+
+        send_progress_payload(payload);
+        led_flash();
     }
  }
