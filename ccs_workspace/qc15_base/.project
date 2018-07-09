@@ -27,6 +27,11 @@
 	</natures>
 	<linkedResources>
 		<link>
+			<name>radio.h</name>
+			<type>1</type>
+			<locationURI>WORKSPACE_LOC/qc15_radiomcu/radio.h</locationURI>
+		</link>
+		<link>
 			<name>driverlib/MSP430FR2xx_4xx</name>
 			<type>2</type>
 			<locationURI>PARENT-1-WORKSPACE_LOC/driverlib/MSP430FR2xx_4xx</locationURI>
