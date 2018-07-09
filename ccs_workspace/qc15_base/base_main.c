@@ -87,16 +87,14 @@ void send_progress_payload(radio_progress_payload payload) {
     send_string(&payload.part_id, 1);
     send_char(',');
     send_string(payload.part_data, 10);
-    send_char(0x00);
+    send_char(0x0D);
+    send_char(0x0A);
 }
 
 radio_progress_payload create_payload(uint8_t part_id, uint8_t part_data[10]) {
     radio_progress_payload payload;
     payload.part_id = part_id;
     memcpy(payload.part_data, part_data, 10);
-//    for (int i = 10; i > 0; i--) {
-//        payload.part_data[10-i] = part_data[10-i];
-//    }
     return payload;
 }
 
