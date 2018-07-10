@@ -102,7 +102,7 @@ void ipc_init() {
 #pragma vector=USCI_A0_VECTOR
 __interrupt void USCI_A0_ISR(void)
 {
-    volatile static uint8_t rx_byte = 0;
+    static volatile uint8_t rx_byte = 0;
     switch(__even_in_range(UCA0IV,USCI_UART_UCTXCPTIFG))
     {
     case USCI_NONE: break;
