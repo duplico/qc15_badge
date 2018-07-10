@@ -145,7 +145,7 @@ void main (void)
 
     __bis_SR_register(GIE);
 
-    led_set_anim(anim_rainbow, TLC_ANIM_MODE_SAME);
+    led_set_anim((led_ring_animation_t *) &anim_rainbow, TLC_ANIM_MODE_SAME, 0);
 
     while (1) {
         if (f_time_loop) {
@@ -157,6 +157,11 @@ void main (void)
         if (f_ipc_rx) {
             f_ipc_rx = 0;
             ipc_get_rx(rx_from_radio);
+        }
+
+        if (s_led_anim_done) {
+            s_led_anim_done = 0;
+            led_set_anim((led_ring_animation_t *) &anim_rainbow, TLC_ANIM_MODE_SAME, 0);
         }
 
         // Go to sleep.
