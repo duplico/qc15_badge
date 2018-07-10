@@ -116,6 +116,10 @@ void init() {
     s25flash_init();
     ipc_init();
     timer_init();
+
+    // TODO: Prior to shipping, confirm this against the linker file.
+    // Copy FRAM_EXECUTE to RAM_EXECUTE
+    memcpy((void *)0x1C00,(const void*)0x10000,0x0100);
 }
 
 const rgbcolor_t rainbow_colors[] = {
