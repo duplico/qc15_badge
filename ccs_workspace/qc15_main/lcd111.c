@@ -82,7 +82,6 @@ void lcd111_init_io() {
 void lcd111_sr_out(uint8_t out) {
     EUSCI_B_SPI_transmitData(EUSCI_B1_BASE, out);
     while (EUSCI_B_SPI_isBusy(EUSCI_B1_BASE));
-        __no_operation(); // Spin while it sends.
 }
 
 void lcd111_command(uint8_t lcd_id, uint8_t command) {
