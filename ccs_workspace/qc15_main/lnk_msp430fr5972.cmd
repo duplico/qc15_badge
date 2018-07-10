@@ -192,8 +192,9 @@ SECTIONS
     .data       : {} > RAM                  /* Global & static vars              */
     .TI.noinit  : {} > RAM                  /* For #pragma noinit                */
     .stack      : {} > RAM (HIGH)           /* Software system stack             */
-    .run_from_ram: load = FRAM_EXECUTE, run=RAM_EXECUTE
     .tinyram    : {} > TINYRAM              /* Tiny RAM                          */
+
+    .run_from_ram: load=FRAM_EXECUTE, run=RAM_EXECUTE
 
     .infoA (NOLOAD) : {} > INFOA              /* MSP430 INFO FRAM  Memory segments */
     .infoB (NOLOAD) : {} > INFOB
