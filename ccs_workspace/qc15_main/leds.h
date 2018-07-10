@@ -16,7 +16,7 @@
 #define TLC_ANIM_MODE_SHIFT 1
 #define TLC_ANIM_MODE_SAME  2
 
-#define DEFAULT_ANIM_SPEED 100
+#define DEFAULT_ANIM_SPEED 30
 
 typedef struct {
     int_fast16_t r;

@@ -43,6 +43,22 @@ void led_init() {
 
 const rgbcolor16_t color_off = {0, 0, 0};
 
+/// Compute the index of the next frame in the current animation.
+uint8_t next_anim_index(uint8_t index) {
+    // If we're currently looping, and the next index will be after the end
+    //  of the animation section,
+    if (led_ring_anim_loops &&
+        (index+1 == led_ring_anim_curr->len + led_ring_anim_pad_len)) {
+        // then the next index will be the beginning of the animation
+        //  section, which is just the length of the pad.
+        return led_ring_anim_pad_len;
+    } else {
+        // If we're not looping, or at the end of the animation, then things
+        //  are much easier. The next index is just the next index.
+        return index+1;
+    }
+}
+
 /// Place colors into a color frame element, accounting for padding.
 /**
  ** Using an animation frame index, which indexes a length padded by the
@@ -84,7 +100,7 @@ void led_load_colors() {
         // Stage the (possible padded) destination colors into the appropriate
         //  destination frame:
         led_stage_color(&led_ring_dest[0],
-                        (led_ring_anim_index+1) % led_ring_anim_len_padded);
+                        next_anim_index(led_ring_anim_index));
 
         led_ring_step[0].r = ((int_fast16_t) led_ring_dest[0].r - (int_fast16_t)led_ring_curr[0].r) / led_ring_anim_curr->speed;
         led_ring_step[0].g = ((int_fast16_t) led_ring_dest[0].g - (int_fast16_t)led_ring_curr[0].g) / led_ring_anim_curr->speed;
@@ -138,23 +154,39 @@ void led_timestep() {
     if (led_ring_anim_step >= led_ring_anim_curr->speed) {
         // fade is complete. Time for the destination.
         led_ring_anim_step = 0;
+
         led_ring_anim_index++;
 
         // Go ahead and set our current color to the desired destination.
         //  This makes sure that we reach the _exact_ destination color every
         //  time, rather than opening ourselves up to propagation error.
-        led_stage_color(&led_ring_curr[0], led_ring_anim_index);
+        memcpy(&led_ring_curr, &led_ring_dest, sizeof(rgbcolor16_t));
 
-        if (led_ring_anim_index == led_ring_anim_len_padded) {
+        led_display_colors();
+
+        // We conclude our current animation if, EITHER:
+        //  a) We're looping with more loops left to go,
+        //     and we've reached the end of the animation proper, OR
+        //  b) We're not looping (or are, but have no loops left),
+        //     and we've reached the end of the end padding.
+
+        if ((led_ring_anim_loops && (led_ring_anim_index == led_ring_anim_curr->len + led_ring_anim_pad_len))
+                || (led_ring_anim_index == led_ring_anim_len_padded)) {
             // animation is over.
             if (led_ring_anim_loops) {
                 if (led_ring_anim_loops != 0xFF) {
                     led_ring_anim_loops--;
                 }
-                led_ring_anim_index = 0;
+                // We're not going to do either the start or end padding,
+                //  since we're in an intermediate loop.
+                led_ring_anim_index = led_ring_anim_pad_len;
             } else {
+                // TODO: It appears that the turn-off step takes twice as long
+                //  as the rest. What do?
                 led_anim_type = LED_ANIM_TYPE_NONE;
                 s_led_anim_done = 1;
+                // No need to load any new colors, since the pad has taken care
+                //  of turning all the lights off for us.
                 return;
             }
         }
@@ -162,7 +194,6 @@ void led_timestep() {
         // Stage the next color sets
         //  i.e., set curr, dest, and steps.
         led_load_colors();
-        led_display_colors();
 
     } else {
         led_ring_curr[0].r+= led_ring_step[0].r;
