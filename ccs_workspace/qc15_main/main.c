@@ -162,21 +162,6 @@ void main (void)
         // Go to sleep.
         LPM0; // TODO: Determine.
     }
-
-    while (1) {
-        led_all_one_color_ring_only(255, 0, 0);
-        delay_millis(250);
-        led_all_one_color_ring_only(255, 8, 0x00);
-        delay_millis(250);
-        led_all_one_color_ring_only(255, 32, 0x00);
-        delay_millis(250);
-        led_all_one_color_ring_only(0, 64, 0);
-        delay_millis(250);
-        led_all_one_color_ring_only(0, 0, 128);
-        delay_millis(250);
-        led_all_one_color_ring_only(128, 0, 128);
-        delay_millis(250);
-    }
 }
 
 // 0xFFDE Timer1_A3 CC0
