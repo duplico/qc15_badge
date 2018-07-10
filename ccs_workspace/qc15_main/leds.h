@@ -12,9 +12,11 @@
 #include "ht16d35b.h"
 
 // LED animation states:
-#define TLC_ANIM_MODE_IDLE  0
+#define LED_ANIM_TYPE_NONE  0
 #define TLC_ANIM_MODE_SHIFT 1
 #define TLC_ANIM_MODE_SAME  2
+
+#define DEFAULT_ANIM_SPEED 15
 
 typedef struct {
     int_fast16_t r;

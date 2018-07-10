@@ -12,6 +12,7 @@
 #include "ht16d35b.h"
 #include "s25flash.h"
 #include "ipc.h"
+#include "leds.h"
 
 volatile uint64_t csecs_of_queercon = 0;
 volatile uint8_t f_time_loop = 0;
@@ -117,20 +118,40 @@ void init() {
     timer_init();
 }
 
+const rgbcolor_t rainbow_colors[] = {
+        {255, 0, 0}, // Red
+        {255, 24, 0x00}, // Orange
+        {128, 40, 0x00}, // Yellow
+        {0, 64, 0}, // Green
+        {0, 0, 196}, // Blue
+        {128, 0, 128}, // Purple
+};
+
+const led_ring_animation_t anim_rainbow = {
+        &rainbow_colors[0],
+        6,
+        DEFAULT_ANIM_SPEED,
+        "Rainbow"
+};
+
 void main (void)
 {
     init();
 
-    lcd111_text(0, "Test 0");
-    lcd111_text(1, "Test 1");
+    lcd111_text(0, "Queercon 15");
+    lcd111_text(1, "UBER BADGE");
 
     uint8_t rx_from_radio[IPC_MSG_LEN_MAX] = {0};
 
     __bis_SR_register(GIE);
 
+    led_set_anim(anim_rainbow, TLC_ANIM_MODE_SAME);
+
     while (1) {
-        if (f_time_loop % 128) {
+        if (f_time_loop) {
             f_time_loop = 0;
+            // TODO: Count timesteps elapsed.
+            led_timestep();
         }
 
         if (f_ipc_rx) {
