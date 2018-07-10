@@ -85,9 +85,6 @@ void init_clocks() {
     //      MODOSC   5M  for MODCLK
 
     // Configurable sources:
-    // DCO  (Digitally-controlled oscillator)
-    //  This defaults to 16 MHz. We'll keep this.
-
     // LFXT (Low frequency external crystal)
     CS_turnOnXT1LF(
             CS_XT1_DRIVE_0
@@ -101,19 +98,33 @@ void init_clocks() {
 
     //clear all OSC fault flag
     CS_clearAllOscFlagsWithTimeout(1000);
-    // TODO: OSC flags in POST routine, please.
+    // TODO: Check OSC flags in a POST routine, please.
+
+    // DCO  (Digitally-controlled oscillator)
+    //  Let's bring this up to 8 MHz or so.
+
+    __bis_SR_register(SCG0);                // disable FLL
+    CSCTL3 |= SELREF__XT1CLK;               // Set XT1CLK as FLL reference source
+    CSCTL0 = 0;                             // clear DCO and MOD registers
+    CSCTL1 &= ~(DCORSEL_7);                 // Clear DCO frequency select bits first
+    CSCTL1 |= DCORSEL_3;                    // Set DCO = 8MHz
+    CSCTL2 = FLLD_0 + 243;                  // DCODIV = /1
+//    CSCTL2 = FLLD_3 + 243;                  // DCODIV = /8
+    __delay_cycles(3);
+    __bic_SR_register(SCG0);                // enable FLL
+    while(CSCTL7 & (FLLUNLOCK0 | FLLUNLOCK1)); // Poll until FLL is locked
 
     // SYSTEM CLOCKS
     // =============
 
     // MCLK (1 MHz)
     //  All sources but MODOSC are available at up to /128
-    //  Initializes to DCOCLKDIV (divided DCO) (1 MHz)
-    //  This is fine.
-
-    // SMCLK
+    //  Set to DCO/8 = 1 MHz
+    // SMCLK (1 MHz)
     //  Derived from MCLK with divider up to /8
-    //  Initializes to MCLK/1, which we'll keep.
+    //  Set to MCLK/1, which we'll keep.
+
+    CSCTL5 |= DIVM_3 | DIVS_0;
 
     // MODCLK (5 MHz)
     //  This comes from MODOSC
@@ -122,6 +133,14 @@ void init_clocks() {
     //  Initializes to REFO, which is ~ 32k.
     //  This is OK, but we'd rather have it connected to our watch crystal,
     //   which will give us a more precise 32k signal.
+
+    CS_initClockSignal(
+            CS_ACLK,
+            CS_XT1CLK_SELECT,
+            CS_CLOCK_DIVIDER_1
+    );
+//    CSCTL4 = SELMS__DCOCLKDIV | SELA__XT1CLK;  // Set ACLK = XT1CLK = 32768Hz
+
 }
 
 void timer_init() {
@@ -154,6 +173,11 @@ void main (void)
     radio_init();
 
     uint8_t rx_from_main[IPC_MSG_LEN_MAX] = {0};
+
+    volatile uint32_t sclk = CS_getSMCLK();
+    __no_operation();
+    sclk = CS_getMCLK();
+    __no_operation();
 
     __bis_SR_register(GIE);
 

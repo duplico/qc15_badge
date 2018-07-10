@@ -27,9 +27,7 @@ void init_clocks() {
     //      LFMODCLK (MODCLK/128, 39 kHz)
 
     // Configurable sources:
-    //      DCO  (Digitally-controlled oscillator) (16 MHz)
-
-    CS_setDCOFreq(1, 4); // Set DCO to 16 MHz
+    //      DCO  (Digitally-controlled oscillator) (8 MHz)
 
     //      LFXT (Low frequency external crystal) - unused
     //      HFXT (High frequency external crystal) - unused
@@ -42,7 +40,7 @@ void init_clocks() {
     //  Available sources are HFXT, DCO, LFXT, VLO, or external digital clock.
     //   If it's above 8 MHz, we need to configure FRAM wait-states.
     //   Set to 8 MHz (DCO /2)
-    CS_initClockSignal(CS_MCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_2); // 8 M
+    CS_initClockSignal(CS_MCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_1); // 8 M
 
     // SMCLK (1 MHz)
     //  Defaults to DCOCLK /8
@@ -50,7 +48,7 @@ void init_clocks() {
     //      NB: This is different from the SMCLK behavior of the FR2xxx series,
     //          which can only source SMCLK from a divided MCLK.
     //  We'll use DCO /16
-    CS_initClockSignal(CS_SMCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_16); // 1 M
+    CS_initClockSignal(CS_SMCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_8); // 1 M
 
     // MODCLK (5 MHz)
     //  This comes from MODOSC. It's fixed.
@@ -110,7 +108,6 @@ void init() {
     WDT_A_hold(WDT_A_BASE);
 
     init_clocks();
-
     init_io();
 
     lcd111_init();
@@ -132,19 +129,13 @@ void main (void)
     __bis_SR_register(GIE);
 
     while (1) {
-        if (f_time_loop) {
+        if (f_time_loop % 128) {
             f_time_loop = 0;
-            if (csecs_of_queercon % 200) {
-//                ipc_tx("TEST", 5);
-                EUSCI_A_UART_transmitData(EUSCI_A0_BASE, IPC_SYNC_WORD);
-            }
         }
 
         if (f_ipc_rx) {
             f_ipc_rx = 0;
             ipc_get_rx(rx_from_radio);
-            rx_from_radio[24]=0;
-            lcd111_text(0, (char *)rx_from_radio);
         }
 
         // Go to sleep.
@@ -171,7 +162,7 @@ void main (void)
 #pragma vector=TIMER1_A0_VECTOR
 __interrupt
 void TIMER_ISR() {
-    // All we have here is TA0CCR0 CCIFG0
+    // All we have here is CCIFG0
     f_time_loop = 1;
     csecs_of_queercon++;
     LPM0_EXIT;
