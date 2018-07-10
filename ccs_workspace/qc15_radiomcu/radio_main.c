@@ -26,9 +26,11 @@
 #include "driverlib.h"
 #include <msp430fr2422.h>
 
-#include "rfm75.h"
+#include "radio.h"
+#include "ipc.h"
 
 volatile uint8_t f_time_loop = 0;
+volatile uint64_t csecs_of_queercon = 0;
 
 void delay_millis(unsigned long mils) {
     while (mils) {
@@ -151,6 +153,8 @@ void main (void)
     timer_init();
     radio_init();
 
+    uint8_t rx_from_main[IPC_MSG_LEN_MAX] = {0};
+
     __bis_SR_register(GIE);
 
     while (1) {
@@ -161,6 +165,16 @@ void main (void)
 
         if (f_time_loop) {
             // centisecond.
+            f_time_loop = 0;
+            if (csecs_of_queercon % 100 == 0) {
+                // once per second
+                ipc_tx("Testing IPC", 12);
+            }
+        }
+
+        if (f_ipc_rx) {
+            f_ipc_rx = 0;
+            ipc_get_rx(rx_from_main);
         }
 
         __bis_SR_register(LPM0_bits);
@@ -173,5 +187,6 @@ __interrupt
 void TIMER_ISR() {
     // All we have here is TA0CCR0 CCIFG0
     f_time_loop = 1;
+    csecs_of_queercon++;
     LPM0_EXIT;
 }

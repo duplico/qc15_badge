@@ -13,6 +13,9 @@
 #include "s25flash.h"
 #include "ipc.h"
 
+volatile uint64_t csecs_of_queercon = 0;
+volatile uint8_t f_time_loop = 0;
+
 void init_clocks() {
 
     // CLOCK SOURCES
@@ -75,7 +78,6 @@ void init_io() {
     s25flash_init_io();
     init_ipc_io();
 
-
     // Screw post inputs with pull-ups
     P7DIR &= ~(GPIO_PIN2+GPIO_PIN3+GPIO_PIN4); // inputs
     P7REN |= GPIO_PIN2+GPIO_PIN3+GPIO_PIN4; // resistor enable
@@ -85,6 +87,23 @@ void init_io() {
     P9DIR &= ~(BIT4+BIT5+BIT6+BIT7); // inputs
     P9REN |= (BIT4+BIT5+BIT6+BIT7); // 0xf0
     P9OUT |= 0xf0; // pull up, please.
+}
+
+/// Initialize the centisecond timer.
+void timer_init() {
+    // We need timer A3 for our loop below.
+    Timer_A_initUpModeParam timer_param = {0};
+    timer_param.clockSource = TIMER_A_CLOCKSOURCE_SMCLK; // 1 MHz
+    // We want this to go every 10 ms, so at 100 Hz (every 10,000 ticks @ 1MHz)
+    //  (a centisecond clock!)
+    timer_param.clockSourceDivider = TIMER_A_CLOCKSOURCE_DIVIDER_1; // /1
+    timer_param.timerPeriod = 10000;
+    timer_param.timerInterruptEnable_TAIE = TIMER_A_TAIE_INTERRUPT_DISABLE;
+    timer_param.captureCompareInterruptEnable_CCR0_CCIE = TIMER_A_CCIE_CCR0_INTERRUPT_ENABLE;
+    timer_param.timerClear = TIMER_A_SKIP_CLEAR;
+    timer_param.startTimer = false;
+    Timer_A_initUpMode(TIMER_A1_BASE, &timer_param);
+    Timer_A_startCounter(TIMER_A1_BASE, TIMER_A_UP_MODE);
 }
 
 void init() {
@@ -98,6 +117,7 @@ void init() {
     ht16d_init();
     s25flash_init();
     ipc_init();
+    timer_init();
 }
 
 void main (void)
@@ -106,6 +126,30 @@ void main (void)
 
     lcd111_text(0, "Test 0");
     lcd111_text(1, "Test 1");
+
+    uint8_t rx_from_radio[IPC_MSG_LEN_MAX] = {0};
+
+    __bis_SR_register(GIE);
+
+    while (1) {
+        if (f_time_loop) {
+            f_time_loop = 0;
+            if (csecs_of_queercon % 200) {
+//                ipc_tx("TEST", 5);
+                EUSCI_A_UART_transmitData(EUSCI_A0_BASE, IPC_SYNC_WORD);
+            }
+        }
+
+        if (f_ipc_rx) {
+            f_ipc_rx = 0;
+            ipc_get_rx(rx_from_radio);
+            rx_from_radio[24]=0;
+            lcd111_text(0, (char *)rx_from_radio);
+        }
+
+        // Go to sleep.
+        LPM0; // TODO: Determine.
+    }
 
     while (1) {
         led_all_one_color_ring_only(255, 0, 0);
@@ -121,4 +165,14 @@ void main (void)
         led_all_one_color_ring_only(128, 0, 128);
         delay_millis(250);
     }
+}
+
+// 0xFFDE Timer1_A3 CC0
+#pragma vector=TIMER1_A0_VECTOR
+__interrupt
+void TIMER_ISR() {
+    // All we have here is TA0CCR0 CCIFG0
+    f_time_loop = 1;
+    csecs_of_queercon++;
+    LPM0_EXIT;
 }
