@@ -115,7 +115,7 @@ void ht_send_array(uint8_t txdat[], uint8_t len) {
         while (!UCB0IFG & UCTXIFG) // While TX is unavailable, spin.
             __no_operation();
 
-        __delay_cycles(500);
+        __delay_cycles(1000);
 
         UCB0IFG &= ~UCTXIFG; // Clear TX flag.
         UCB0TXBUF = txdat[i]; // write dat.
