@@ -126,7 +126,8 @@ __interrupt void USCI_A0_ISR(void)
                 ipc_state &= ~IPC_STATE_RX_MASK;
                 ipc_state |= IPC_STATE_RX_HOLD;
                 f_ipc_rx = 1;
-                LPM4_EXIT; // TODO: Does this work in LPM1 or 0 or whatever?
+                LPM1_EXIT; // TODO: Does this work in LPM1 or 0 or whatever?
+                break;
             }
         } else if (ipc_state & IPC_STATE_RX_LEN) {
             // We are ready to accept the length of the message.
@@ -134,6 +135,7 @@ __interrupt void USCI_A0_ISR(void)
                 // Valid length
                 ipc_state &= ~IPC_STATE_RX_LEN;
                 ipc_state |= IPC_STATE_RX_BUSY;
+                ipc_rx_len = rx_byte;
             } else {
                 // Invalid length. Cancel RX.
                 ipc_state &= ~IPC_STATE_RX_MASK;
@@ -142,7 +144,7 @@ __interrupt void USCI_A0_ISR(void)
             // This should be the first byte we receive.
             if (rx_byte == IPC_SYNC_WORD) {
                 // Valid first byte.
-                ipc_state |= IPC_STATE_RX_BUSY;
+                ipc_state |= IPC_STATE_RX_LEN;
                 ipc_rx_index = 0;
                 ipc_rx_len = 0;
             } else {
@@ -159,6 +161,11 @@ __interrupt void USCI_A0_ISR(void)
             // We just finished sending the SYNC word, and now we
             //  need to send the length of our message.
             UCA0TXBUF = ipc_tx_len;
+            ipc_state &= ~IPC_STATE_TX_MASK;
+            ipc_state |= IPC_STATE_TX_READY;
+        } else if (ipc_state & IPC_STATE_TX_READY) {
+            // Time to send the first data byte.
+            UCA0TXBUF = ipc_tx_buf[ipc_tx_index];
             ipc_state &= ~IPC_STATE_TX_MASK;
             ipc_state |= IPC_STATE_TX_BUSY;
         } else if (ipc_state & IPC_STATE_TX_BUSY) {
