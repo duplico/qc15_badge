@@ -16,6 +16,13 @@ typedef struct {
     uint8_t b;
 } rgbcolor_t;
 
+
+typedef struct {
+    uint16_t r;
+    uint16_t g;
+    uint16_t b;
+} rgbcolor16_t;
+
 void ht16d_init_io();
 void ht16d_init();
 void led_send_gray();
