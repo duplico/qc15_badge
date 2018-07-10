@@ -9,7 +9,6 @@
 #include "leds.h"
 
 #define FLAG_COUNT 14
-#define DEFAULT_ANIM_SPEED 10
 
 const rgbcolor_t flag_rainbow_colors[] = {
         {0xe4, 0x03, 0x03}, // Red
