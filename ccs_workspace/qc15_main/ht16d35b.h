@@ -8,6 +8,14 @@
 #ifndef HT16D35B_H_
 #define HT16D35B_H_
 
+#include <stdint.h>
+
+typedef struct {
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+} rgbcolor_t;
+
 void ht16d_init_io();
 void ht16d_init();
 void led_send_gray();
