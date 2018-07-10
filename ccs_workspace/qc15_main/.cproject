@@ -61,7 +61,7 @@
 								<option id="com.ti.ccstudio.buildDefinitions.MSP430_18.1.compilerID.OTHER_FLAGS.1089583565" name="Other flags" superClass="com.ti.ccstudio.buildDefinitions.MSP430_18.1.compilerID.OTHER_FLAGS" valueType="stringList">
 									<listOptionValue builtIn="false" value=""/>
 								</option>
-								<option id="com.ti.ccstudio.buildDefinitions.MSP430_18.1.compilerID.ADVICE__POWER.2108749400" name="Enable checking of ULP power rules (--advice:power)" superClass="com.ti.ccstudio.buildDefinitions.MSP430_18.1.compilerID.ADVICE__POWER" value="&quot;1,2,3,4,5,6,7,8,9,10,11,12,14&quot;" valueType="string"/>
+								<option id="com.ti.ccstudio.buildDefinitions.MSP430_18.1.compilerID.ADVICE__POWER.2108749400" name="Enable checking of ULP power rules (--advice:power)" superClass="com.ti.ccstudio.buildDefinitions.MSP430_18.1.compilerID.ADVICE__POWER" value="&quot;1,2,3,4,5,6,7,8,9,10&quot;" valueType="string"/>
 								<option id="com.ti.ccstudio.buildDefinitions.MSP430_18.1.compilerID.VERBOSE_DIAGNOSTICS.610055453" name="Verbose diagnostics (--verbose_diagnostics, -pdv)" superClass="com.ti.ccstudio.buildDefinitions.MSP430_18.1.compilerID.VERBOSE_DIAGNOSTICS" value="true" valueType="boolean"/>
 								<inputType id="com.ti.ccstudio.buildDefinitions.MSP430_18.1.compiler.inputType__C_SRCS.321833100" name="C Sources" superClass="com.ti.ccstudio.buildDefinitions.MSP430_18.1.compiler.inputType__C_SRCS"/>
 								<inputType id="com.ti.ccstudio.buildDefinitions.MSP430_18.1.compiler.inputType__CPP_SRCS.285456630" name="C++ Sources" superClass="com.ti.ccstudio.buildDefinitions.MSP430_18.1.compiler.inputType__CPP_SRCS"/>
