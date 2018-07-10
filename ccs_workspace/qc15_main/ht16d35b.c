@@ -11,7 +11,6 @@
 #include <msp430.h>
 
 #include "util.h"
-
 #include "ht16d35b.h"
 
 // Command definitions:
@@ -32,6 +31,8 @@
 #define HTCMD_SW_RESET      0xCC
 
 // Master LED value and translation buffers:
+
+// TODO: Convert all this to rgbcolor_t
 
 uint8_t led_values[24][3] = {
     {0xe4, 0x03, 0x03}, // Red
@@ -114,7 +115,7 @@ void ht_send_array(uint8_t txdat[], uint8_t len) {
         while (!UCB0IFG & UCTXIFG) // While TX is unavailable, spin.
             __no_operation();
 
-        __delay_cycles(500);
+        __delay_cycles(1000);
 
         UCB0IFG &= ~UCTXIFG; // Clear TX flag.
         UCB0TXBUF = txdat[i]; // write dat.
@@ -286,6 +287,10 @@ void led_send_gray() {
 
         ht_send_array(light_array, 30);
     }
+}
+
+void set_colors(uint8_t id_start, uint8_t end_id, rgbcolor_t* colors) {
+
 }
 
 void led_all_one_color(uint8_t r, uint8_t g, uint8_t b) {
