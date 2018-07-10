@@ -56,13 +56,15 @@ MEMORY
     TINYRAM                 : origin = 0x0006, length = 0x001A
     PERIPHERALS_8BIT        : origin = 0x0020, length = 0x00E0
     PERIPHERALS_16BIT       : origin = 0x0100, length = 0x0100
-    RAM                     : origin = 0x1C00, length = 0x0800
+    RAM_EXECUTE				: origin = 0x1C00, length = 0x0100
+    RAM                     : origin = 0x1D00, length = 0x0700
     INFOA                   : origin = 0x1980, length = 0x0080
     INFOB                   : origin = 0x1900, length = 0x0080
     INFOC                   : origin = 0x1880, length = 0x0080
     INFOD                   : origin = 0x1800, length = 0x0080
     FRAM                    : origin = 0x4400, length = 0xBB80
-    FRAM2                   : origin = 0x10000,length = 0x4000
+    FRAM_EXECUTE			: origin = 0x10000,length = 0x0100
+    FRAM2                   : origin = 0x10100,length = 0x3F00
     JTAGSIGNATURE           : origin = 0xFF80, length = 0x0004, fill = 0xFFFF
     BSLSIGNATURE            : origin = 0xFF84, length = 0x0004, fill = 0xFFFF
     IPESIGNATURE            : origin = 0xFF88, length = 0x0008, fill = 0xFFFF
@@ -190,6 +192,7 @@ SECTIONS
     .data       : {} > RAM                  /* Global & static vars              */
     .TI.noinit  : {} > RAM                  /* For #pragma noinit                */
     .stack      : {} > RAM (HIGH)           /* Software system stack             */
+    .run_from_ram: load = FRAM_EXECUTE, run=RAM_EXECUTE
     .tinyram    : {} > TINYRAM              /* Tiny RAM                          */
 
     .infoA (NOLOAD) : {} > INFOA              /* MSP430 INFO FRAM  Memory segments */
