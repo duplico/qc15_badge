@@ -103,7 +103,7 @@ void lcd111_command(uint8_t lcd_id, uint8_t command) {
     // Hold on for a moment while it works
     //  We can't read, in this configuration, so we can't
     //  poll the busy signal.
-    delay_millis(50);
+    delay_millis(5);
 
     // Keep the whole bus HIGH in between cycles.
     lcd111_sr_out(0xff);
@@ -161,6 +161,7 @@ void lcd111_init() {
 }
 
 void lcd111_text(uint8_t lcd_id, char *text) {
+    lcd111_command(0, 0xe0); // Data address: 0
     uint8_t i=0;
     while (text[i])
         lcd111_data(lcd_id, text[i++]);
