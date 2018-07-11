@@ -27,18 +27,11 @@ rgbcolor16_t led_ring_dest[18];
 rgbdelta_t led_ring_step[18];
 
 uint8_t led_line_state = 0;
-//rgbcolor_t led_line_curr[6];
-//rgbcolor_t led_line_dest[6];
-//rgbdelta_t led_line_step[6];
 
 void led_init() {
-    memset(led_ring_curr, 0, 18);
-    memset(led_ring_dest, 0, 18);
-    memset(led_ring_step, 0, 18);
-
-//    memset(led_line_curr, 0, 6);
-//    memset(led_line_dest, 0, 6);
-//    memset(led_line_step, 0, 6);
+    memset(led_ring_curr, 0, sizeof(led_ring_curr));
+    memset(led_ring_dest, 0, sizeof(led_ring_dest));
+    memset(led_ring_step, 0, sizeof(led_ring_step));
 }
 
 const rgbcolor16_t color_off = {0, 0, 0};
@@ -94,6 +87,7 @@ void led_stage_color(rgbcolor16_t *dest_color_frame, uint8_t anim_index) {
 
 // TODO: Relocate the following function to RAM as it has multiple division
 //  and modulo operations and will be executed frequently..
+#pragma CODE_SECTION(led_load_colors,".run_from_ram")
 /// Set up the current frame's color sets (i.e. dest and step).
 void led_load_colors() {
     if (led_anim_type == TLC_ANIM_MODE_SAME) {
@@ -110,12 +104,15 @@ void led_load_colors() {
 
 /// Send the colors to the underlying controller.
 void led_display_colors() {
-    led_all_one_color_ring_only(led_ring_curr[0].r >> 7,
-                                led_ring_curr[0].g >> 7,
-                                led_ring_curr[0].b >> 7);
+    if (led_anim_type == TLC_ANIM_MODE_SAME) {
+        led_all_one_color_ring_only(led_ring_curr[0].r >> 7,
+                                    led_ring_curr[0].g >> 7,
+                                    led_ring_curr[0].b >> 7);
+    } else if (led_anim_type == TLC_ANIM_MODE_SHIFT) {
+        ht16d_set_colors(0, 18, led_ring_curr);
+    }
 }
 
-//#pragma CODE_SECTION(led_set_anim,".run_from_ram")
 /// Set the current LED ring animation.
 void led_set_anim(led_ring_animation_t *anim, uint8_t anim_type, uint8_t loops) {
     led_ring_anim_curr = anim;
@@ -160,7 +157,8 @@ void led_timestep() {
         // Go ahead and set our current color to the desired destination.
         //  This makes sure that we reach the _exact_ destination color every
         //  time, rather than opening ourselves up to propagation error.
-        memcpy(&led_ring_curr, &led_ring_dest, sizeof(rgbcolor16_t));
+        // TODO: index it based on animation type
+        memcpy(&led_ring_curr, &led_ring_dest, sizeof(led_ring_curr));
 
         led_display_colors();
 
