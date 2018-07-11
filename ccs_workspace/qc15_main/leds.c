@@ -84,8 +84,6 @@ uint8_t next_anim_index(uint8_t index) {
     //  end pad.
     // TODO: Make sure that pad_loops is < num_colors
 
-
-
     if (index_into_pad < extra_anim_frames) {
         // This one is OK to loop.
         return led_ring_anim_num_colors + ((index + 1) % led_ring_anim_curr->len);
