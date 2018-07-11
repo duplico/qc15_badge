@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdlib.h>
 
 #include <msp430fr5972.h>
 #include <driverlib.h>
@@ -14,7 +15,6 @@
 #include "ipc.h"
 #include "leds.h"
 
-volatile uint64_t csecs_of_queercon = 0;
 volatile uint8_t f_time_loop = 0;
 
 void init_clocks() {
@@ -88,15 +88,14 @@ void init_io() {
     P9OUT |= 0xf0; // pull up, please.
 }
 
-/// Initialize the centisecond timer.
+/// Initialize the animation timer to about 30 Hz
 void timer_init() {
     // We need timer A3 for our loop below.
     Timer_A_initUpModeParam timer_param = {0};
     timer_param.clockSource = TIMER_A_CLOCKSOURCE_SMCLK; // 1 MHz
-    // We want this to go every 10 ms, so at 100 Hz (every 10,000 ticks @ 1MHz)
-    //  (a centisecond clock!)
+    // We want this to go every 33 1/3 ms, so at 33 1/3 Hz (every 3,333 ticks @ 1MHz)
     timer_param.clockSourceDivider = TIMER_A_CLOCKSOURCE_DIVIDER_1; // /1
-    timer_param.timerPeriod = 10000;
+    timer_param.timerPeriod = 3333;
     timer_param.timerInterruptEnable_TAIE = TIMER_A_TAIE_INTERRUPT_DISABLE;
     timer_param.captureCompareInterruptEnable_CCR0_CCIE = TIMER_A_CCIE_CCR0_INTERRUPT_ENABLE;
     timer_param.timerClear = TIMER_A_SKIP_CLEAR;
@@ -120,6 +119,8 @@ void init() {
     // TODO: Prior to shipping, confirm this against the linker file.
     // Copy FRAM_EXECUTE to RAM_EXECUTE
     memcpy((void *)0x1C00,(const void*)0x10000,0x0200);
+
+    srand(25); // TODO: ID
 }
 
 const rgbcolor_t rainbow_colors[] = {
@@ -134,8 +135,7 @@ const rgbcolor_t rainbow_colors[] = {
 const led_ring_animation_t anim_rainbow = {
         &rainbow_colors[0],
         6,
-        10,
-//        DEFAULT_ANIM_SPEED,
+        5,
         "Rainbow"
 };
 
@@ -150,7 +150,7 @@ void main (void)
 
     __bis_SR_register(GIE);
 
-    led_set_anim((led_ring_animation_t *) &anim_rainbow, LED_ANIM_TYPE_SPIN, 2, 1);
+    led_set_anim((led_ring_animation_t *) &anim_rainbow, LED_ANIM_TYPE_FALL, 5, 1);
 
     while (1) {
         if (f_time_loop) {
@@ -180,6 +180,5 @@ __interrupt
 void TIMER_ISR() {
     // All we have here is CCIFG0
     f_time_loop = 1;
-    csecs_of_queercon++;
     LPM0_EXIT;
 }
