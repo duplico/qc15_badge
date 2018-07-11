@@ -16,6 +16,7 @@
 #include "leds.h"
 
 volatile uint8_t f_time_loop = 0;
+uint8_t s_buttons = 0;
 
 void init_clocks() {
 
@@ -83,9 +84,9 @@ void init_io() {
     P7OUT |= GPIO_PIN2+GPIO_PIN3+GPIO_PIN4; // pull-up resistor
 
     // Buttons: 9.4, 9.5, 9.6, 9.7
-    P9DIR &= ~(BIT4+BIT5+BIT6+BIT7); // inputs
-    P9REN |= (BIT4+BIT5+BIT6+BIT7); // 0xf0
-    P9OUT |= 0xf0; // pull up, please.
+    P9DIR &= 0x0F; // inputs
+    P9REN |= 0xF0; // resistors on
+    P9OUT |= 0xF0; // pull ups, please
 }
 
 /// Initialize the animation timer to about 30 Hz
@@ -141,6 +142,36 @@ const led_ring_animation_t anim_rainbow = {
         "Rainbow"
 };
 
+void poll_buttons() {
+    // The buttons are active LOW.
+    static uint8_t button_read_prev = 0xF0;
+    static uint8_t button_read = 0xF0;
+    static uint8_t button_state = 0xF0;
+
+    // The following is a very silly way to debounce 4 buttons.
+
+    // Buttons 1,2,3,4 are attached to P9.7,P9.6,P9.5,P9.4 respectively.
+
+    button_read = P9IN & 0xF0;
+    for (uint8_t i=0; i<4; i++) {
+        // For each of our 4 buttons:
+        if ((button_read & (BIT4<<i)) == (button_read_prev & (BIT4<<i))
+                && (button_read & (BIT4<<i)) != (button_state & (BIT4<<i))) {
+            button_state &= ~(BIT4<<i);
+            button_state |= (button_read & (BIT4<<i));
+
+            // Flag the button. Lower nibble is WHICH button:
+            s_buttons |= (BIT0<<i);
+            // Upper nibble is its current value:
+            //  (so if it's 1, it was just RELEASED,
+            //    & if it's 0, it was just PRESSED.)
+            s_buttons |= (button_read & (BIT4<<i));
+        }
+    }
+    button_read_prev = button_read;
+} // poll_buttons
+
+
 void main (void)
 {
     init();
@@ -158,6 +189,7 @@ void main (void)
         if (f_time_loop) {
             f_time_loop = 0;
             led_timestep();
+            poll_buttons();
         }
 
         if (f_ipc_rx) {
@@ -167,7 +199,41 @@ void main (void)
 
         if (s_led_anim_done) {
             s_led_anim_done = 0;
-            led_set_anim((led_ring_animation_t *) &anim_rainbow, LED_ANIM_TYPE_SPIN, 2, 18);
+            led_set_anim((led_ring_animation_t *) &anim_rainbow,
+                         LED_ANIM_TYPE_SPIN, 2, 18);
+        }
+
+        if (s_buttons) {
+            if (s_buttons & BIT0) {
+                if (s_buttons & BIT4) {
+                    // release
+                } else {
+                    // press
+                }
+            }
+
+            if (s_buttons & BIT1) {
+                if (s_buttons & BIT5) {
+                    // release
+                } else {
+                    // press
+                }
+            }
+            if (s_buttons & BIT2) {
+                if (s_buttons & BIT6) {
+                    // release
+                } else {
+                    // press
+                }
+            }
+            if (s_buttons & BIT3) {
+                if (s_buttons & BIT7) {
+                    // release
+                } else {
+                    // press
+                }
+            }
+            s_buttons = 0;
         }
 
         // Go to sleep.
