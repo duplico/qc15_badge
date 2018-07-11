@@ -31,7 +31,7 @@ uint8_t ipc_tx(uint8_t *tx_buf, uint8_t len) {
 
     if (len > IPC_MSG_LEN_MAX) {
         len = IPC_MSG_LEN_MAX;
-        while (1); // ASSERT. TODO
+        while (1);
     }
 
     memcpy(ipc_tx_buf, tx_buf, len);
@@ -98,7 +98,6 @@ void ipc_init() {
 
 }
 
-// TODO: Implement a timeout for held and active RXes.
 #pragma vector=USCI_A0_VECTOR
 __interrupt void USCI_A0_ISR(void)
 {
@@ -126,7 +125,7 @@ __interrupt void USCI_A0_ISR(void)
                 ipc_state &= ~IPC_STATE_RX_MASK;
                 ipc_state |= IPC_STATE_RX_HOLD;
                 f_ipc_rx = 1;
-                LPM1_EXIT; // TODO: Does this work in LPM1 or 0 or whatever?
+                LPM1_EXIT;
                 break;
             }
         } else if (ipc_state & IPC_STATE_RX_LEN) {

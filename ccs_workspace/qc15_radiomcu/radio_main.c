@@ -98,7 +98,6 @@ void init_clocks() {
 
     //clear all OSC fault flag
     CS_clearAllOscFlagsWithTimeout(1000);
-    // TODO: Check OSC flags in a POST routine, please.
 
     // DCO  (Digitally-controlled oscillator)
     //  Let's bring this up to 8 MHz or so.
@@ -166,8 +165,6 @@ void main (void)
     init_io();
     init_clocks();
     ipc_init();
-
-    // TODO: Wait to load my configuration over IPC-serial.
 
     timer_init();
     radio_init();
