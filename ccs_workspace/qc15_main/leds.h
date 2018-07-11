@@ -12,9 +12,10 @@
 #include "ht16d35b.h"
 
 // LED animation states:
-#define LED_ANIM_TYPE_NONE  0
-#define TLC_ANIM_MODE_SHIFT 1
-#define TLC_ANIM_MODE_SAME  2
+#define LED_ANIM_TYPE_NONE 0
+#define LED_ANIM_TYPE_SPIN 1
+#define LED_ANIM_TYPE_SAME 2
+#define LED_ANIM_TYPE_FALL 3
 
 #define DEFAULT_ANIM_SPEED 30
 
