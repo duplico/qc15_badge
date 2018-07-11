@@ -129,7 +129,7 @@ void led_display_colors() {
 // TODO: Do pad_between
 
 /// Set the current LED ring animation.
-void led_set_anim(led_ring_animation_t *anim, uint8_t anim_type, uint8_t loops, uint8_t pad_between) {
+void led_set_anim(led_ring_animation_t *anim, uint8_t anim_type, uint8_t loops) {
     led_ring_anim_curr = anim;
     led_anim_type = anim_type;
     led_ring_anim_step = 0;
