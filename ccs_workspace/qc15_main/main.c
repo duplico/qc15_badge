@@ -150,7 +150,7 @@ void main (void)
 
     __bis_SR_register(GIE);
 
-    led_set_anim((led_ring_animation_t *) &anim_rainbow, LED_ANIM_TYPE_SPIN, 2);
+    led_set_anim((led_ring_animation_t *) &anim_rainbow, LED_ANIM_TYPE_SPIN, 2, 1);
 
     while (1) {
         if (f_time_loop) {
@@ -166,7 +166,7 @@ void main (void)
 
         if (s_led_anim_done) {
             s_led_anim_done = 0;
-            led_set_anim((led_ring_animation_t *) &anim_rainbow, LED_ANIM_TYPE_SPIN, 2);
+            led_set_anim((led_ring_animation_t *) &anim_rainbow, LED_ANIM_TYPE_SPIN, 2, 18);
         }
 
         // Go to sleep.
