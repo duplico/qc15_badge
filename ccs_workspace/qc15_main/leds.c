@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "qc15.h"
 #include "leds.h"
@@ -27,18 +28,17 @@ rgbcolor16_t led_ring_dest[18];
 rgbdelta_t led_ring_step[18];
 
 uint8_t led_line_state = 0;
-rgbcolor16_t led_line_curr[6];
+rgbcolor16_t led_line_curr[6] = {0,};
 rgbcolor16_t led_line_dest[6];
-};
 rgbdelta_t led_line_step[6];
 
 rgbcolor16_t led_line_centers[6] = {
-    {255, 0, 0},  // Red
-    {255, 20, 0}, // Orange
-    {255, 60, 0}, // Yellow
-    {0, 64, 0},   // Green
-    {0, 0, 144},  // Blue
-    {128, 0, 96}, // Purple
+    {255<<7, 0, 0},  // Red
+    {255<<7, 20<<7, 0}, // Orange
+    {255<<7, 60<<7, 0}, // Yellow
+    {0, 64<<7, 0},   // Green
+    {0, 0, 144<<7},  // Blue
+    {128<<7, 0, 96<<7}, // Purple
 };
 
 void led_init() {
@@ -204,8 +204,8 @@ void led_set_anim(led_ring_animation_t *anim, uint8_t anim_type, uint8_t loops, 
     led_display_colors();
 }
 
-// TODO: Change this rate, and give it a parameter for csecs elapsed.
-/// LED timestep function, which should be called approx. 100x per second.
+// TODO: Consider giving this a parameter for time elapsed.
+/// LED timestep function, which should be called approx. 30x per second.
 void led_timestep() {
     if (!led_anim_type) {
         // LED_ANIM_TYPE_NONE
