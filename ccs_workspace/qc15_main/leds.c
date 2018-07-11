@@ -14,12 +14,11 @@
 
 uint8_t s_led_anim_done = 0;
 
-uint8_t led_ring_looping = 0;
 uint8_t led_anim_type = 0;
 uint16_t led_ring_anim_step = 0;
 uint8_t led_ring_anim_index = 0;
 uint8_t led_ring_anim_loops = 0;
-uint8_t led_ring_anim_pad_len = 0;
+uint8_t led_ring_anim_num_colors = 0;
 uint8_t led_ring_anim_len_padded = 0;
 led_ring_animation_t *led_ring_anim_curr;
 rgbcolor16_t led_ring_curr[18];
@@ -39,21 +38,39 @@ const rgbcolor16_t color_off = {0, 0, 0};
 /// Compute the index of the next frame in the current animation.
 uint8_t next_anim_index(uint8_t index) {
     // TODO:
-    return (index+1) % led_ring_anim_len_padded;
+//    return (index+1) % led_ring_anim_len_padded;
 
-    // If we're currently looping, and the next index will be after the end
-    //  of the animation section,
-    if (led_ring_anim_loops &&
-        (index+1 >= led_ring_anim_curr->len + led_ring_anim_pad_len)) {
-        // then the next index will be the beginning of the animation
-        //  section, which is just the length of the pad.
-        return led_ring_anim_pad_len + (index + 1) % led_ring_anim_curr->len;
-    } else {
-        // If we're not looping, or at the end of the animation, then things
-        //  are much easier. The next index is just the next index.
+    // If we're not looping, or if we're in the START pad,
+    //  or if we're in the ANIMATION itself, then we just need to
+    //  increment the index
+    // (remember that the logic for reseting our index WON'T let us
+    //  overflow here - see led_timestep())
+    if (!led_ring_anim_loops ||
+            (index+1 < led_ring_anim_curr->len + led_ring_anim_num_colors)) {
         return index+1;
     }
 
+    // If we're down here, then the following things are true:
+    //  1. We're in the END PAD.
+    //  2. The animation is a loop.
+
+    // This means that we need to decide whether to substitute in some
+    //  of the animation (in the event that there are still remaining loops
+    //  left to start), OR whether we just give it the end pad instead.
+
+    // We're allowed to show, at most, this many extra animation frames:
+    uint8_t extra_anim_frames = led_ring_anim_loops * led_ring_anim_curr->len;
+
+    // We're this many frames into the END PAD:
+    uint8_t index_into_pad = (index + 1) - (led_ring_anim_curr->len + led_ring_anim_num_colors);
+
+    if (index_into_pad < extra_anim_frames) {
+        // This one is OK to loop.
+        return led_ring_anim_num_colors + ((index + 1) % led_ring_anim_curr->len);
+    } else {
+        // This one is just a pad.
+        return index + 1;
+    }
 }
 
 /// Place colors into a color frame element, accounting for padding.
@@ -75,41 +92,29 @@ uint8_t next_anim_index(uint8_t index) {
 void led_stage_color(rgbcolor16_t *dest_color_frame, uint8_t anim_index) {
     uint8_t unpadded_index = 0;
 
-    if (anim_index < led_ring_anim_pad_len ||
-            anim_index >= led_ring_anim_curr->len + led_ring_anim_pad_len) {
+    if (anim_index < led_ring_anim_num_colors ||
+            anim_index >= led_ring_anim_curr->len + led_ring_anim_num_colors) {
         // If the current index is in the pad, i.e. before or after the anim,
         //  then turn the LED off until it's out of the pad.
         memcpy(dest_color_frame, &color_off, sizeof(rgbcolor16_t));
     } else {
         // Current index is in the animation, not the pad:
-        unpadded_index = anim_index-led_ring_anim_pad_len;
+        unpadded_index = anim_index-led_ring_anim_num_colors;
         dest_color_frame->r = led_ring_anim_curr->colors[unpadded_index].r << 7;
         dest_color_frame->g = led_ring_anim_curr->colors[unpadded_index].g << 7;
         dest_color_frame->b = led_ring_anim_curr->colors[unpadded_index].b << 7;
     }
 }
 
-// Relocate the following function to RAM as it has multiple division
-//  and modulo operations and will be executed frequently:
 #pragma CODE_SECTION(led_load_colors,".run_from_ram")
 
 /// Set up the current frame's color sets (i.e. dest and step).
+/**
+ ** This function is located in RAM because it has lots of low-performance
+ **  and power-hungry division operations.
+ */
 void led_load_colors() {
-    uint8_t num_colors;
-
-    switch(led_anim_type) {
-    case LED_ANIM_TYPE_SAME:
-        num_colors = 1;
-        break;
-    case LED_ANIM_TYPE_SPIN:
-        num_colors = 18;
-        break;
-    case LED_ANIM_TYPE_FALL:
-        num_colors = 9;
-        break;
-    }
-
-    for (uint8_t i=0; i<num_colors; i++) {
+    for (uint8_t i=0; i<led_ring_anim_num_colors; i++) {
         led_stage_color(&led_ring_dest[i],
                         next_anim_index(led_ring_anim_index+i));
 
@@ -121,22 +126,22 @@ void led_load_colors() {
 
 /// Send the colors to the underlying controller.
 void led_display_colors() {
-    if (led_anim_type == LED_ANIM_TYPE_SAME) {
+    switch(led_anim_type) {
+    case LED_ANIM_TYPE_SAME:
         led_all_one_color_ring_only(led_ring_curr[0].r >> 7,
                                     led_ring_curr[0].g >> 7,
                                     led_ring_curr[0].b >> 7);
-    } else if (led_anim_type == LED_ANIM_TYPE_SPIN) {
-        ht16d_set_colors(0, 18, led_ring_curr);
-    } else if (led_anim_type == LED_ANIM_TYPE_FALL) {
+        break;
+    case LED_ANIM_TYPE_FALL:
         for (uint8_t i=0; i<9; i++) {
             memcpy(&led_ring_curr[17-i], &led_ring_curr[i], sizeof(rgbcolor16_t));
         }
+        // fall through...
+    case LED_ANIM_TYPE_SPIN:
         ht16d_set_colors(0, 18, led_ring_curr);
+        break;
     }
 }
-
-// TODO: We need to fix the padding at the END of the animation.
-//       Namely, we need to do the WHOLE pad at the end.
 
 /// Set the current LED ring animation.
 void led_set_anim(led_ring_animation_t *anim, uint8_t anim_type, uint8_t loops) {
@@ -147,36 +152,29 @@ void led_set_anim(led_ring_animation_t *anim, uint8_t anim_type, uint8_t loops) 
     led_ring_anim_loops = loops;
 
     if (anim_type == LED_ANIM_TYPE_SAME) {
-        led_ring_anim_pad_len = 1;
+        led_ring_anim_num_colors = 1;
     } else if (anim_type == LED_ANIM_TYPE_SPIN) {
-        led_ring_anim_pad_len = 18;
+        led_ring_anim_num_colors = 18;
     } else if (anim_type == LED_ANIM_TYPE_FALL) {
-        led_ring_anim_pad_len = 9;
+        led_ring_anim_num_colors = 9;
     }
 
     // We need the full-sized pad on either side of the animation.
     //  In the event of looping animations, we will not use the pad
     //  between loops.
-    led_ring_anim_len_padded = anim->len + 2*led_ring_anim_pad_len;
+    led_ring_anim_len_padded = anim->len + 2*led_ring_anim_num_colors;
     uint8_t num_colors;
 
-    switch(led_anim_type) {
-    case LED_ANIM_TYPE_SAME:
-        num_colors = 1;
-        break;
-    case LED_ANIM_TYPE_SPIN:
-        num_colors = 18;
-        break;
-    case LED_ANIM_TYPE_FALL:
-        num_colors = 9;
-        break;
-    }
-
-    for (uint8_t i=0; i<num_colors; i++) {
+    // Set the current colors to their initial values. This is always
+    //  going to be in the START pad (so they'll be blank)
+    for (uint8_t i=0; i<led_ring_anim_num_colors; i++) {
         led_stage_color(&led_ring_curr[i], i);
     }
 
+    // Set the destination and steps for each of the LEDs in play:
     led_load_colors();
+
+    // Write the initial colors to the LED controller:
     led_display_colors();
 }
 
@@ -198,8 +196,7 @@ void led_timestep() {
         // Go ahead and set our current color to the desired destination.
         //  This makes sure that we reach the _exact_ destination color every
         //  time, rather than opening ourselves up to propagation error.
-        // TODO: index it based on animation type
-        memcpy(&led_ring_curr, &led_ring_dest, sizeof(led_ring_curr));
+        memcpy(&led_ring_curr, &led_ring_dest, sizeof(rgbcolor16_t) * led_ring_anim_num_colors);
 
         led_display_colors();
 
@@ -211,17 +208,14 @@ void led_timestep() {
 
         // We conclude the current cycle of the animation if the next shift
         //  will cause us to overflow off the end of the pad.
-        if (led_ring_anim_index == led_ring_anim_curr->len + led_ring_anim_pad_len) {
+        if (led_ring_anim_index == led_ring_anim_curr->len + led_ring_anim_num_colors) {
             // animation is over.
             if (led_ring_anim_loops) {
                 if (led_ring_anim_loops != 0xFF) {
                     led_ring_anim_loops--;
                 }
-                // We're not going to do either the start or end padding,
-                //  since we're in an intermediate loop.
-                // TODO:
-//                led_ring_anim_index = led_ring_anim_pad_len;
-                led_ring_anim_index = 0;
+                // We skip the START pad, since we're looping.
+                led_ring_anim_index = led_ring_anim_num_colors;
             } else {
                 led_anim_type = LED_ANIM_TYPE_NONE;
                 s_led_anim_done = 1;
@@ -236,16 +230,10 @@ void led_timestep() {
         led_load_colors();
 
     } else {
-        if (led_anim_type == LED_ANIM_TYPE_SAME) {
-            led_ring_curr[0].r+= led_ring_step[0].r;
-            led_ring_curr[0].g+= led_ring_step[0].g;
-            led_ring_curr[0].b+= led_ring_step[0].b;
-        } else { // if (led_anim_type == LED_ANIM_TYPE_SPIN) { // TODO
-            for (uint8_t i=0; i<18; i++) {
-                led_ring_curr[i].r+= led_ring_step[i].r;
-                led_ring_curr[i].g+= led_ring_step[i].g;
-                led_ring_curr[i].b+= led_ring_step[i].b;
-            }
+        for (uint8_t i=0; i<led_ring_anim_num_colors; i++) {
+            led_ring_curr[i].r+= led_ring_step[i].r;
+            led_ring_curr[i].g+= led_ring_step[i].g;
+            led_ring_curr[i].b+= led_ring_step[i].b;
         }
         led_display_colors();
     }
