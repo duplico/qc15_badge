@@ -246,6 +246,7 @@ void main (void)
         }
 
         // Go to sleep.
+        LPM0;
     }
 }
 
