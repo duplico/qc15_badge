@@ -49,9 +49,9 @@ uint8_t led_values[24][3] = {
     {0xff, 0xed, 0x00}, // Yellow
     {0xff, 0xed, 0x00}, // Yellow
     {0xff, 0xed, 0x00}, // Yellow
-    {0x00, 0x80, 0x26}, // Green
-    {0x00, 0x80, 0x26}, // Green
-    {0x00, 0x80, 0x26}, // Green
+    {0x00, 0x80, 0}, // Green
+    {0x00, 0x80, 0}, // Green
+    {0x00, 0x80, 0}, // Green
     {0x00, 0x4d, 0xff}, // Blue
     {0x00, 0x4d, 0xff}, // Blue
     {0x00, 0x4d, 0xff}, // Blue
@@ -64,8 +64,8 @@ uint8_t led_values[24][3] = {
     {255, 60, 0}, // Yellow
     {0, 64, 0}, // Green
     {0, 0, 144}, // Blue
-    {192, 0, 144}, // Purple
-//    {128, 0, 96}, // Purple
+//    {192, 0, 144}, // Purple
+    {128, 0, 96}, // Purple
 };
 
 uint8_t led_mapping[24][3][2] = {{{2, 15}, {2, 16}, {2, 17}}, {{1, 15}, {1, 16}, {1, 17}}, {{0, 15}, {0, 16}, {0, 17}}, {{2, 23}, {2, 24}, {2, 25}}, {{1, 23}, {1, 24}, {1, 25}}, {{0, 23}, {0, 24}, {0, 25}}, {{2, 18}, {2, 19}, {2, 20}}, {{1, 18}, {1, 19}, {1, 20}}, {{0, 18}, {0, 19}, {0, 20}}, {{2, 11}, {2, 10}, {2, 9}}, {{1, 11}, {1, 10}, {1, 9}}, {{0, 11}, {0, 10}, {0, 9}}, {{2, 6}, {2, 7}, {2, 8}}, {{1, 6}, {1, 7}, {1, 8}}, {{0, 6}, {0, 7}, {0, 8}}, {{2, 12}, {2, 13}, {2, 14}}, {{0, 12}, {0, 13}, {0, 14}}, {{1, 12}, {1, 13}, {1, 14}}, {{0, 0}, {0, 2}, {0, 1}}, {{1, 0}, {1, 2}, {1, 1}}, {{2, 0}, {2, 2}, {2, 1}}, {{2, 3}, {2, 5}, {2, 4}}, {{1, 3}, {1, 5}, {1, 4}}, {{0, 3}, {0, 5}, {0, 4}}};
@@ -225,7 +225,7 @@ void ht16d_init() {
     }
 
     // SW Reset (HTCMD_SW_RESET)
-    ht_send_cmd_single(HTCMD_SW_RESET); // workie.
+    ht_send_cmd_single(HTCMD_SW_RESET);
 
     volatile uint8_t ht_status_reg[22] = {0};
     ht_read_reg((uint8_t *) ht_status_reg);
@@ -247,6 +247,8 @@ void ht16d_init() {
     uint8_t row_ctl[] = {HTCMD_ROW_PIN_CTL, 0b00111001, 0xff, 0xff, 0xff};
     ht_send_array(row_ctl, 5);
     ht_send_two(HTCMD_SYS_OSC_CTL, 0b10); // Activate oscillator.
+
+    led_all_one_color(0,0,0); // Turn off all the LEDs.
 
     ht_send_two(HTCMD_SYS_OSC_CTL, 0b11); // Activate oscillator & display.
 }
@@ -288,15 +290,26 @@ void led_send_gray() {
             uint8_t led_num = led_col_mapping[col][row][0];
             uint8_t rgb_num = led_col_mapping[col][row][1];
 
-            light_array[row+2] = led_values[led_num][rgb_num];
+            light_array[row+2] = led_values[led_num][rgb_num]>>2;
         }
 
         ht_send_array(light_array, 30);
     }
 }
 
-void set_colors(uint8_t id_start, uint8_t end_id, rgbcolor_t* colors) {
-
+/// Set some of the colors, and immediately send them to the LED controller.
+void ht16d_set_colors(uint8_t id_start, uint8_t id_len, rgbcolor16_t* colors) {
+    if (id_start >= 24 || id_start+id_len > 24) {
+        // ASSERT
+        while (1); // TODO
+    }
+    // TODO: Improve performance.
+    for (uint8_t i=0; i<id_len; i++) {
+        led_values[id_start+i][0] = (uint8_t)(colors[i].r >> 7);
+        led_values[id_start+i][1] = (uint8_t)(colors[i].g >> 7);
+        led_values[id_start+i][2] = (uint8_t)(colors[i].b >> 7);
+    }
+    led_send_gray();
 }
 
 void led_all_one_color(uint8_t r, uint8_t g, uint8_t b) {
