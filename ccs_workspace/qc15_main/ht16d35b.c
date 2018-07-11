@@ -324,7 +324,6 @@ void led_all_one_color(uint8_t r, uint8_t g, uint8_t b) {
     for (uint8_t col=0; col<3; col++) {
         light_array[1] = 0x20*col;
         for (uint8_t row=0; row<28; row++) {
-            uint8_t led_num = led_col_mapping[col][row][0];
             uint8_t rgb_num = led_col_mapping[col][row][1];
 
             switch (rgb_num) {

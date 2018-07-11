@@ -119,7 +119,7 @@ void init() {
 
     // TODO: Prior to shipping, confirm this against the linker file.
     // Copy FRAM_EXECUTE to RAM_EXECUTE
-    memcpy((void *)0x1C00,(const void*)0x10000,0x0100);
+    memcpy((void *)0x1C00,(const void*)0x10000,0x0200);
 }
 
 const rgbcolor_t rainbow_colors[] = {
@@ -134,7 +134,8 @@ const rgbcolor_t rainbow_colors[] = {
 const led_ring_animation_t anim_rainbow = {
         &rainbow_colors[0],
         6,
-        DEFAULT_ANIM_SPEED,
+        10,
+//        DEFAULT_ANIM_SPEED,
         "Rainbow"
 };
 
@@ -149,7 +150,7 @@ void main (void)
 
     __bis_SR_register(GIE);
 
-    led_set_anim((led_ring_animation_t *) &anim_rainbow, TLC_ANIM_MODE_SAME, 2);
+    led_set_anim((led_ring_animation_t *) &anim_rainbow, TLC_ANIM_MODE_SHIFT, 0xff);
 
     while (1) {
         if (f_time_loop) {
@@ -165,7 +166,7 @@ void main (void)
 
         if (s_led_anim_done) {
             s_led_anim_done = 0;
-            led_set_anim((led_ring_animation_t *) &anim_rainbow, TLC_ANIM_MODE_SAME, 2);
+            led_set_anim((led_ring_animation_t *) &anim_rainbow, TLC_ANIM_MODE_SAME, 0);
         }
 
         // Go to sleep.
