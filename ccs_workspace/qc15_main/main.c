@@ -64,7 +64,9 @@ void init_ipc_io() {
     // IPC:
     // 2.0 A0_TX
     // 2.1 A0_RX
-    GPIO_setAsPeripheralModuleFunctionOutputPin(GPIO_PORT_P2, GPIO_PIN0+GPIO_PIN1, GPIO_PRIMARY_MODULE_FUNCTION);
+    GPIO_setAsPeripheralModuleFunctionOutputPin(GPIO_PORT_P2,
+                                                GPIO_PIN0+GPIO_PIN1,
+                                                GPIO_PRIMARY_MODULE_FUNCTION);
     UCA0CTLW0 |= UCSWRST;
 }
 
@@ -94,11 +96,13 @@ void timer_init() {
     // We need timer A3 for our loop below.
     Timer_A_initUpModeParam timer_param = {0};
     timer_param.clockSource = TIMER_A_CLOCKSOURCE_SMCLK; // 1 MHz
-    // We want this to go every 33 1/3 ms, so at 33 1/3 Hz (every 3,333 ticks @ 1MHz)
+    // We want this to go every 33 1/3 ms, so at 33 1/3 Hz
+    //  (every 3,333 ticks @ 1MHz)
     timer_param.clockSourceDivider = TIMER_A_CLOCKSOURCE_DIVIDER_1; // /1
     timer_param.timerPeriod = 3333;
     timer_param.timerInterruptEnable_TAIE = TIMER_A_TAIE_INTERRUPT_DISABLE;
-    timer_param.captureCompareInterruptEnable_CCR0_CCIE = TIMER_A_CCIE_CCR0_INTERRUPT_ENABLE;
+    timer_param.captureCompareInterruptEnable_CCR0_CCIE =
+            TIMER_A_CCIE_CCR0_INTERRUPT_ENABLE;
     timer_param.timerClear = TIMER_A_SKIP_CLEAR;
     timer_param.startTimer = false;
     Timer_A_initUpMode(TIMER_A1_BASE, &timer_param);
@@ -183,7 +187,12 @@ void main (void)
 
     __bis_SR_register(GIE);
 
-    led_set_anim((led_ring_animation_t *) &anim_rainbow, LED_ANIM_TYPE_FALL, 5, 1);
+    led_set_anim(
+        (led_ring_animation_t *) &anim_rainbow,
+        LED_ANIM_TYPE_FALL,
+        5,
+        1
+    );
 
     while (1) {
         if (f_time_loop) {
