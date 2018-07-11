@@ -16,6 +16,6 @@ void radio_tx_done(uint8_t ack) {
 }
 
 void radio_init() {
-    rfm75_init(35, &radio_rx_done, &radio_tx_done); // TODO: ID
+    rfm75_init(35, &radio_rx_done, &radio_tx_done);
     rfm75_post();
 }

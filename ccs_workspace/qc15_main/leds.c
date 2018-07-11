@@ -11,7 +11,6 @@
 
 #include "qc15.h"
 #include "leds.h"
-//#include "led_animations.h" // TODO
 
 uint8_t s_led_anim_done = 0;
 
@@ -74,15 +73,6 @@ uint8_t next_anim_index(uint8_t index) {
 
     // We're this many frames into the END PAD:
     uint8_t index_into_pad = (index + 1) - (led_ring_anim_curr->len + led_ring_anim_num_colors);
-
-
-    // TODO: Actually do the following to make the pad forcing more effective:
-    // If we're FORCING a pad, then we're allowed to go up to
-    //  led_ring_anim_pad_loops frames away from the END of the
-    //  END pad. (that is to say, we're allowed to go a maximum of
-    //  led_ring_anim_num_colors-led_ring_anim_pad_loops frames into the
-    //  end pad.
-    // TODO: Make sure that pad_loops is < num_colors
 
     if (index_into_pad < extra_anim_frames) {
         // This one is OK to loop.
@@ -202,7 +192,6 @@ void led_set_anim(led_ring_animation_t *anim, uint8_t anim_type, uint8_t loops, 
     led_display_colors();
 }
 
-// TODO: Consider giving this a parameter for time elapsed.
 /// LED timestep function, which should be called approx. 30x per second.
 void led_timestep() {
     if (!led_anim_type) {
@@ -241,11 +230,9 @@ void led_timestep() {
                 // Generally speaking, when we loop we'll skip the START pad
                 //  in between loop iterations. However, the variable
                 //  led_ring_anim_pad_loops forces us to include a pad
-                //  between loops, which will use the START pad, or a subset thereof.
+                //  between loops, which will use the START pad.
                 if (led_ring_anim_pad_loops) {
-                    // TODO: Make pad_loops more flexible.
                     led_ring_anim_index = 0;
-//                    led_ring_anim_index = led_ring_anim_num_colors - led_ring_anim_pad_loops;
                 } else {
                     led_ring_anim_index = led_ring_anim_num_colors;
                 }

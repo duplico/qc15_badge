@@ -116,11 +116,13 @@ void init() {
     ipc_init();
     timer_init();
 
-    // TODO: Prior to shipping, confirm this against the linker file.
+    // We're storing at least one compute-intensive function in a special
+    //  place in FRAM, and then copying it to RAM, where it will run
+    //  with lower power consumption, and possible faster, when invoked.
     // Copy FRAM_EXECUTE to RAM_EXECUTE
     memcpy((void *)0x1C00,(const void*)0x10000,0x0200);
 
-    srand(25); // TODO: ID
+    srand(25);
 }
 
 const rgbcolor_t rainbow_colors[] = {
@@ -155,7 +157,6 @@ void main (void)
     while (1) {
         if (f_time_loop) {
             f_time_loop = 0;
-            // TODO: Count timesteps elapsed.
             led_timestep();
         }
 
@@ -170,7 +171,6 @@ void main (void)
         }
 
         // Go to sleep.
-        LPM0; // TODO: Determine.
     }
 }
 
