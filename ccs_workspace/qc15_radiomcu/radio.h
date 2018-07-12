@@ -34,6 +34,17 @@ typedef struct { // Progress report payload (unicast to base)
     uint8_t part_data[10]; // 80 bits per segment
 } radio_progress_payload;
 
+typedef struct { // Stats report payload (unicast to base???)
+    uint16_t badges_seen_count;
+    uint16_t badges_connected_count;
+    uint8_t ubers_seen_count;
+    uint8_t ubers_connected_count;
+    uint8_t handlers_seen;
+    uint8_t handlers_connected;
+    uint8_t pad0;
+    uint8_t pad1;
+} radio_stats_payload;
+
 rfm75_rx_callback_fn radio_rx_done;
 rfm75_tx_callback_fn radio_tx_done;
 void radio_init();
