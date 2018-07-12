@@ -28,16 +28,11 @@
 
 #include "radio.h"
 #include "ipc.h"
+#include "util.h"
+
 
 volatile uint8_t f_time_loop = 0;
 volatile uint64_t csecs_of_queercon = 0;
-
-void delay_millis(unsigned long mils) {
-    while (mils) {
-        __delay_cycles(1000);
-        mils--;
-    }
-}
 
 void init_io() {
     // The magic FRAM make-it-work command:

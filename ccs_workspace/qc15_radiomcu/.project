@@ -42,6 +42,16 @@
 			<locationURI>WORKSPACE_LOC/qc15_common/qc15.h</locationURI>
 		</link>
 		<link>
+			<name>util.c</name>
+			<type>1</type>
+			<locationURI>WORKSPACE_LOC/qc15_common/util.c</locationURI>
+		</link>
+		<link>
+			<name>util.h</name>
+			<type>1</type>
+			<locationURI>WORKSPACE_LOC/qc15_common/util.h</locationURI>
+		</link>
+		<link>
 			<name>driverlib/MSP430FR2xx_4xx</name>
 			<type>2</type>
 			<locationURI>PARENT-1-WORKSPACE_LOC/driverlib/MSP430FR2xx_4xx</locationURI>
