@@ -208,6 +208,9 @@ void bootstrap(uint8_t fastboot) {
     // 10->11 SWITCH TOGGLE
     // 11->12 OK w/ any feedback
 
+    // Tell the radio module to reboot.
+    ipc_tx_byte(IPC_MSG_REBOOT);
+
     if (bootstrap_status == POST_MCU) {
         bootstrap_status++;
     }
@@ -269,8 +272,10 @@ void bootstrap(uint8_t fastboot) {
             f_ipc_rx = 0;
             // If it's valid...
             if (ipc_get_rx(rx_from_radio)) {
-                if (bootstrap_status == POST_IPC) {
-                    if ((rx_from_radio[0] & 0xF0) == IPC_MSG_POST) {
+                if ((rx_from_radio[0] & 0xF0) == IPC_MSG_POST) {
+                    // Give the correct response.
+                    ipc_tx_byte(IPC_MSG_POST); // TODO: this will change
+                    if (bootstrap_status == POST_IPC) {
                         // got a POST message.
                         if (rx_from_radio[0] & 0x0F) {
                             lcd111_text(1, "QC15 BOOTSTRAP> FAIL");
@@ -302,6 +307,20 @@ void bootstrap(uint8_t fastboot) {
                         }
                     }
                 }
+
+                if (bootstrap_status == POST_SW1 &&
+                        (rx_from_radio[0] & 0xF0) == IPC_MSG_SWITCH) {
+                    lcd111_text(0, "POST: Toggle switch back");
+                    bootstrap_status++;
+                } else if (bootstrap_status == POST_SW2 &&
+                        (rx_from_radio[0] & 0xF0) == IPC_MSG_SWITCH) {
+                    lcd111_text(0, "POST: Buttons OK");
+                    delay_millis(1000);
+                    lcd111_text(0, "Click UP to leave POST");
+                    bootstrap_status++;
+                    break;
+                }
+
             } else {
                 // CRC fail. It will resend.
             }
@@ -324,12 +343,6 @@ void bootstrap(uint8_t fastboot) {
             lcd111_text(0, "POST: Click UP.");
             bootstrap_status++;
         }
-
-//        if (s_led_anim_done) {
-//            s_led_anim_done = 0;
-//            led_set_anim((led_ring_animation_t *) &anim_rainbow,
-//                         LED_ANIM_TYPE_SPIN, 2, 18);
-//        }
 
         if (s_buttons) {
             if (s_buttons & BIT0) { // DOWN
