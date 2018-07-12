@@ -11,17 +11,20 @@
 #include <msp430.h>
 #include <driverlib.h>
 
+#include "qc15.h"
+
 #include "ipc.h"
+#include "util.h"
 
 volatile uint8_t f_ipc_rx = 0;
 
 uint8_t ipc_state = 0;
 uint8_t ipc_tx_index = 0;
 uint8_t ipc_tx_len = 0;
-uint8_t ipc_tx_buf[IPC_MSG_LEN_MAX] = {0};
+uint8_t ipc_tx_buf[IPC_MSG_LEN_MAX+2] = {0};
 uint8_t ipc_rx_index = 0;
 uint8_t ipc_rx_len = 0;
-uint8_t ipc_rx_buf[IPC_MSG_LEN_MAX] = {0};
+uint8_t ipc_rx_buf[IPC_MSG_LEN_MAX+2] = {0}; // TODO: volatile?
 
 uint8_t ipc_tx(uint8_t *tx_buf, uint8_t len) {
     if (ipc_state & IPC_STATE_TX_MASK) {
@@ -31,12 +34,15 @@ uint8_t ipc_tx(uint8_t *tx_buf, uint8_t len) {
 
     if (len > IPC_MSG_LEN_MAX) {
         len = IPC_MSG_LEN_MAX;
-        while (1);
+        while (1); // TODO: ASSERT/SPIN
     }
 
     memcpy(ipc_tx_buf, tx_buf, len);
+
+    crc16_append_buffer(ipc_tx_buf, len);
+
     ipc_tx_index = 0;
-    ipc_tx_len = len;
+    ipc_tx_len = len+2;
 
     // Begin TX by sending the SYNC word.
     UCA0TXBUF = IPC_SYNC_WORD;
@@ -45,12 +51,21 @@ uint8_t ipc_tx(uint8_t *tx_buf, uint8_t len) {
     return 1;
 }
 
-void ipc_get_rx(uint8_t *rx_buf) {
-    memcpy(rx_buf, ipc_rx_buf, ipc_rx_len);
-    // Once this function returns, we're allowed to let
-    //  the contents of ipc_rx_buf go stale, but not
-    //  until then.
+/// Validate and copy IPC message into `rx_buf`, returning 1 if successful.
+uint8_t ipc_get_rx(uint8_t *rx_buf) {
+    // Once we either invalidate ipc_rx_buf, or copy it into rx_buf, we can
+    //  allow it to be overwritten. But not until then. And we have to be
+    //  cautious about this, since it's guarding against an interrupt.
+
+    // If the CRC fails,
+    if (!crc16_check_buffer(ipc_rx_buf, ipc_rx_len-2)) {
+        ipc_state &= ~IPC_STATE_RX_MASK;
+        return 0;
+    }
+
+    memcpy(rx_buf, ipc_rx_buf, ipc_rx_len-2);
     ipc_state &= ~IPC_STATE_RX_MASK;
+    return 1;
 }
 
 void ipc_init() {
@@ -76,26 +91,6 @@ void ipc_init() {
     UCA0MCTLW = 0x2000 | UCOS16 | UCBRF_8;
     UCA0CTLW0 &= ~UCSWRST;
     UCA0IE |= UCTXIE | UCRXIE;
-
-    /*
-     *
-     * From main.c:
-     *
-    EUSCI_A_UART_initParam uart_param = {0};
-
-    uart_param.selectClockSource = EUSCI_A_UART_CLOCKSOURCE_SMCLK; // 1 MHz
-    uart_param.overSampling = EUSCI_A_UART_OVERSAMPLING_BAUDRATE_GENERATION; // 1
-    uart_param.clockPrescalar = 6;
-    uart_param.firstModReg = 8;
-    uart_param.secondModReg = 0x20; // 1/6/8/0x20 = 9600 @ 1 MHz
-    uart_param.parity = EUSCI_A_UART_NO_PARITY;
-    uart_param.msborLsbFirst = EUSCI_A_UART_LSB_FIRST;
-    uart_param.numberofStopBits = EUSCI_A_UART_ONE_STOP_BIT;
-    uart_param.uartMode = EUSCI_A_UART_MODE;
-
-    EUSCI_A_UART_init(EUSCI_A0_BASE, &uart_param);
-     */
-
 }
 
 #pragma vector=USCI_A0_VECTOR

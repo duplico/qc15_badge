@@ -19,6 +19,21 @@
  *  Send CRC16
  */
 
+// IPC tasks:
+//  * Startup      (R->M) (M->R)
+//  *  R->M:
+//  *  M->R: Stats update
+//  * Time setting (M->R)
+//  * Time event (R->M)
+//  * Update stats (M->R)
+//  * (Successful download)
+//  * (Successful upload)
+//  * Gaydar updates:
+//  *  Person arrived (w/ name)
+//  *  Person departs (id only)
+//  * Power switch status update
+//  * Profit
+
 #define IPC_STATE_IDLE    0b0000
 #define IPC_STATE_RX_LEN  0b0010
 #define IPC_STATE_RX_BUSY 0b0100
@@ -34,6 +49,6 @@ extern volatile uint8_t f_ipc_rx;
 
 void ipc_init();
 uint8_t ipc_tx(uint8_t *tx_buf, uint8_t len);
-void ipc_get_rx(uint8_t *rx_buf);
+uint8_t ipc_get_rx(uint8_t *rx_buf);
 
 #endif /* IPC_H_ */
