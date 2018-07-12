@@ -160,8 +160,11 @@ void lcd111_init() {
 }
 
 void lcd111_text(uint8_t lcd_id, char *text) {
-    lcd111_command(0, 0xe0); // Data address: 0
+    lcd111_command(lcd_id, 0x01); // Clear display and reset address.
     uint8_t i=0;
-    while (text[i])
+    while (text[i]) {
         lcd111_data(lcd_id, text[i++]);
+        if (i>=24)
+            return;
+    }
 }
