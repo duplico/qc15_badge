@@ -34,8 +34,6 @@ const uint8_t FLASH_CMD_POWER_UP = 0xAB;
 
 #define FLASH_EUSCI_A_BASE EUSCI_A1_BASE
 
-void delay_millis(unsigned long mils);
-
 void usci_a1_send_sync(uint8_t data) {
     // If we're held, wait:
     // TODO: don't busy wait.
