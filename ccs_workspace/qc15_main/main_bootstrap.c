@@ -13,7 +13,7 @@
 #include <driverlib.h>
 #include <s25flash.h>
 
-//#include "qc15.h"
+#include "qc15.h"
 
 #include "util.h"
 
@@ -123,58 +123,65 @@ void bootstrap(uint8_t fastboot) {
             f_ipc_rx = 0;
             // If it's valid...
             if (ipc_get_rx(rx_from_radio)) {
-                if ((rx_from_radio[0] & 0xF0) == IPC_MSG_POST) {
-                    // Give the correct response.
-                    ipc_tx_byte(IPC_MSG_POST); // TODO: this will change
-                    if (bootstrap_status == POST_IPC) {
-                        // got a POST message.
-                        if (rx_from_radio[0] & 0x0F) {
-                            lcd111_text(1, "QC15 BOOTSTRAP> FAIL");
-                            led_all_one_color(200, 50, 0);
-                            // it indicates a FAILURE on the radio side
-                            if (rx_from_radio[0] & BIT0) {
-                                // MCU fail
-                                lcd111_text(0, "RADIOMCU: MCU FAIL");
-                                delay_millis(2000);
-                            }
-                            if (rx_from_radio[0] & BIT1) {
-                                // XT1 fail
-                                lcd111_text(0, "RADIOMCU: XT1 FAIL");
-                                delay_millis(2000);
-                            }
-                            if (rx_from_radio[0] & BIT2) {
-                                // RFM75 fail
-                                lcd111_text(0, "RADIOMCU: RFM75 FAIL");
-                                delay_millis(2000);
-                            }
-                            bootstrap_status++;
-                        } else {
-                            // all good.
-                            bootstrap_status++;
-                            if (!fastboot) {
-                                lcd111_text(0, "IPC POST: OK");
-                                delay_millis(200);
-                            }
+                // Give the correct response, whatever it's asking for:
+                handle_ipc_rx(rx_from_radio);
+
+                // Now check whether we need to continue our bootstrap state
+                //  machine (such as it is) based on this message.
+                if ((rx_from_radio[0] & 0xF0) == IPC_MSG_POST
+                        && bootstrap_status == POST_IPC) {
+
+                    if (rx_from_radio[0] & 0x0F) {
+                        // There was some kind of failure reported on the
+                        //  radio mcu side.
+                        lcd111_text(1, "QC15 BOOTSTRAP> FAIL");
+                        led_all_one_color(200, 50, 0);
+
+                        // Decode it:
+
+                        if (rx_from_radio[0] & BIT0) {
+                            // MCU fail
+                            lcd111_text(0, "RADIOMCU: MCU FAIL");
+                            delay_millis(2000);
+                        }
+                        if (rx_from_radio[0] & BIT1) {
+                            // XT1 fail
+                            lcd111_text(0, "RADIOMCU: XT1 FAIL");
+                            delay_millis(2000);
+                        }
+                        if (rx_from_radio[0] & BIT2) {
+                            // RFM75 fail
+                            lcd111_text(0, "RADIOMCU: RFM75 FAIL");
+                            delay_millis(2000);
+                        }
+                    } else {
+                        // all good.
+                        if (!fastboot) {
+                            lcd111_text(0, "IPC POST: OK");
+                            delay_millis(200);
                         }
                     }
-                }
 
-                if (bootstrap_status == POST_SW1 &&
-                        (rx_from_radio[0] & 0xF0) == IPC_MSG_SWITCH) {
-                    lcd111_text(0, "POST: Toggle switch back");
                     bootstrap_status++;
-                } else if (bootstrap_status == POST_SW2 &&
-                        (rx_from_radio[0] & 0xF0) == IPC_MSG_SWITCH) {
-                    lcd111_text(0, "POST: Buttons OK");
-                    delay_millis(1000);
-                    lcd111_text(0, "Click UP to leave POST");
-                    bootstrap_status++;
-                    break;
-                }
 
-            } else {
-                // CRC fail. It will resend.
+                }
             }
+
+            if (bootstrap_status == POST_SW1 &&
+                    (rx_from_radio[0] & 0xF0) == IPC_MSG_SWITCH) {
+                lcd111_text(0, "POST: Toggle switch back");
+                bootstrap_status++;
+            } else if (bootstrap_status == POST_SW2 &&
+                    (rx_from_radio[0] & 0xF0) == IPC_MSG_SWITCH) {
+                lcd111_text(0, "POST: Buttons OK");
+                delay_millis(1000);
+                lcd111_text(0, "Click UP to leave POST");
+                bootstrap_status++;
+                break;
+            }
+
+        } else {
+            // CRC fail. It will resend.
         }
 
         if (time_32nd_secs == 128 && bootstrap_status == POST_IPC) {
@@ -240,5 +247,4 @@ void bootstrap(uint8_t fastboot) {
             s_buttons = 0;
         }
     }
-
 }

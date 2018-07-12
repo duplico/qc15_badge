@@ -30,6 +30,32 @@ uint8_t ipc_tx_byte(uint8_t tx_byte) {
     return ipc_tx(&tx_byte, 1);
 }
 
+uint8_t ipc_tx_op_buf(uint8_t op, uint8_t *tx_buf, uint8_t len) {
+    if (ipc_state & IPC_STATE_TX_MASK) {
+        // TX already in progress. Abort.
+        return 0;
+    }
+
+    if (len > IPC_MSG_LEN_MAX) {
+        len = IPC_MSG_LEN_MAX;
+        while (1); // TODO: ASSERT/SPIN
+    }
+
+    ipc_tx_buf[0] = op;
+    memcpy(&ipc_tx_buf[1], tx_buf, len);
+
+    crc16_append_buffer(ipc_tx_buf, len);
+
+    ipc_tx_index = 0;
+    ipc_tx_len = len+3;
+
+    // Begin TX by sending the SYNC word.
+    UCA0TXBUF = IPC_SYNC_WORD;
+    // Next we will need to send the length.
+    ipc_state |= IPC_STATE_TX_LEN;
+    return 1;
+}
+
 uint8_t ipc_tx(uint8_t *tx_buf, uint8_t len) {
     if (ipc_state & IPC_STATE_TX_MASK) {
         // TX already in progress. Abort.

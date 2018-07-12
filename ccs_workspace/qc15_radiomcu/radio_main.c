@@ -30,11 +30,15 @@
 #include "ipc.h"
 #include "util.h"
 
+#include "qc15.h"
+
 
 volatile uint8_t f_time_loop = 0;
 uint8_t s_switch = 0;
 volatile uint64_t csecs_of_queercon = 0;
 uint8_t sw_state = 0;
+
+qc15status badge_status = {0};
 
 void init_io() {
     // The magic FRAM make-it-work command:
@@ -209,12 +213,16 @@ void bootstrap() {
         if (f_ipc_rx) {
             f_ipc_rx = 0;
             if (ipc_get_rx(rx_from_main)) {
-                if (rx_from_main[0] == IPC_MSG_POST)
-                // TODO: read the status.
-                // POST is done.
-                return;
+                if (rx_from_main[0] == IPC_MSG_STATS_ANS) {
+                    // TODO: read the status.
+                    // POST is done.
+                    return;
+                }
             }
         }
+
+        // TODO: These don't seem to be coming through, now that I've changed
+        //  the type of it to the STATS_ANS instead of just the POST.
 
         // TODO: change timeouts
         if (bootstrap_status == POST_IPC && time_csecs==50) {
@@ -237,6 +245,20 @@ void poll_switch() {
         s_switch = 1;
     }
     sw_read_prev = sw_read;
+}
+
+void handle_ipc_rx(uint8_t *rx_from_radio) {
+    switch(rx_from_radio[0]) {
+    case IPC_MSG_REBOOT:
+        PMMCTL0 |= PMMSWPOR; // Software reboot.
+        break; // though this hardly seems necessary.
+    case IPC_MSG_STATS_ANS:
+        // A response to our request for a stats update:
+        memcpy(&badge_status, &rx_from_radio[1], sizeof(qc15status));
+        break;
+    default:
+        break;
+    }
 }
 
 void main (void)
@@ -273,10 +295,7 @@ void main (void)
         if (f_ipc_rx) {
             f_ipc_rx = 0;
             if (ipc_get_rx(rx_from_main)) {
-                if (rx_from_main[0] == IPC_MSG_REBOOT) {
-                    //                        break;
-                    PMMCTL0 |= PMMSWPOR;
-                }
+                handle_ipc_rx(rx_from_main);
             }
         }
 

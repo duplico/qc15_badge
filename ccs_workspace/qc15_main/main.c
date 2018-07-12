@@ -19,6 +19,7 @@
 
 volatile uint8_t f_time_loop = 0;
 uint8_t s_buttons = 0;
+qc15status badge_status = {0}; // TODO don't initialize
 
 void init_clocks() {
 
@@ -180,9 +181,26 @@ void poll_buttons() {
     button_read_prev = button_read;
 } // poll_buttons
 
+void handle_ipc_rx(uint8_t *rx_from_radio) {
+    switch(rx_from_radio[0] & 0xF0) {
+    case IPC_MSG_POST:
+        // The radio MCU has rebooted.
+        // fall through:
+    case IPC_MSG_STATS_REQ:
+        // We need to prep and send a stats message for the radio.
+        ipc_tx_op_buf(IPC_MSG_STATS_ANS, (uint8_t *) &badge_status, sizeof(qc15status));
+        break;
+    case IPC_MSG_SWITCH:
+        // The switch has been toggled.
+        break;
+    }
+}
+
 void main (void)
 {
     init();
+
+    // TODO: init conf and stats
 
     __bis_SR_register(GIE);
 
@@ -213,7 +231,7 @@ void main (void)
         if (f_ipc_rx) {
             f_ipc_rx = 0;
             if (ipc_get_rx(rx_from_radio)) {
-                __no_operation();
+                handle_ipc_rx(rx_from_radio);
             }
         }
 

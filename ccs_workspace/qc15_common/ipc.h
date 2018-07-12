@@ -8,7 +8,7 @@
 #ifndef IPC_H_
 #define IPC_H_
 
-#define IPC_MSG_LEN_MAX 25
+#define IPC_MSG_LEN_MAX sizeof(qc15status)+1
 #define IPC_SYNC_WORD 0xea
 
 /*
@@ -19,11 +19,14 @@
  *  Send CRC16
  */
 
-// TODO: Add a reboot cmd from main to radio
+// From MAIN to RADIO:
+#define IPC_MSG_STATS_ANS 0x01
+#define IPC_MSG_REBOOT 0x02
 
+// From RADIO to MAIN:
+#define IPC_MSG_STATS_REQ 0x90
 #define IPC_MSG_POST 0xa0
 #define IPC_MSG_SWITCH 0xb0
-#define IPC_MSG_REBOOT 0xc0
 
 // IPC tasks:
 //  * Startup      (R->M) (M->R)
@@ -56,6 +59,7 @@ extern volatile uint8_t f_ipc_rx;
 void ipc_init();
 uint8_t ipc_tx(uint8_t *tx_buf, uint8_t len);
 uint8_t ipc_tx_byte(uint8_t tx_byte);
+uint8_t ipc_tx_op_buf(uint8_t op, uint8_t *tx_buf, uint8_t len);
 uint8_t ipc_get_rx(uint8_t *rx_buf);
 
 #endif /* IPC_H_ */
