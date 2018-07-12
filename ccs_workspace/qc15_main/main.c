@@ -175,15 +175,115 @@ void poll_buttons() {
     button_read_prev = button_read;
 } // poll_buttons
 
+#define POST_MCU 0
+#define POST_LCD 1
+#define POST_LED 2
+#define POST_NOR 3
+#define POST_IPC 4
+#define POST_UP 5
+#define POST_DOWN 6
+#define POST_LEFT 7
+#define POST_RIGHT 8
+#define POST_SW1 9
+#define POST_SW2 10
+#define POST_OK 11
+
+void bootstrap() {
+    lcd111_text(1, "QC15 BOOTSTRAP");
+    led_all_one_color(100, 100, 100);
+
+    uint8_t bootstrap_status = 0;
+
+    // 0->1   MCU POST
+    // 1->2   LCD POST
+    // 2->3   LED POST
+    // 3->4   NOR POST
+    // 4->5   IPC POST w/ RADIOMCU POST STATUS
+    // 5->6   UP
+    // 6->7   DOWN
+    // 7->8   LEFT
+    // 8->9   RIGHT
+    // 9->10  SWITCH TOGGLE
+    // 10->11 SWITCH TOGGLE
+    // 11->12 OK w/ any feedback
+
+    if (bootstrap_status == POST_MCU) {
+        bootstrap_status++;
+    }
+
+    while (1) {
+        if (f_time_loop) {
+            f_time_loop = 0;
+            led_timestep();
+            poll_buttons();
+        }
+
+        if (f_ipc_rx) {
+            f_ipc_rx = 0;
+            if (ipc_get_rx(rx_from_radio)) {
+                __no_operation();
+            }
+        }
+
+        if (s_led_anim_done) {
+            s_led_anim_done = 0;
+            led_set_anim((led_ring_animation_t *) &anim_rainbow,
+                         LED_ANIM_TYPE_SPIN, 2, 18);
+        }
+
+        if (s_buttons) {
+            if (s_buttons & BIT0) {
+                if (s_buttons & BIT4) {
+                    // release
+                } else {
+                    // press
+                }
+            }
+
+            if (s_buttons & BIT1) {
+                if (s_buttons & BIT5) {
+                    // release
+                } else {
+                    // press
+                }
+            }
+            if (s_buttons & BIT2) {
+                if (s_buttons & BIT6) {
+                    // release
+                } else {
+                    // press
+                }
+            }
+            if (s_buttons & BIT3) {
+                if (s_buttons & BIT7) {
+                    // release
+                } else {
+                    // press
+                }
+            }
+            s_buttons = 0;
+        }
+
+        // Go to sleep.
+        LPM0;
+    }
+
+}
 
 void main (void)
 {
     init();
 
+    uint8_t rx_from_radio[IPC_MSG_LEN_MAX] = {0};
+
+    bootstrap();
+
+    // TODO: Establish IPC
+
+
     lcd111_text(0, "Queercon 15");
     lcd111_text(1, "UBER BADGE");
 
-    uint8_t rx_from_radio[IPC_MSG_LEN_MAX] = {0};
 
     __bis_SR_register(GIE);
 
@@ -203,7 +303,9 @@ void main (void)
 
         if (f_ipc_rx) {
             f_ipc_rx = 0;
-            ipc_get_rx(rx_from_radio);
+            if (ipc_get_rx(rx_from_radio)) {
+                __no_operation();
+            }
         }
 
         if (s_led_anim_done) {
