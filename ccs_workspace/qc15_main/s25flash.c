@@ -190,6 +190,7 @@ void flash_wake() {
     __delay_cycles(30);
 }
 
+/// Basic power-on self-test of serial flash, returning 1 on success.
 uint8_t s25flash_post() {
     // TODO: Check the correct RDID on the flash:
     flash_rdid();
@@ -200,16 +201,16 @@ uint8_t s25flash_post() {
     flash_wr_en();
     status = flash_get_status();
     if (status != (initial_status | BIT1)) {
-        return 1;
+        return 0;
     }
 
     flash_wr_dis();
     status = flash_get_status();
     if (status != (initial_status & ~BIT1)) {
-        return 1;
+        return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 void s25flash_init_io() {
