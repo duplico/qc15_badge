@@ -42,5 +42,5 @@ void crc16_append_buffer(uint8_t *buf, uint16_t len) {
  */
 uint8_t crc16_check_buffer(uint8_t *buf, uint16_t len) {
     uint16_t crc = crc16(buf, len);
-    return (buf[len] == crc & 0xFF) && (buf[len + 1] == (crc >> 8) & 0xFF);
+    return (buf[len] == (crc & 0xFF)) && (buf[len+1] == ((crc >> 8) & 0xFF));
 }

@@ -137,6 +137,7 @@ void init_clocks() {
 
 }
 
+// TODO: Is there any reason for this to be csecs and not 1/32 seconds?
 void timer_init() {
     // We need timer A3 for our loop below.
     Timer_A_initUpModeParam timer_param = {0};
@@ -153,6 +154,71 @@ void timer_init() {
     Timer_A_startCounter(TIMER_A1_BASE, TIMER_A_UP_MODE);
 }
 
+#define POST_MCU 0
+#define POST_XT1 1
+#define POST_RFM 2
+#define POST_IPC 3
+#define POST_IPC_OK 4
+#define POST_OK 5
+
+void bootstrap() {
+    // We'll do our POST here, which involves:
+    // 1. MCU
+    // 2. Crystal
+    // 3. Radio
+    // 4. IPC
+    uint8_t rx_from_main[IPC_MSG_LEN_MAX] = {0};
+    uint8_t bootstrap_status = POST_MCU;
+    uint16_t time_csecs = 0; // TODO
+    uint8_t failure_flags = 0x00;
+
+    if (bootstrap_status == POST_MCU) {
+        if (!1) {
+            failure_flags |= BIT0;
+        }
+        bootstrap_status++;
+    }
+
+    if (bootstrap_status == POST_XT1) {
+        // TODO: check crystal register
+        // If bad:
+        // failure_flags |= BIT1;
+        bootstrap_status++;
+    }
+
+    if (bootstrap_status == POST_RFM) {
+        if (!rfm75_post()) {
+            // Radio failure:
+            failure_flags |= BIT2;
+        }
+        bootstrap_status++;
+    }
+
+    ipc_tx_byte(IPC_MSG_POST | failure_flags);
+
+    while (1) {
+        if (f_time_loop) {
+            f_time_loop = 0;
+            time_csecs++;
+        }
+
+        if (f_ipc_rx) {
+            f_ipc_rx = 0;
+            if (ipc_get_rx(rx_from_main)) {
+                // TODO: read the status.
+                // POST is done.
+                return;
+            }
+        }
+
+        // TODO: change timeouts
+        if (bootstrap_status == POST_IPC && time_csecs==50) {
+            time_csecs = 0;
+            ipc_tx_byte(IPC_MSG_POST | failure_flags);
+        }
+    }
+}
+
 void main (void)
 {
     //Stop watchdog timer
@@ -165,13 +231,9 @@ void main (void)
     radio_init();
 
     uint8_t rx_from_main[IPC_MSG_LEN_MAX] = {0};
-
-    volatile uint32_t sclk = CS_getSMCLK();
-    __no_operation();
-    sclk = CS_getMCLK();
-    __no_operation();
-
     __bis_SR_register(GIE);
+
+    bootstrap();
 
     while (1) {
         if (f_rfm75_interrupt) {

@@ -19,6 +19,9 @@
  *  Send CRC16
  */
 
+#define IPC_MSG_POST 0xa0
+#define IPC_MSG_SWITCH 0xb0
+
 // IPC tasks:
 //  * Startup      (R->M) (M->R)
 //  *  R->M:
@@ -49,6 +52,7 @@ extern volatile uint8_t f_ipc_rx;
 
 void ipc_init();
 uint8_t ipc_tx(uint8_t *tx_buf, uint8_t len);
+uint8_t ipc_tx_byte(uint8_t tx_byte);
 uint8_t ipc_get_rx(uint8_t *rx_buf);
 
 #endif /* IPC_H_ */

@@ -26,6 +26,10 @@ uint8_t ipc_rx_index = 0;
 uint8_t ipc_rx_len = 0;
 uint8_t ipc_rx_buf[IPC_MSG_LEN_MAX+2] = {0}; // TODO: volatile?
 
+uint8_t ipc_tx_byte(uint8_t tx_byte) {
+    return ipc_tx(&tx_byte, 1);
+}
+
 uint8_t ipc_tx(uint8_t *tx_buf, uint8_t len) {
     if (ipc_state & IPC_STATE_TX_MASK) {
         // TX already in progress. Abort.

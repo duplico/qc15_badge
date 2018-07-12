@@ -10,5 +10,6 @@
 
 void s25flash_init();
 void s25flash_init_io();
+uint8_t s25flash_post();
 
 #endif /* S25FLASH_H_ */

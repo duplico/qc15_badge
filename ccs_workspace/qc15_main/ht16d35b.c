@@ -198,10 +198,6 @@ void ht16d_init() {
     // SW Reset (HTCMD_SW_RESET)
     ht_send_cmd_single(HTCMD_SW_RESET);
 
-    volatile uint8_t ht_status_reg[22] = {0};
-    ht_read_reg((uint8_t *) ht_status_reg);
-    __no_operation();
-
     // Set global brightness (HTCMD_GLOBAL_BRTNS)
     ht_send_two(HTCMD_GLOBAL_BRTNS, 0x0f); // 0x40 is the most
     // Set BW/Binary display mode.
@@ -222,6 +218,13 @@ void ht16d_init() {
     led_all_one_color(0,0,0); // Turn off all the LEDs.
 
     ht_send_two(HTCMD_SYS_OSC_CTL, 0b11); // Activate oscillator & display.
+}
+
+/// A really crappy POST method.
+uint8_t ht16d_post() {
+    volatile uint8_t ht_status_reg[22] = {0};
+    ht_read_reg((uint8_t *) ht_status_reg);
+    return ht_status_reg[11] == 0b0000111;
 }
 
 void led_send_gray() {
