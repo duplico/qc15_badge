@@ -168,6 +168,9 @@ void poll_buttons() {
 
             // Flag the button. Lower nibble is WHICH button:
             s_buttons |= (BIT0<<i);
+
+            // 0=down; 1=right; 2=left; 3=up
+
             // Upper nibble is its current value:
             //  (so if it's 1, it was just RELEASED,
             //    & if it's 0, it was just PRESSED.)
@@ -182,7 +185,9 @@ void main (void)
     init();
 
     __bis_SR_register(GIE);
-    bootstrap(1);
+
+    // hold DOWN on turn-on for verbose boot:
+    bootstrap(P9IN & BIT4);
 
     uint8_t rx_from_radio[IPC_MSG_LEN_MAX] = {0};
 

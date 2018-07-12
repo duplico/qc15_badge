@@ -217,7 +217,7 @@ void bootstrap(uint8_t fastboot) {
                     // press
                 }
             }
-            if (s_buttons & BIT2) {
+            if (s_buttons & BIT2) { // LEFT
                 if (s_buttons & BIT6) {
                     if (bootstrap_status == POST_LEFT) {
                         lcd111_text(0, "POST: Click RIGHT.");
@@ -227,7 +227,7 @@ void bootstrap(uint8_t fastboot) {
                     // press
                 }
             }
-            if (s_buttons & BIT3) {
+            if (s_buttons & BIT3) { // UP
                 if (s_buttons & BIT7) {
                     if (bootstrap_status == POST_UP) {
                         lcd111_text(0, "POST: Click DOWN.");
