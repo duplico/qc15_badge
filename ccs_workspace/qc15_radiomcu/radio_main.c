@@ -32,7 +32,9 @@
 
 
 volatile uint8_t f_time_loop = 0;
+uint8_t s_switch = 0;
 volatile uint64_t csecs_of_queercon = 0;
+uint8_t sw_state = 0;
 
 void init_io() {
     // The magic FRAM make-it-work command:
@@ -68,6 +70,8 @@ void init_io() {
     P2DIR &= ~BIT2; // Switch pin set to input.
     P2REN |= BIT2;  // Switch resistor enable
     P2OUT |= BIT2;  // Switch resistor pull UP direction
+
+    sw_state = P2IN & BIT2; // Read the switch's initial value.
 }
 
 void init_clocks() {
@@ -205,6 +209,7 @@ void bootstrap() {
         if (f_ipc_rx) {
             f_ipc_rx = 0;
             if (ipc_get_rx(rx_from_main)) {
+                if (rx_from_main[0] == IPC_MSG_POST)
                 // TODO: read the status.
                 // POST is done.
                 return;
@@ -219,21 +224,39 @@ void bootstrap() {
     }
 }
 
+void poll_switch() {
+    // right is HIGH ("off")
+    static uint8_t sw_read_prev = 0;
+    static uint8_t sw_read = 0;
+
+    sw_read = P2IN & BIT2;
+    if (sw_read == sw_read_prev && sw_read != sw_state) {
+        // We're (a) debounced, and (b) detecting a change:
+        sw_state = sw_read;
+        // raise a signal:
+        s_switch = 1;
+    }
+    sw_read_prev = sw_read;
+}
+
 void main (void)
 {
-    //Stop watchdog timer
+    uint8_t rx_from_main[IPC_MSG_LEN_MAX] = {0};
+
     WDT_A_hold(WDT_A_BASE);
+
     init_io();
     init_clocks();
     ipc_init();
-
     timer_init();
     radio_init();
 
-    uint8_t rx_from_main[IPC_MSG_LEN_MAX] = {0};
+
     __bis_SR_register(GIE);
 
     bootstrap();
+
+    // TODO: Clean up from bootstrap if needed.
 
     while (1) {
         if (f_rfm75_interrupt) {
@@ -244,15 +267,30 @@ void main (void)
         if (f_time_loop) {
             // centisecond.
             f_time_loop = 0;
-            if (csecs_of_queercon % 100 == 0) {
-                // once per second
-                ipc_tx("Testing IPC", 12);
-            }
+            poll_switch();
         }
 
         if (f_ipc_rx) {
             f_ipc_rx = 0;
-            ipc_get_rx(rx_from_main);
+            if (ipc_get_rx(rx_from_main)) {
+                if (rx_from_main[0] == IPC_MSG_REBOOT) {
+                    //                        break;
+                    PMMCTL0 |= PMMSWPOR;
+                }
+            }
+        }
+
+        if (s_switch) {
+            // The switch has been toggled. So we need to send a message to
+            //  that effect. This is a fairly important message, so we'll
+            //  keep trying to send it every time we get here, until it
+            //  succeeds. But we're not going to wait for an ACK.
+            // Because the switch is "active low" (that is, LEFT
+            //  is "ON" and corresponds to LOW), we're going to take this
+            //  opportunity to evaluate sw_state and reverse it.
+            if (ipc_tx_byte(IPC_MSG_SWITCH | (sw_state ? 0 : 1))) {
+                s_switch = 0;
+            }
         }
 
         __bis_SR_register(LPM0_bits);

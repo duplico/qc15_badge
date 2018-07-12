@@ -19,8 +19,11 @@
  *  Send CRC16
  */
 
+// TODO: Add a reboot cmd from main to radio
+
 #define IPC_MSG_POST 0xa0
 #define IPC_MSG_SWITCH 0xb0
+#define IPC_MSG_REBOOT 0xc0
 
 // IPC tasks:
 //  * Startup      (R->M) (M->R)
