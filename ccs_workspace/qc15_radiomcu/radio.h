@@ -11,6 +11,11 @@
 #include <stdint.h>
 #include "rfm75.h"
 
+#define RADIO_MSG_TYPE_BEACON 1
+#define RADIO_MSG_TYPE_DLOAD 2
+#define RADIO_MSG_TYPE PROGRESS 3
+#define RADIO_MSG_TYPE_STATS 4
+
 typedef struct {
     uint16_t badge_id;
     uint8_t proto_version;

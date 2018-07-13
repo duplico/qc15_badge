@@ -10,6 +10,11 @@
 
 #define QC15_CRC_SEED 0x5321
 
+// NB: If a base ID higher than QC_BADGES_IN_SYSTEM is needed, then we will
+//     also have to change our radio validator.
+#define QC15_BADGES_IN_SYSTEM 450
+#define QC15_BASE_ID QC15_BADGES_IN_SYSTEM
+
 typedef struct {
     uint16_t badge_id;
     uint8_t code_segment_ids[6];

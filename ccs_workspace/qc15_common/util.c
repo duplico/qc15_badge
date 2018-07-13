@@ -18,7 +18,7 @@ void delay_millis(unsigned long mils) {
 }
 
 /// Compute a 16-bit CRC on `len` bytes of byte buffer `buf`.
-uint16_t crc16(uint8_t *buf, uint16_t len) {
+uint16_t crc16_compute(uint8_t *buf, uint16_t len) {
     CRC_setSeed(CRC_BASE, QC15_CRC_SEED);
     for (uint16_t i=0; i<len; i++) {
         CRC_set8BitData(CRC_BASE, buf[i]);
@@ -31,7 +31,7 @@ uint16_t crc16(uint8_t *buf, uint16_t len) {
  ** Note that `len` does NOT include the CRC.
  */
 void crc16_append_buffer(uint8_t *buf, uint16_t len) {
-    uint16_t crc = crc16(buf, len);
+    uint16_t crc = crc16_compute(buf, len);
     buf[len] = crc & 0xFF; // TODO: Check whether this matches MSP430 Endianness
     buf[len + 1] = (crc >> 8) & 0xFF;
 }
@@ -41,6 +41,6 @@ void crc16_append_buffer(uint8_t *buf, uint16_t len) {
  ** Note that there must be room in the buffer AFTER len for the CRC.
  */
 uint8_t crc16_check_buffer(uint8_t *buf, uint16_t len) {
-    uint16_t crc = crc16(buf, len);
+    uint16_t crc = crc16_compute(buf, len);
     return (buf[len] == (crc & 0xFF)) && (buf[len+1] == ((crc >> 8) & 0xFF));
 }
