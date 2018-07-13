@@ -8,7 +8,7 @@
 #ifndef IPC_H_
 #define IPC_H_
 
-#define IPC_MSG_LEN_MAX sizeof(qc15status)+1
+#define IPC_MSG_LEN_MAX sizeof(qc15status)+4
 #define IPC_SYNC_WORD 0xea
 
 /*

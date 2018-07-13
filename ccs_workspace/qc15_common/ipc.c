@@ -44,7 +44,7 @@ uint8_t ipc_tx_op_buf(uint8_t op, uint8_t *tx_buf, uint8_t len) {
     ipc_tx_buf[0] = op;
     memcpy(&ipc_tx_buf[1], tx_buf, len);
 
-    crc16_append_buffer(ipc_tx_buf, len);
+    crc16_append_buffer(ipc_tx_buf, len+1);
 
     ipc_tx_index = 0;
     ipc_tx_len = len+3;
