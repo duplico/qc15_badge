@@ -150,7 +150,7 @@ __interrupt void USCI_A0_ISR(void)
                 ipc_state &= ~IPC_STATE_RX_MASK;
                 ipc_state |= IPC_STATE_RX_HOLD;
                 f_ipc_rx = 1;
-                LPM1_EXIT;
+                LPM_EXIT;
                 break;
             }
         } else if (ipc_state & IPC_STATE_RX_LEN) {

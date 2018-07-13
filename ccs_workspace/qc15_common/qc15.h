@@ -8,6 +8,8 @@
 #ifndef QC15_H_
 #define QC15_H_
 
+#include "msp430.h"
+
 #define QC15_CRC_SEED 0x5321
 
 // TODO: we need to add 1 to all of these for the null term
@@ -25,6 +27,10 @@
 #define QC15_HOSTS_IN_SYSTEM 451
 
 #define CODE_SEGMENT_REP_LEN 10
+
+#define LPM_BITS LPM0_bits
+#define LPM LPM0
+#define LPM_EXIT LPM0_EXIT
 
 // TODO: Single source of truth in this file, instead of this level of
 //  duplication, please.
