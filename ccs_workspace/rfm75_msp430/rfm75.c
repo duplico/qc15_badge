@@ -48,14 +48,14 @@ const uint8_t bank0_init_data[BANK0_INITS][2] = {
         { 0x02, BIT0+BIT1 }, //Enable RX pipe 0 and 1
         { 0x03, 0b00000001 }, //RX/TX address field width 3byte
         { 0x04, 0b00000100 }, //auto-RT // TODO
-        { 0x05, 0x53 }, //channel: 2400 + LS 7 bits of this field = channel (2.483)
-        { 0x06, 0b00000111 }, //air data rate-1M,out power max, setup LNA gain high.
+        { 0x05, 0x53 }, //channel: 2400 + LS 7 of this field = channel (2.483)
+        { 0x06, 0b00000111 }, //air data rate-1M,out power max, LNA gain high.
         { 0x07, 0b01110000 }, // Clear interrupt flags
         // 0x0a - RX_ADDR_P0 - 3 bytes
         // 0x0b - RX_ADDR_P1 - 3 bytes
         // 0x10 - TX_ADDR - 5 bytes
-        { 0x11, RFM75_PAYLOAD_SIZE }, //Number of bytes in RX payload in data pipe0
-        { 0x12, RFM75_PAYLOAD_SIZE }, //Number of bytes in RX payload in data pipe1
+        { 0x11, RFM75_PAYLOAD_SIZE }, //Number of bytes in RX payload in pipe0
+        { 0x12, RFM75_PAYLOAD_SIZE }, //Number of bytes in RX payload in pipe1
         { 0x13, 0 }, //Number of bytes in RX payload in data pipe2 - disable
         { 0x14, 0 }, //Number of bytes in RX payload in data pipe3 - disable
         { 0x15, 0 }, //Number of bytes in RX payload in data pipe4 - disable
@@ -141,7 +141,7 @@ void rfm75_write_reg_buf(uint8_t reg, uint8_t *data, uint8_t data_len) {
 
 /// Set the RFM75's active register bank.
 void rfm75_select_bank(uint8_t bank) {
-    volatile uint8_t currbank = rfm75_get_status() & 0x80; // Get MSB, which is active bank.
+    volatile uint8_t currbank = rfm75_get_status() & 0x80;
     if ((currbank && (bank==0)) || ((currbank==0) && bank)) {
         send_rfm75_cmd(ACTIVATE_CMD, 0x53);
     }
@@ -158,9 +158,11 @@ void set_unicast_addr(uint16_t addr) {
 
 /// Perform a RFM75 self-test and return a 1 if it appears to be working.
 uint8_t rfm75_post() {
-    volatile uint8_t bank_one = rfm75_get_status() & 0x80; // Get MSB, which is active bank.
+    // The MSB of the status register is the active bank, and ACTIVATE 0x53
+    //  is supposed to change the active bank. Let's see if it works.
+    volatile uint8_t bank_one = rfm75_get_status() & 0x80;
     send_rfm75_cmd(ACTIVATE_CMD, 0x53);
-    volatile uint8_t bank_two = rfm75_get_status() & 0x80; // Get MSB, which is active bank.
+    volatile uint8_t bank_two = rfm75_get_status() & 0x80;
 
     rfm75_select_bank(0); // Go back to the normal bank.
 
@@ -294,7 +296,8 @@ void rfm75_io_init() {
 }
 
 /// Initialize the RFM75 module with its address and callback functions.
-void rfm75_init(uint16_t unicast_address, rfm75_rx_callback_fn* rx_callback, rfm75_tx_callback_fn* tx_callback)
+void rfm75_init(uint16_t unicast_address, rfm75_rx_callback_fn* rx_callback,
+                rfm75_tx_callback_fn* tx_callback)
 {
     // Disable the IRQ pin interrupt, while we set up our inputs.
     //  This may not be necessary, but is out of an abundance of caution
@@ -324,7 +327,7 @@ void rfm75_init(uint16_t unicast_address, rfm75_rx_callback_fn* rx_callback, rfm
     //  is a toggle,
     uint8_t test_feature_reg = 0;
     test_feature_reg = rfm75_read_reg(FEATURE);
-    rfm75_write_reg(FEATURE, test_feature_reg ^ 0b00000111); // flip all the bits.
+    rfm75_write_reg(FEATURE, test_feature_reg ^ 0b00000111); // try to flip bits
     if (rfm75_read_reg(FEATURE) == test_feature_reg) {
         // In spite of trying to flip these, bits, they stayed the same.
         // Therefore, it needs to be ACTIVATED.
@@ -472,7 +475,7 @@ uint8_t rfm75_deferred_interrupt() {
         //  Clear the interrupt flag on the module...
         rfm75_write_reg(STATUS, BIT6);
         //  ... and assert CE, to listen more.
-        CE_ACTIVATE;
+        CE_ACTIVATE; // TODO: This was already happening, right?
         rfm75_state = RFM75_RX_LISTEN;
         ret |= 0b10;
     }

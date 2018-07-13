@@ -10,11 +10,14 @@
 
 #include <stdint.h>
 #include "rfm75.h"
+#include "qc15.h"
 
 #define RADIO_MSG_TYPE_BEACON 1
 #define RADIO_MSG_TYPE_DLOAD 2
-#define RADIO_MSG_TYPE PROGRESS 3
+#define RADIO_MSG_TYPE_PROGRESS 3
 #define RADIO_MSG_TYPE_STATS 4
+
+#define RADIO_PROTO_VER 1
 
 typedef struct {
     uint16_t badge_id;
@@ -39,15 +42,16 @@ typedef struct { // Progress report payload (unicast to base)
     uint8_t part_data[10]; // 80 bits per segment
 } radio_progress_payload;
 
-typedef struct { // Stats report payload (unicast to base???)
+typedef struct { // Stats report payload (unicast to base???) (TODO: what is this for?)
     uint16_t badges_seen_count;
     uint16_t badges_connected_count;
+    uint16_t badges_uploaded_count;
     uint8_t ubers_seen_count;
     uint8_t ubers_connected_count;
+    uint8_t ubers_uploaded_count;
     uint8_t handlers_seen;
     uint8_t handlers_connected;
-    uint8_t pad0;
-    uint8_t pad1;
+    uint8_t handlers_uploaded_count;
 } radio_stats_payload;
 
 rfm75_rx_callback_fn radio_rx_done;

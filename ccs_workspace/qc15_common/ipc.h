@@ -23,26 +23,6 @@
 #define IPC_MSG_STATS_ANS 0x01
 #define IPC_MSG_REBOOT 0x02
 
-// From RADIO to MAIN:
-#define IPC_MSG_STATS_REQ 0x90
-#define IPC_MSG_POST 0xa0
-#define IPC_MSG_SWITCH 0xb0
-
-// IPC tasks:
-//  * Startup      (R->M) (M->R)
-//  *  R->M:
-//  *  M->R: Stats update
-//  * Time setting (M->R)
-//  * Time event (R->M)
-//  * Update stats (M->R)
-//  * (Successful download)
-//  * (Successful upload)
-//  * Gaydar updates:
-//  *  Person arrived (w/ name)
-//  *  Person departs (id only)
-//  * Power switch status update
-//  * Profit
-
 #define IPC_STATE_IDLE    0b0000
 #define IPC_STATE_RX_LEN  0b0010
 #define IPC_STATE_RX_BUSY 0b0100
@@ -52,6 +32,46 @@
 #define IPC_STATE_TX_READY 0b00100000
 #define IPC_STATE_TX_BUSY  0b01000000
 #define IPC_STATE_TX_MASK (IPC_STATE_TX_LEN | IPC_STATE_TX_READY | IPC_STATE_TX_BUSY)
+
+// IPC tasks:
+//  [x] Reboot (M->R)
+//  [x] POST/bootstrap (R->M)
+//  [ ] Time setting (manual, not time virus) (M->R)
+//  [ ] Time event (R->M)
+//  [x] Update stats (M->R) (TODO: make sure it works outside bootstrap)
+//  [ ] Successful download (R->M)
+//  [ ] Successful upload (R->M)
+//  [ ] Gaydar updates:
+//  [ ]  Person arrived (w/ name) (R->M)
+//  [ ]  Person departs (id only) (R->M)
+//  [x] Power switch status update (R->M)
+//  [ ] ????
+//  [ ] Profit
+
+// From RADIO to MAIN:
+// Single-byte messages:
+#define IPC_MSG_STATS_REQ 0x90 // TODO: in use?
+#define IPC_MSG_POST 0xa0
+#define IPC_MSG_SWITCH 0xb0
+
+// Buffer messages:
+#define IPC_MSG_GD_ARR 0x10 // cmd, id, name
+#define IPC_MSG_GD_DEP 0x20 // cmd, id
+/// Occurs when we've successfully downloaded another badge
+#define IPC_MSG_GD_DL 0x30
+/// Occurs when another badge has downloaded from us
+#define IPC_MSG_GD_UL 0x40
+
+typedef struct {
+    uint16_t badge_id;
+    uint8_t name[10];
+} ipc_msg_gd_arr_t;
+
+// TODO: screw it, do we need anything else? I'm making a pointer to a dang int.
+// Shared for both GD_DL and GD_UL
+typedef struct {
+    uint16_t badge_id;
+} ipc_msg_gd_dl_ul_t;
 
 //extern uint8_t ipc_state;
 extern volatile uint8_t f_ipc_rx;

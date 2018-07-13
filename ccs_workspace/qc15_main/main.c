@@ -201,6 +201,7 @@ void main (void)
     init();
 
     // TODO: init conf and stats
+    // TODO: remember to have SEEN and such from myself.
 
     __bis_SR_register(GIE);
 
