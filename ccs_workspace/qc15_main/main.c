@@ -242,7 +242,7 @@ void main (void)
         }
 
         if (s_buttons) {
-            if (s_buttons & BIT0) {
+            if (s_buttons & BIT0) { // DOWN
                 if (s_buttons & BIT4) {
                     // release
                 } else {
@@ -250,21 +250,21 @@ void main (void)
                 }
             }
 
-            if (s_buttons & BIT1) {
+            if (s_buttons & BIT1) { // RIGHT
                 if (s_buttons & BIT5) {
                     // release
                 } else {
                     // press
                 }
             }
-            if (s_buttons & BIT2) {
+            if (s_buttons & BIT2) { // LEFT
                 if (s_buttons & BIT6) {
                     // release
                 } else {
                     // press
                 }
             }
-            if (s_buttons & BIT3) {
+            if (s_buttons & BIT3) { // UP
                 if (s_buttons & BIT7) {
                     // release
                 } else {

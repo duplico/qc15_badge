@@ -162,6 +162,7 @@ void timer_init() {
     Timer_A_startCounter(TIMER_A1_BASE, TIMER_A_UP_MODE);
 }
 
+// TODO: Move these:
 #define POST_MCU 0
 #define POST_XT1 1
 #define POST_RFM 2
@@ -182,15 +183,14 @@ void bootstrap() {
 
     if (bootstrap_status == POST_MCU) {
         if (!1) {
-            failure_flags |= BIT0;
+            failure_flags |= BIT0; // General purpose flag.
         }
         bootstrap_status++;
     }
 
     if (bootstrap_status == POST_XT1) {
-        // TODO: check crystal register
-        // If bad:
-        // failure_flags |= BIT1;
+        if (CSCTL7 & XT1OFFG)
+            failure_flags |= BIT1; // crystal fault
         bootstrap_status++;
     }
 
@@ -214,17 +214,15 @@ void bootstrap() {
             f_ipc_rx = 0;
             if (ipc_get_rx(rx_from_main)) {
                 if (rx_from_main[0] == IPC_MSG_STATS_ANS) {
-                    // TODO: read the status.
-                    // POST is done.
+                    // Read the current status into our volatile copy of it.
+                    memcpy(badge_status, &rx_from_main[1], sizeof(qc15status));
+
+                    // POST/bootstrap process is done.
                     return;
                 }
             }
         }
 
-        // TODO: These don't seem to be coming through, now that I've changed
-        //  the type of it to the STATS_ANS instead of just the POST.
-
-        // TODO: change timeouts
         if (bootstrap_status == POST_IPC && time_csecs==50) {
             time_csecs = 0;
             ipc_tx_byte(IPC_MSG_POST | failure_flags);

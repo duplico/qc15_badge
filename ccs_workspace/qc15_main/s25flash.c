@@ -213,6 +213,8 @@ uint8_t s25flash_post() {
     return 1;
 }
 
+// TODO: Add the ability to turn this off for external control.
+
 void s25flash_init_io() {
     // Flash (2018):
     // CS#      P3.7 (idle high)
