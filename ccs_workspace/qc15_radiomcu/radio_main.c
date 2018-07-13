@@ -32,7 +32,6 @@
 
 #include "qc15.h"
 
-
 volatile uint8_t f_time_loop = 0;
 uint8_t s_switch = 0;
 volatile uint64_t csecs_of_queercon = 0;
@@ -215,7 +214,7 @@ void bootstrap() {
             if (ipc_get_rx(rx_from_main)) {
                 if (rx_from_main[0] == IPC_MSG_STATS_ANS) {
                     // Read the current status into our volatile copy of it.
-                    memcpy(badge_status, &rx_from_main[1], sizeof(qc15status));
+                    memcpy(&badge_status, &rx_from_main[1], sizeof(qc15status));
 
                     // POST/bootstrap process is done.
                     return;

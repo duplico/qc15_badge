@@ -25,9 +25,7 @@
 /// Persistent unicast address, to return pipe 0 to after ACKs.
 uint16_t rfm75_unicast_addr = 0;
 
-// TODO: Do these need to be different?
-uint8_t payload_in[RFM75_PAYLOAD_SIZE] = {0};  ///< Buffer to hold RX payload.
-uint8_t payload_out[RFM75_PAYLOAD_SIZE] = {0}; ///< Buffer to hold TX payload.
+uint8_t payload[RFM75_PAYLOAD_SIZE] = {0};  ///< Buffer to hold TX/RX payload.
 
 /// The RFM75 state tracks its progress through a sort of state machine.
 uint8_t rfm75_state = RFM75_BOOT;
@@ -461,10 +459,10 @@ uint8_t rfm75_deferred_interrupt() {
         rfm75_state = RFM75_RX_READY;
 
         // Read the FIFO. No need to flush it; it's deleted when read.
-        read_rfm75_cmd_buf(RD_RX_PLOAD, payload_in, RFM75_PAYLOAD_SIZE);
+        read_rfm75_cmd_buf(RD_RX_PLOAD, payload, RFM75_PAYLOAD_SIZE);
 
         // Invoke the registered callback function.
-        rx_done(payload_in, RFM75_PAYLOAD_SIZE,
+        rx_done(payload, RFM75_PAYLOAD_SIZE,
                 (iv & 0b1110) >> 1); // This is the pipe ID
 
         // After rx_done returns (and ONLY after it returns), the
