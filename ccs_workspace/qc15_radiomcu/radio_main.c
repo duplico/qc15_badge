@@ -309,7 +309,7 @@ void main (void)
             }
         }
 
-        __bis_SR_register(LPM0_bits);
+        LPM;
     }
 }
 
@@ -320,5 +320,5 @@ void TIMER_ISR() {
     // All we have here is TA0CCR0 CCIFG0
     f_time_loop = 1;
     csecs_of_queercon++;
-    LPM0_EXIT;
+    LPM_EXIT;
 }

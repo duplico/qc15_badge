@@ -276,7 +276,7 @@ void main (void)
         }
 
         // Go to sleep.
-        LPM0;
+        LPM;
     }
 }
 
@@ -286,5 +286,5 @@ __interrupt
 void TIMER_ISR() {
     // All we have here is CCIFG0
     f_time_loop = 1;
-    LPM0_EXIT;
+    LPM_EXIT;
 }
