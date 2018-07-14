@@ -69,8 +69,8 @@ void bootstrap(uint8_t fastboot) {
     if (bootstrap_status == POST_LCD) {
         bootstrap_status++;
         if (!fastboot) {
-            lcd111_text(1, "QC15 BOOTSTRAP>");
-            lcd111_text(0, "LCD POST: OK");
+            lcd111_set_text(1, "QC15 BOOTSTRAP>");
+            lcd111_set_text(0, "LCD POST: OK");
             delay_millis(200);
         }
     }
@@ -79,14 +79,14 @@ void bootstrap(uint8_t fastboot) {
         if (ht16d_post()) {
             bootstrap_status++;
             if (!fastboot) {
-                lcd111_text(0, "LED driver POST: OK");
+                lcd111_set_text(0, "LED driver POST: OK");
                 led_all_one_color(100, 100, 100);
                 delay_millis(200);
             }
         } else {
             // POST appears to have failed.
-            lcd111_text(1, "QC15 BOOTSTRAP> FAIL");
-            lcd111_text(0, "LED driver POST: FAIL");
+            lcd111_set_text(1, "QC15 BOOTSTRAP> FAIL");
+            lcd111_set_text(0, "LED driver POST: FAIL");
             delay_millis(2000);
             bootstrap_status++;
         }
@@ -96,15 +96,15 @@ void bootstrap(uint8_t fastboot) {
         if (s25flash_post()) {
             bootstrap_status++;
             if (!fastboot) {
-                lcd111_text(0, "SPI NOR flash POST: OK");
+                lcd111_set_text(0, "SPI NOR flash POST: OK");
                 delay_millis(200);
             }
         } else {
             // TODO: This is FATAL, probably.
             //  We should do an animation or something so the badge does
             //  _something_.
-            lcd111_text(1, "QC15 BOOTSTRAP> FAIL");
-            lcd111_text(0, "SPI NOR flash POST FAIL!");
+            lcd111_set_text(1, "QC15 BOOTSTRAP> FAIL");
+            lcd111_set_text(0, "SPI NOR flash POST FAIL!");
             led_all_one_color(200, 0, 0);
             delay_millis(2000);
             bootstrap_status++;
@@ -134,30 +134,30 @@ void bootstrap(uint8_t fastboot) {
                     if (rx_from_radio[0] & 0x0F) {
                         // There was some kind of failure reported on the
                         //  radio mcu side.
-                        lcd111_text(1, "QC15 BOOTSTRAP> FAIL");
+                        lcd111_set_text(1, "QC15 BOOTSTRAP> FAIL");
                         led_all_one_color(200, 50, 0);
 
                         // Decode it:
 
                         if (rx_from_radio[0] & BIT0) {
                             // MCU fail
-                            lcd111_text(0, "RADIOMCU: MCU FAIL");
+                            lcd111_set_text(0, "RADIOMCU: MCU FAIL");
                             delay_millis(2000);
                         }
                         if (rx_from_radio[0] & BIT1) {
                             // XT1 fail
-                            lcd111_text(0, "RADIOMCU: XT1 FAIL");
+                            lcd111_set_text(0, "RADIOMCU: XT1 FAIL");
                             delay_millis(2000);
                         }
                         if (rx_from_radio[0] & BIT2) {
                             // RFM75 fail
-                            lcd111_text(0, "RADIOMCU: RFM75 FAIL");
+                            lcd111_set_text(0, "RADIOMCU: RFM75 FAIL");
                             delay_millis(2000);
                         }
                     } else {
                         // all good.
                         if (!fastboot) {
-                            lcd111_text(0, "IPC POST: OK");
+                            lcd111_set_text(0, "IPC POST: OK");
                             delay_millis(200);
                         }
                     }
@@ -169,13 +169,13 @@ void bootstrap(uint8_t fastboot) {
 
             if (bootstrap_status == POST_SW1 &&
                     (rx_from_radio[0] & 0xF0) == IPC_MSG_SWITCH) {
-                lcd111_text(0, "POST: Toggle switch back");
+                lcd111_set_text(0, "POST: Toggle switch back");
                 bootstrap_status++;
             } else if (bootstrap_status == POST_SW2 &&
                     (rx_from_radio[0] & 0xF0) == IPC_MSG_SWITCH) {
-                lcd111_text(0, "POST: Buttons OK");
+                lcd111_set_text(0, "POST: Buttons OK");
                 delay_millis(1000);
-                lcd111_text(0, "Click UP to leave POST");
+                lcd111_set_text(0, "Click UP to leave POST");
                 bootstrap_status++;
                 break;
             }
@@ -186,8 +186,8 @@ void bootstrap(uint8_t fastboot) {
 
         if (time_32nd_secs == 128 && bootstrap_status == POST_IPC) {
             time_32nd_secs = 0;
-            lcd111_text(1, "QC15 BOOTSTRAP> FAIL");
-            lcd111_text(0, "IPC POST> general fail");
+            lcd111_set_text(1, "QC15 BOOTSTRAP> FAIL");
+            lcd111_set_text(0, "IPC POST> general fail");
             led_all_one_color(200, 0, 0);
             delay_millis(2000);
             bootstrap_status++;
@@ -198,7 +198,7 @@ void bootstrap(uint8_t fastboot) {
                 bootstrap_status = POST_OK;
                 break;
             }
-            lcd111_text(0, "POST: Click UP.");
+            lcd111_set_text(0, "POST: Click UP.");
             bootstrap_status++;
         }
 
@@ -206,7 +206,7 @@ void bootstrap(uint8_t fastboot) {
             if (s_buttons & BIT0) { // DOWN
                 if (s_buttons & BIT4) {
                     if (bootstrap_status == POST_DOWN) {
-                        lcd111_text(0, "POST: Click LEFT.");
+                        lcd111_set_text(0, "POST: Click LEFT.");
                         bootstrap_status++;
                     }
                 } else {
@@ -217,7 +217,7 @@ void bootstrap(uint8_t fastboot) {
             if (s_buttons & BIT1) {
                 if (s_buttons & BIT5) { // RIGHT
                     if (bootstrap_status == POST_RIGHT) {
-                        lcd111_text(0, "POST: Toggle switch.");
+                        lcd111_set_text(0, "POST: Toggle switch.");
                         bootstrap_status++;
                     }
                 } else {
@@ -227,7 +227,7 @@ void bootstrap(uint8_t fastboot) {
             if (s_buttons & BIT2) { // LEFT
                 if (s_buttons & BIT6) {
                     if (bootstrap_status == POST_LEFT) {
-                        lcd111_text(0, "POST: Click RIGHT.");
+                        lcd111_set_text(0, "POST: Click RIGHT.");
                         bootstrap_status++;
                     }
                 } else {
@@ -237,7 +237,7 @@ void bootstrap(uint8_t fastboot) {
             if (s_buttons & BIT3) { // UP
                 if (s_buttons & BIT7) {
                     if (bootstrap_status == POST_UP) {
-                        lcd111_text(0, "POST: Click DOWN.");
+                        lcd111_set_text(0, "POST: Click DOWN.");
                         bootstrap_status++;
                     }
                 } else {

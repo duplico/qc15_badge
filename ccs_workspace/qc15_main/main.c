@@ -149,6 +149,35 @@ const led_ring_animation_t anim_rainbow = {
         "Rainbow"
 };
 
+
+const rgbcolor_t pan_colors[] = {
+        {0xff, 0x21, 0x8c}, // 255,33,140
+        {0xff, 0xd8, 0x00}, //255,216,0
+        {0xff, 0xd8, 0x00}, //255,216,0
+        {0x21, 0xb1, 0xff}, //33,177,255
+};
+
+const led_ring_animation_t anim_pan = {
+        &pan_colors[0],
+        4,
+        6,
+        "Pansexual"
+};
+
+const rgbcolor_t bw_colors[] = {
+        {0x20, 0x20, 0x20},
+        {0xff, 0xff, 0xff},
+        {0x00, 0x00, 0x00},
+        {0x00, 0x00, 0x00},
+};
+
+const led_ring_animation_t anim_bw = {
+        &bw_colors[0],
+        4,
+        10,
+        "bwtest"
+};
+
 void poll_buttons() {
     // The buttons are active LOW.
     static uint8_t button_read_prev = 0xF0;
@@ -210,15 +239,22 @@ void main (void)
 
     uint8_t rx_from_radio[IPC_MSG_LEN_MAX] = {0};
 
-    lcd111_text(0, "Queercon 15");
-    lcd111_text(1, "UBER BADGE");
+//    lcd111_set_text(0, "Queercon 15");
+    lcd111_set_text(1, "UBER BADGE");
+    lcd111_clear(0);
+    lcd111_cursor_type(0, BIT0);
+    lcd111_put_text(0, "TYPING", 24);
+    lcd111_cursor_pos(0, 3);
 
-
+    lcd111_clear(1);
+    lcd111_cursor_type(1, BIT2);
+    lcd111_put_text(1, "TYPING", 24);
+    lcd111_cursor_pos(1, 3);
 
     led_set_anim(
-        (led_ring_animation_t *) &anim_rainbow,
-        LED_ANIM_TYPE_FALL,
-        5,
+        (led_ring_animation_t *) &anim_bw,
+        LED_ANIM_TYPE_SPIN,
+        0xff,
         1
     );
 

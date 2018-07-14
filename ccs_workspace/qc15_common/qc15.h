@@ -59,14 +59,16 @@ typedef struct {
 
 extern qc15status badge_status;
 
+#define SMCLK_FREQ_KHZ 1000
+
 // The following items are specific to the RADIO MCU:
 #ifdef __MSP430FR2422__
-#define CLOCK_FREQ_KHZ 1000
+#define MCLK_FREQ_KHZ 1000
 #endif
 
 // The following are specific to the MAIN MCU:
 #ifdef __MSP430FR5972__
-#define CLOCK_FREQ_KHZ 8000
+#define MCLK_FREQ_KHZ 8000
 extern qc15conf badge_conf;
 #endif
 
