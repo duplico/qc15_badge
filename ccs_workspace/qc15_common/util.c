@@ -12,7 +12,7 @@
 
 void delay_millis(unsigned long mils) {
     while (mils) {
-        __delay_cycles(CLOCK_FREQ_KHZ);
+        __delay_cycles(MCLK_FREQ_KHZ);
         mils--;
     }
 }
