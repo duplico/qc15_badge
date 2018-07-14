@@ -205,12 +205,12 @@ void rfm75_enter_prx() {
 
 /// Transmit an RFM75 message to a given address, or RFM75_BROADCAST_ADDR.
 /**
- ** \param addr[in]  The destination address, or RFM75_BROADCAST_ADDR.
- ** \param noack[in] Disable acknowledgments. This is only valid when
+ ** \param addr  The destination address, or RFM75_BROADCAST_ADDR.
+ ** \param noack Disable acknowledgments. This is only valid when
  **                  `addr` is a unicast destination, because broadcast
  **                  messages can't be acknowledged anyway.
- ** \param data[in]  A pointer to the buffer containing the data to transmit.
- ** \param len[in]   The length of the data buffer.
+ ** \param data  A pointer to the buffer containing the data to transmit.
+ ** \param len   The length of the data buffer.
  **
  ** Note that it's important for `len` to be the same as RFM75_PAYLOAD_SIZE,
  ** or else strange things may happen.
@@ -420,6 +420,9 @@ void rfm75_init(uint16_t unicast_address, rfm75_rx_callback_fn* rx_callback,
  * This function will, as needed, clear the interrupt vector on the RFM75,
  * and clear the interrupt flag that was set in this driver's ISR.
  *
+ * This function will also invoke `tx_done()` or `rx_done()` as appropriate.
+ *
+ *
  */
 uint8_t rfm75_deferred_interrupt() {
     f_rfm75_interrupt = 0;
@@ -435,8 +438,6 @@ uint8_t rfm75_deferred_interrupt() {
 
         // Complete the TX state machine activity:
         rfm75_state = RFM75_TX_DONE;
-        // Return to PRX mode:
-        rfm75_enter_prx();
     }
 
     if (iv & BIT5 && rfm75_state == RFM75_TX_SEND) { // TX interrupt
@@ -445,8 +446,6 @@ uint8_t rfm75_deferred_interrupt() {
         // Clear the interrupt flag on the radio module:
         rfm75_write_reg(STATUS, BIT5);
         rfm75_state = RFM75_TX_DONE;
-        // Return to PRX mode:
-        rfm75_enter_prx();
         // It's a TX, so return 0b01:
         ret |= 0b01;
     }
@@ -460,6 +459,16 @@ uint8_t rfm75_deferred_interrupt() {
         //  the radio module (meaning EITHER, it was ACKed, OR
         //  we did not request an ACK).
         tx_done(!(ret & 0b100));
+
+        // It's important that our tx_done callback function is able to call
+        //  `rfm75_tx()`. All the cleanup we needed to do to re-TX has already
+        //  been done. So we need to check if we're still in `RFM75_TX_DONE`
+        //  after the callback returns. If we are, it's OK to return to PRX
+        //  mode. If not, we're elsewhere in the TX state machine and should
+        //  leave `rfm75_state` alone.
+        if (rfm75_state == RFM75_TX_DONE) {
+            rfm75_enter_prx();
+        }
     }
 
     if (iv & BIT6 && rfm75_state == RFM75_RX_LISTEN) { // RX interrupt
@@ -472,6 +481,12 @@ uint8_t rfm75_deferred_interrupt() {
         // Invoke the registered callback function.
         rx_done(payload, RFM75_PAYLOAD_SIZE,
                 (iv & 0b1110) >> 1); // This is the pipe ID
+
+        // TODO: It should be possible to call `rfm75_tx()` from `rx_done()`,
+        //  and currently it isn't. We should model the following cleanup code
+        //  on the part above that cleans up after a completed TX. (note that
+        //  cleaning up from an RX is slightly more complex than cleaning up
+        //  after a completed TX.)
 
         // After rx_done returns (and ONLY after it returns), the
         //  payload_in is stale and is allowed to be overwritten.
