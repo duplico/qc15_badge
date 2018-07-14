@@ -412,9 +412,13 @@ void rfm75_init(uint16_t unicast_address, rfm75_rx_callback_fn* rx_callback,
  * This function needs to be called every time that the RFM75 IRQ is asserted,
  * preferably as soon as possible. However, for performance reasons it's
  * important that this not be called from inside the interrupt service routine
- * itself. The ISR sets a flag called
+ * itself. The ISR sets a flag called `f_rfm75_interrupt`, which signals to the
+ * main program that this function needs to be called. While this deferred
+ * interrupt is pending, the radio will have limited to no background
+ * functionality (depending on whether we are in PTX or PRX mode).
  *
- * This function will, as needed, clear the interr
+ * This function will, as needed, clear the interrupt vector on the RFM75,
+ * and clear the interrupt flag that was set in this driver's ISR.
  *
  */
 uint8_t rfm75_deferred_interrupt() {
