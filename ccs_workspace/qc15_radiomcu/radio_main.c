@@ -279,7 +279,6 @@ void main (void)
 
     while (1) {
         if (f_rfm75_interrupt) {
-            f_rfm75_interrupt = 0;
             rfm75_deferred_interrupt();
         }
 
