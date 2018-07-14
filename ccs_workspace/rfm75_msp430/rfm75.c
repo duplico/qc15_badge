@@ -422,7 +422,8 @@ void rfm75_init(uint16_t unicast_address, rfm75_rx_callback_fn* rx_callback,
  *
  */
 uint8_t rfm75_deferred_interrupt() {
-    // RFM75 interrupt:
+    f_rfm75_interrupt = 0;
+    // Get the interrupt vector from the RFM75 module:
     uint8_t iv = rfm75_get_status();
     uint8_t ret = 0x00;
 
