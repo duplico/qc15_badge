@@ -12,11 +12,10 @@
 
 #define QC15_CRC_SEED 0x5321
 
-// TODO: we need to add 1 to all of these for the null term
-#define QC15_PERSON_NAME_LEN 10
-#define QC15_BADGE_NAME_LEN 10
+// The actual lengths are 10, but we add 1 because of the null terminator.
+#define QC15_PERSON_NAME_LEN 11
+#define QC15_BADGE_NAME_LEN 11
 
-// TODO:
 // Number of radio flush intervals to keep a badge in the system:
 #define RADIO_GD_INTERVAL 10
 
@@ -32,8 +31,6 @@
 #define LPM LPM0
 #define LPM_EXIT LPM0_EXIT
 
-// TODO: Single source of truth in this file, instead of this level of
-//  duplication, please.
 typedef struct {
     uint16_t badge_id;
     uint8_t person_name[QC15_PERSON_NAME_LEN];
@@ -46,7 +43,7 @@ typedef struct {
 
 typedef struct {
     uint16_t badge_id;
-    uint32_t qc_clock; // TODO
+    uint32_t qc_clock;
     uint8_t badges_seen[57];
     uint8_t badges_downloaded[57];
     uint8_t badges_uploaded[57];

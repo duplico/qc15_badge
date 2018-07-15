@@ -71,7 +71,6 @@ void bootstrap() {
         //  this means that either (a) the main MCU is broken, in which case it
         //  doesn't matter what we do, or (b) the IPC channel is broken, in
         //  which case there's no possible way for us to get useful behavior.
-        // TODO: Disable the radio during bootstrap.
 
         if (f_ipc_rx) {
             f_ipc_rx = 0;
@@ -95,5 +94,4 @@ void bootstrap() {
     }
     // Bootstrapping is complete. Cleanup:
     qc_clock = 0;
-    // TODO: re-enable the radio.
 }

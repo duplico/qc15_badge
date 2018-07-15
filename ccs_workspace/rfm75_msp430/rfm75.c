@@ -47,7 +47,7 @@ const uint8_t bank0_init_data[BANK0_INITS][2] = {
         { 0x01, BIT0+BIT1 }, // Auto-ack for pipe0 (unicast)
         { 0x02, BIT0+BIT1 }, //Enable RX pipe 0 and 1
         { 0x03, 0b00000001 }, //RX/TX address field width 3byte
-        { 0x04, 0b00000100 }, //auto-RT // TODO
+        { 0x04, 0b00000100 }, //auto-RT
         { 0x05, 0x53 }, //channel: 2400 + LS 7 of this field = channel (2.483)
         { 0x06, 0b00000111 }, //air data rate-1M,out power max, LNA gain high.
         { 0x07, 0b01110000 }, // Clear interrupt flags
@@ -166,16 +166,6 @@ uint8_t rfm75_post() {
 
     rfm75_select_bank(0); // Go back to the normal bank.
 
-    // The following is an alternative POST that was used at some point.
-    // TODO: Decide what to do with this:
-    //
-    //    volatile uint8_t temp = 0;
-    //    volatile uint8_t test = 0;
-    //    for(uint8_t i=0;i<BANK0_INITS;i++) {
-    //        temp = rfm75_read_byte(bank0_init_data[i][0]);
-    //        test = temp == bank0_init_data[i][1];
-    //    }
-
     if (bank_one == bank_two) {
         return 0;
     }
@@ -201,6 +191,11 @@ void rfm75_enter_prx() {
     CE_ACTIVATE;
 
     rfm75_state = RFM75_RX_LISTEN;
+}
+
+/// Query whether a call to rfm75_tx() is allowed right now.
+uint8_t rfm75_tx_avail() {
+    return rfm75_state == RFM75_RX_LISTEN || rfm75_state == RFM75_TX_DONE;
 }
 
 /// Transmit an RFM75 message to a given address, or RFM75_BROADCAST_ADDR.
@@ -482,12 +477,6 @@ uint8_t rfm75_deferred_interrupt() {
         rx_done(payload, RFM75_PAYLOAD_SIZE,
                 (iv & 0b1110) >> 1); // This is the pipe ID
 
-        // TODO: It should be possible to call `rfm75_tx()` from `rx_done()`,
-        //  and currently it isn't. We should model the following cleanup code
-        //  on the part above that cleans up after a completed TX. (note that
-        //  cleaning up from an RX is slightly more complex than cleaning up
-        //  after a completed TX.)
-
         // After rx_done returns (and ONLY after it returns), the
         //  payload_in is stale and is allowed to be overwritten.
 
@@ -495,15 +484,12 @@ uint8_t rfm75_deferred_interrupt() {
         //  Clear the interrupt flag on the module...
         rfm75_write_reg(STATUS, BIT6);
         //  ... and assert CE, to listen more.
-        CE_ACTIVATE; // TODO: This was already happening, right?
+        CE_ACTIVATE;
         rfm75_state = RFM75_RX_LISTEN;
         ret |= 0b10;
     }
     return ret;
 }
-
-// TODO: For some reason, this ISR is no longer getting compiled into the
-//       code for the badge.
 
 ///The RFM75's interrupt pin ISR, which sets `f_rfm75_interrupt` to 1.
 #pragma vector=RFMISR_VECTOR

@@ -5,8 +5,6 @@
  *      Author: George
  */
 
-// TODO : Setup the Release link paths
-
 #ifndef RFM75_H_
 #define RFM75_H_
 
@@ -140,6 +138,7 @@ typedef void rfm75_tx_callback_fn(uint8_t ack);
 void rfm75_init(uint16_t unicast_address, rfm75_rx_callback_fn *rx_callback, rfm75_tx_callback_fn *tx_callback);
 uint8_t rfm75_post();
 uint8_t rfm75_deferred_interrupt();
+uint8_t rfm75_tx_avail();
 void rfm75_tx(uint16_t addr, uint8_t noack, uint8_t* data, uint8_t len);
 
 extern uint32_t rfm75_seqnum;

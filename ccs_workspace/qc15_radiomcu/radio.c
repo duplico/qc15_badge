@@ -182,18 +182,9 @@ void radio_interval() {
     curr_packet_tx.proto_version = RADIO_PROTO_VER;
 
     payload->time = (qc_clock & 0x00FFFFFF); // Mask out the MSByte
-    // TODO: check whether our clock is authoritative.
 
-    //  TODO: Don't do a freaking memcpy every time we call this function.
-    //        Only do it when we update our name.
     memcpy(payload->name, badge_status.person_name, QC15_PERSON_NAME_LEN);
     crc16_append_buffer(&curr_packet_tx, sizeof(radio_proto)-2);
-
-    // TODO: See if the following are the same, and if they aren't, swap the
-    //       Endianness of the CRC append and test functions.
-    volatile uint16_t test;
-    test = crc16_compute(&curr_packet_tx, sizeof(radio_proto)-2);
-    test = curr_packet_tx.crc16;
 
     // Send our beacon.
     rfm75_tx(RFM75_BROADCAST_ADDR, 1, &curr_packet_tx, RFM75_PAYLOAD_SIZE);

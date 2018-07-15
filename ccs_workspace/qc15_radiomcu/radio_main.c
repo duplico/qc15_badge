@@ -93,8 +93,6 @@ void init_io() {
     P2REN |= BIT2;  // Switch resistor enable
     P2OUT |= BIT2;  // Switch resistor pull UP direction
 
-    // TODO: Perhaps we DO want the switch to fire a signal if it's not
-    //  in the "ON" (0) position at startup.
     sw_state = P2IN & BIT2; // Read the switch's initial value.
 }
 
@@ -278,9 +276,15 @@ void main (void)
         }
 
         if (s_radio_interval) {
-            // TODO: Check whether we're allowed to enter TX. If so:
-            s_radio_interval = 0;
-            radio_interval();
+            // Calling radio_interval() has _lots_ of side effects, and also
+            //  does a radio TX. We need the TX to happen for this interval
+            //  to really be valid, so if we can't do the TX we should just
+            //  defer the radio interval until the next time a transmit is
+            //  allowed.
+            if (rfm75_tx_avail()) {
+                s_radio_interval = 0;
+                radio_interval();
+            }
         }
 
         if (f_ipc_rx) {
