@@ -266,10 +266,11 @@ void main (void)
             rfm75_deferred_interrupt();
         }
 
+        // TODO: Check last vs current and see if any steps need to happen.
         if (f_time_loop) {
             f_time_loop = 0;
             poll_switch();
-            if (qc_clock % 512) {
+            if (qc_clock % 512 == 0) {
                 // Every 16 seconds,
                 s_radio_interval = 1;
             }
