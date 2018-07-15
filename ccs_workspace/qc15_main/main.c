@@ -13,12 +13,18 @@
 #include "s25flash.h"
 #include "ipc.h"
 #include "leds.h"
+#include "game.h"
 
 #include "util.h"
 #include "main_bootstrap.h"
 
 volatile uint8_t f_time_loop = 0;
+uint8_t s_clock_tick = 0;
 uint8_t s_buttons = 0;
+uint8_t s_down = 0;
+uint8_t s_up = 0;
+uint8_t s_left = 0;
+uint8_t s_right = 0;
 uint8_t s_power_on = 0;
 uint8_t s_power_off = 0;
 qc15status badge_status = {0}; // TODO initialize elsewhere
@@ -135,37 +141,6 @@ void init() {
     srand(25);
 }
 
-const rgbcolor_t rainbow_colors[] = {
-        {255, 0, 0}, // Red
-        {255, 24, 0x00}, // Orange
-        {128, 40, 0x00}, // Yellow
-        {0, 64, 0}, // Green
-        {0, 0, 196}, // Blue
-        {128, 0, 128}, // Purple
-};
-
-const led_ring_animation_t anim_rainbow = {
-        &rainbow_colors[0],
-        6,
-        5,
-        "Rainbow"
-};
-
-
-const rgbcolor_t pan_colors[] = {
-        {0xff, 0x21, 0x8c}, // 255,33,140
-        {0xff, 0xd8, 0x00}, //255,216,0
-        {0xff, 0xd8, 0x00}, //255,216,0
-        {0x21, 0xb1, 0xff}, //33,177,255
-};
-
-const led_ring_animation_t anim_pan = {
-        &pan_colors[0],
-        4,
-        6,
-        "Pansexual"
-};
-
 const rgbcolor_t bw_colors[] = {
         {0x20, 0x20, 0x20},
         {0xff, 0xff, 0xff},
@@ -238,6 +213,7 @@ uint8_t rx_from_radio[IPC_MSG_LEN_MAX] = {0};
 void handle_global_signals() {
     if (f_time_loop) {
         f_time_loop = 0;
+        s_clock_tick = 1; // TODO: this should be a difference.
         led_timestep();
         poll_buttons();
     }
@@ -258,6 +234,43 @@ void handle_global_signals() {
         s_power_on = 0;
         led_on();
     }
+
+    if (s_buttons) {
+        if (s_buttons & BIT0) { // DOWN
+            if (s_buttons & BIT4) {
+                s_down = 1;
+                // release
+            } else {
+                // press
+            }
+        }
+
+        if (s_buttons & BIT1) { // RIGHT
+            if (s_buttons & BIT5) {
+                // release
+                s_right = 1;
+            } else {
+                // press
+            }
+        }
+        if (s_buttons & BIT2) { // LEFT
+            if (s_buttons & BIT6) {
+                // release
+                s_left = 1;
+            } else {
+                // press
+            }
+        }
+        if (s_buttons & BIT3) { // UP
+            if (s_buttons & BIT7) {
+                // release
+                s_up = 1;
+            } else {
+                // press
+            }
+        }
+        s_buttons = 0;
+    }
 }
 
 void main (void)
@@ -269,26 +282,28 @@ void main (void)
     // hold DOWN on turn-on for verbose boot:
     bootstrap(P9IN & BIT4);
 
-    lcd111_set_text(1, "UBER BADGE");
-    lcd111_clear(0);
-    lcd111_cursor_type(0, BIT0);
-    lcd111_put_text(0, "TYPING", 24);
-    lcd111_cursor_pos(0, 3);
+//    lcd111_set_text(1, "UBER BADGE");
+//    lcd111_clear(0);
+//    lcd111_cursor_type(0, BIT0);
+//    lcd111_put_text(0, "TYPING", 24);
+//    lcd111_cursor_pos(0, 3);
+//
+//    lcd111_clear(1);
+//    lcd111_cursor_type(1, BIT2);
+//    lcd111_put_text(1, "TYPING", 24);
+//    lcd111_cursor_pos(1, 3);
+//
+//    led_set_anim(
+//        (led_ring_animation_t *) &anim_bw,
+//        LED_ANIM_TYPE_SPIN,
+//        0xff,
+//        1
+//    );
+//
+//    uint8_t text[24] = {' ', 0};
+//    uint8_t cursor_pos = 0;
 
-    lcd111_clear(1);
-    lcd111_cursor_type(1, BIT2);
-    lcd111_put_text(1, "TYPING", 24);
-    lcd111_cursor_pos(1, 3);
-
-    led_set_anim(
-        (led_ring_animation_t *) &anim_bw,
-        LED_ANIM_TYPE_SPIN,
-        0xff,
-        1
-    );
-
-    uint8_t text[24] = {' ', 0};
-    uint8_t cursor_pos = 0;
+    game_begin();
 
     while (1) {
         handle_global_signals();
@@ -297,39 +312,14 @@ void main (void)
             s_led_anim_done = 0;
         }
 
-        if (s_buttons) {
-            if (s_buttons & BIT0) { // DOWN
-                if (s_buttons & BIT4) {
-                    // release
-                } else {
-                    // press
-                }
-            }
+        game_handle_loop();
 
-            if (s_buttons & BIT1) { // RIGHT
-                if (s_buttons & BIT5) {
-                    // release
-                } else {
-                    // press
-                }
-            }
-            if (s_buttons & BIT2) { // LEFT
-                if (s_buttons & BIT6) {
-                    // release
-                } else {
-                    // press
-                }
-            }
-            if (s_buttons & BIT3) { // UP
-                if (s_buttons & BIT7) {
-                    // release
-                } else {
-                    // press
-                }
-            }
-            s_buttons = 0;
-        }
-
+        // Cleanup unhandled signals:
+        s_left = 0;
+        s_right = 0;
+        s_down = 0;
+        s_up = 0;
+        s_clock_tick = 0;
         // Go to sleep.
         LPM;
     }
