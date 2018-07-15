@@ -192,6 +192,20 @@ void led_set_anim(led_ring_animation_t *anim, uint8_t anim_type, uint8_t loops, 
     led_display_colors();
 }
 
+uint8_t sleep_anim_type;
+
+void led_off() {
+    // TODO: sleep mode, if it exists
+    led_all_one_color(0,0,0); // Turn all LEDs off.
+    sleep_anim_type = led_anim_type;
+    led_anim_type = LED_ANIM_TYPE_NONE;
+}
+
+void led_on() {
+    // TODO: Leave sleep mode, if it exists
+    led_anim_type = sleep_anim_type;
+}
+
 /// LED timestep function, which should be called approx. 30x per second.
 void led_timestep() {
     if (!led_anim_type) {

@@ -35,6 +35,8 @@ typedef struct {
 extern uint8_t s_led_anim_done;
 
 void led_timestep();
+void led_off();
+void led_on();
 void led_set_anim(led_ring_animation_t *anim, uint8_t anim_type, uint8_t loops, uint8_t use_pad_in_loops);
 
 #endif /* LEDS_H_ */
