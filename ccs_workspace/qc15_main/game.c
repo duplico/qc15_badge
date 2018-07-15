@@ -140,7 +140,7 @@ void do_action(game_action_t *action) {
         led_set_anim(&animation_list[action->action_detail], LED_ANIM_TYPE_FALL, 0, 0);
         break;
     case GAME_ACTION_TYPE_ANIM_BG:
-        led_set_anim(&animation_list[action->action_detail], LED_ANIM_TYPE_FALL, 0xFF, 0);
+        led_set_anim(&animation_list[action->action_detail], LED_ANIM_TYPE_FALL, 0xFF, 1);
         break;
     case GAME_ACTION_TYPE_STATE:
         break;
