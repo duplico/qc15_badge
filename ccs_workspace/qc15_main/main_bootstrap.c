@@ -100,9 +100,6 @@ void bootstrap(uint8_t fastboot) {
                 delay_millis(200);
             }
         } else {
-            // TODO: This is FATAL, probably.
-            //  We should do an animation or something so the badge does
-            //  _something_.
             lcd111_set_text(1, "QC15 BOOTSTRAP> FAIL");
             lcd111_set_text(0, "SPI NOR flash POST FAIL!");
             led_all_one_color(200, 0, 0);

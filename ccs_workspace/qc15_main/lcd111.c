@@ -171,7 +171,7 @@ void lcd111_cursor_type(uint8_t lcd_id, uint8_t cursor_type) {
 
 /// Set the cursor position to `pos`.
 void lcd111_cursor_pos(uint8_t lcd_id, uint8_t pos) {
-    if (pos > 24) pos = 24; // TODO
+    if (pos > 23) pos = 23;
     lcd111_command(lcd_id, 0b11000000); // upper part to 0 (unused in these)
     lcd111_command(lcd_id, 0b11100000 | pos);
 }

@@ -38,7 +38,7 @@
 //  [x] POST/bootstrap (R->M)
 //  [ ] Time setting (manual, not time virus) (M->R)
 //  [ ] Time event (R->M)
-//  [x] Update stats (M->R) (TODO: make sure it works outside bootstrap)
+//  [x] Update stats (M->R)
 //  [ ] Successful download (R->M)
 //  [ ] Successful upload (R->M)
 //  [ ] Gaydar updates:
@@ -50,7 +50,7 @@
 
 // From RADIO to MAIN:
 // Single-byte messages:
-#define IPC_MSG_STATS_REQ 0x90 // TODO: in use?
+#define IPC_MSG_STATS_REQ 0x90
 #define IPC_MSG_POST 0xa0
 #define IPC_MSG_SWITCH 0xb0
 
@@ -66,12 +66,6 @@ typedef struct {
     uint16_t badge_id;
     uint8_t name[10];
 } ipc_msg_gd_arr_t;
-
-// TODO: screw it, do we need anything else? I'm making a pointer to a dang int.
-// Shared for both GD_DL and GD_UL
-typedef struct {
-    uint16_t badge_id;
-} ipc_msg_gd_dl_ul_t;
 
 //extern uint8_t ipc_state;
 extern volatile uint8_t f_ipc_rx;
