@@ -37,7 +37,14 @@ uint8_t s_switch = 0;
 uint8_t s_radio_interval = 0;
 
 volatile uint64_t qc_clock = 0;
-uint8_t sw_state = 0;
+/// The current state of the switch's bit in its IN register (only BIT2 used).
+/**
+ ** Because the main MCU assumes that the badge starts switched ON, and the
+ ** switch reports LOW when it's in the ON position, the right thing to do
+ ** is to start the switch state as 0, so that a signal will fire over IPC
+ ** if that's not the case.
+ */
+uint8_t sw_state = 0; // BIT2;
 
 qc15status badge_status = {0};
 
@@ -92,8 +99,6 @@ void init_io() {
     P2DIR &= ~BIT2; // Switch pin set to input.
     P2REN |= BIT2;  // Switch resistor enable
     P2OUT |= BIT2;  // Switch resistor pull UP direction
-
-    sw_state = P2IN & BIT2; // Read the switch's initial value.
 }
 
 /// Initialize all the clock sources for the radio MCU.
