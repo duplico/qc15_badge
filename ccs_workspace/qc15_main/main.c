@@ -153,16 +153,15 @@ void init_io() {
     P9OUT |= 0xF0; // pull ups, please
 }
 
-// TODO: This needs to be changed to 32 Hz, to match the radio MCU
-/// Initialize the animation timer to about 30 Hz
+/// Initialize the animation timer to tick every 1/32 of a second.
 void timer_init() {
     // We need timer A3 for our loop below.
     Timer_A_initUpModeParam timer_param = {0};
     timer_param.clockSource = TIMER_A_CLOCKSOURCE_SMCLK; // 1 MHz
-    // We want this to go every 33 1/3 ms, so at 33 1/3 Hz
-    //  (every 3,333 ticks @ 1MHz)
+    // We want this to go every 1/32 of a second, so at 3125 Hz.
+    //  (Every 3125 ticks @ 1 MHz)
     timer_param.clockSourceDivider = TIMER_A_CLOCKSOURCE_DIVIDER_1; // /1
-    timer_param.timerPeriod = 3333;
+    timer_param.timerPeriod = 3125;
     timer_param.timerInterruptEnable_TAIE = TIMER_A_TAIE_INTERRUPT_DISABLE;
     timer_param.captureCompareInterruptEnable_CCR0_CCIE =
             TIMER_A_CCIE_CCR0_INTERRUPT_ENABLE;
