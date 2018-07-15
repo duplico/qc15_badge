@@ -15,6 +15,7 @@ var rfm75_8c =
     [ "rfm75_read_reg", "rfm75_8c.html#aa81bb70450f352c034f5ee93b3eaa7fd", null ],
     [ "rfm75_select_bank", "rfm75_8c.html#a6bae16d37b2df202a86d934637ce725e", null ],
     [ "rfm75_tx", "rfm75_8c.html#a16b3e52dd296897c7d5cf3bfb3febd4a", null ],
+    [ "rfm75_tx_avail", "rfm75_8c.html#af19663f992d5f5702fcfd920535d221e", null ],
     [ "rfm75_write_reg", "rfm75_8c.html#a8ef87655b5f75cbbce1eda0c15f205e0", null ],
     [ "rfm75_write_reg_buf", "rfm75_8c.html#af01711f0ffca0ea90f13e6491e48b97b", null ],
     [ "rfm75spi_recv_sync", "rfm75_8c.html#a3a906d9f60c859125c69909beabee603", null ],
