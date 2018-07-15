@@ -10,6 +10,7 @@ var searchData=
   ['rfm75_5fread_5freg',['rfm75_read_reg',['../rfm75_8c.html#aa81bb70450f352c034f5ee93b3eaa7fd',1,'rfm75.c']]],
   ['rfm75_5fselect_5fbank',['rfm75_select_bank',['../rfm75_8c.html#a6bae16d37b2df202a86d934637ce725e',1,'rfm75.c']]],
   ['rfm75_5ftx',['rfm75_tx',['../rfm75_8c.html#a16b3e52dd296897c7d5cf3bfb3febd4a',1,'rfm75_tx(uint16_t addr, uint8_t noack, uint8_t *data, uint8_t len):&#160;rfm75.c'],['../rfm75_8h.html#a16b3e52dd296897c7d5cf3bfb3febd4a',1,'rfm75_tx(uint16_t addr, uint8_t noack, uint8_t *data, uint8_t len):&#160;rfm75.c']]],
+  ['rfm75_5ftx_5favail',['rfm75_tx_avail',['../rfm75_8c.html#af19663f992d5f5702fcfd920535d221e',1,'rfm75_tx_avail():&#160;rfm75.c'],['../rfm75_8h.html#af19663f992d5f5702fcfd920535d221e',1,'rfm75_tx_avail():&#160;rfm75.c']]],
   ['rfm75_5fwrite_5freg',['rfm75_write_reg',['../rfm75_8c.html#a8ef87655b5f75cbbce1eda0c15f205e0',1,'rfm75.c']]],
   ['rfm75_5fwrite_5freg_5fbuf',['rfm75_write_reg_buf',['../rfm75_8c.html#af01711f0ffca0ea90f13e6491e48b97b',1,'rfm75.c']]],
   ['rfm75spi_5frecv_5fsync',['rfm75spi_recv_sync',['../rfm75_8c.html#a3a906d9f60c859125c69909beabee603',1,'rfm75.c']]],

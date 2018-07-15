@@ -308,6 +308,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a0a2bf470114c3ecd5b90aebe2c971808"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rfm75_8h.html#a0a2bf470114c3ecd5b90aebe2c971808">rfm75_deferred_interrupt</a> ()</td></tr>
 <tr class="memdesc:a0a2bf470114c3ecd5b90aebe2c971808"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handle RFM75 IRQ, posting to the registered RX and TX callbacks as needed.  <a href="#a0a2bf470114c3ecd5b90aebe2c971808">More...</a><br /></td></tr>
 <tr class="separator:a0a2bf470114c3ecd5b90aebe2c971808"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af19663f992d5f5702fcfd920535d221e"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rfm75_8h.html#af19663f992d5f5702fcfd920535d221e">rfm75_tx_avail</a> ()</td></tr>
+<tr class="memdesc:af19663f992d5f5702fcfd920535d221e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query whether a call to <a class="el" href="rfm75_8c.html#a16b3e52dd296897c7d5cf3bfb3febd4a" title="Transmit an RFM75 message to a given address, or RFM75_BROADCAST_ADDR. ">rfm75_tx()</a> is allowed right now.  <a href="#af19663f992d5f5702fcfd920535d221e">More...</a><br /></td></tr>
+<tr class="separator:af19663f992d5f5702fcfd920535d221e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a16b3e52dd296897c7d5cf3bfb3febd4a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rfm75_8h.html#a16b3e52dd296897c7d5cf3bfb3febd4a">rfm75_tx</a> (uint16_t addr, uint8_t noack, uint8_t *data, uint8_t len)</td></tr>
 <tr class="memdesc:a16b3e52dd296897c7d5cf3bfb3febd4a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transmit an RFM75 message to a given address, or RFM75_BROADCAST_ADDR.  <a href="#a16b3e52dd296897c7d5cf3bfb3febd4a">More...</a><br /></td></tr>
 <tr class="separator:a16b3e52dd296897c7d5cf3bfb3febd4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1684,7 +1687,8 @@ Variables</h2></td></tr>
 
 <p>Handle RFM75 IRQ, posting to the registered RX and TX callbacks as needed. </p>
 <p>This function needs to be called every time that the RFM75 IRQ is asserted, preferably as soon as possible. However, for performance reasons it's important that this not be called from inside the interrupt service routine itself. The ISR sets a flag called <code>f_rfm75_interrupt</code>, which signals to the main program that this function needs to be called. While this deferred interrupt is pending, the radio will have limited to no background functionality (depending on whether we are in PTX or PRX mode).</p>
-<p>This function will, as needed, clear the interrupt vector on the RFM75, and clear the interrupt flag that was set in this driver's ISR. </p>
+<p>This function will, as needed, clear the interrupt vector on the RFM75, and clear the interrupt flag that was set in this driver's ISR.</p>
+<p>This function will also invoke <code><a class="el" href="rfm75_8c.html#af841d031b79a45dbd545dc8ba63507c4" title="Function pointer to the callback for a successful TX or a failed ACK. ">tx_done()</a></code> or <code><a class="el" href="rfm75_8c.html#a81871ba6c4a3d53974b7cd1c45f63c65" title="Function pointer to the callback for a message RX. ">rx_done()</a></code> as appropriate. </p>
 
 </div>
 </div>
@@ -1792,6 +1796,25 @@ Variables</h2></td></tr>
   </dd>
 </dl>
 <p>Note that it's important for <code>len</code> to be the same as RFM75_PAYLOAD_SIZE, or else strange things may happen. </p>
+
+</div>
+</div>
+<a id="af19663f992d5f5702fcfd920535d221e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af19663f992d5f5702fcfd920535d221e">&#9670;&nbsp;</a></span>rfm75_tx_avail()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint8_t rfm75_tx_avail </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Query whether a call to <a class="el" href="rfm75_8c.html#a16b3e52dd296897c7d5cf3bfb3febd4a" title="Transmit an RFM75 message to a given address, or RFM75_BROADCAST_ADDR. ">rfm75_tx()</a> is allowed right now. </p>
 
 </div>
 </div>

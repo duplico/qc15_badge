@@ -100,6 +100,7 @@ var rfm75_8h =
     [ "rfm75_init", "rfm75_8h.html#a988507535fe930ba36687c2049057edc", null ],
     [ "rfm75_post", "rfm75_8h.html#a2960877ae855b3c950f9287f9591e4af", null ],
     [ "rfm75_tx", "rfm75_8h.html#a16b3e52dd296897c7d5cf3bfb3febd4a", null ],
+    [ "rfm75_tx_avail", "rfm75_8h.html#af19663f992d5f5702fcfd920535d221e", null ],
     [ "f_rfm75_interrupt", "rfm75_8h.html#a285af2b025570bb5b300b7bb77646ccb", null ],
     [ "rfm75_seqnum", "rfm75_8h.html#a053ac01576f9b28774939a646b39456e", null ]
 ];
