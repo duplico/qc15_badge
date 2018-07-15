@@ -23,7 +23,7 @@ typedef struct {
     uint16_t badge_id;
     uint8_t proto_version;
     uint8_t msg_type;
-    uint8_t msg_payload[14];
+    uint8_t msg_payload[QC15_PERSON_NAME_LEN+4];
     uint16_t crc16;
 } radio_proto;
 
@@ -43,7 +43,7 @@ typedef struct { // Progress report payload (unicast to base)
     uint8_t part_data[10]; // 80 bits per segment
 } radio_progress_payload;
 
-typedef struct { // Stats report payload (unicast to base???) (TODO: what is this for?)
+typedef struct { // Stats report payload (unicast to base???)
     uint16_t badges_seen_count;
     uint16_t badges_connected_count;
     uint16_t badges_uploaded_count;
