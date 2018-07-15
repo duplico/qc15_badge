@@ -19,7 +19,9 @@
 
 volatile uint8_t f_time_loop = 0;
 uint8_t s_buttons = 0;
-qc15status badge_status = {0}; // TODO don't initialize
+uint8_t s_power_on = 0;
+uint8_t s_power_off = 0;
+qc15status badge_status = {0}; // TODO initialize elsewhere
 
 void init_clocks() {
 
@@ -221,7 +223,40 @@ void handle_ipc_rx(uint8_t *rx_from_radio) {
         break;
     case IPC_MSG_SWITCH:
         // The switch has been toggled.
+        if (rx_from_radio[0] & 0x0F) {
+            s_power_off = 0;
+            s_power_on = 1;
+        } else {
+            s_power_on = 0;
+            s_power_off = 1;
+        }
         break;
+    }
+}
+uint8_t rx_from_radio[IPC_MSG_LEN_MAX] = {0};
+
+void handle_global_signals() {
+    if (f_time_loop) {
+        f_time_loop = 0;
+        led_timestep();
+        poll_buttons();
+    }
+
+    if (f_ipc_rx) {
+        f_ipc_rx = 0;
+        if (ipc_get_rx(rx_from_radio)) {
+            handle_ipc_rx(rx_from_radio);
+        }
+    }
+
+    if (s_power_off) {
+        s_power_off = 0;
+        led_off();
+    }
+
+    if (s_power_on) {
+        s_power_on = 0;
+        led_on();
     }
 }
 
@@ -234,9 +269,6 @@ void main (void)
     // hold DOWN on turn-on for verbose boot:
     bootstrap(P9IN & BIT4);
 
-    uint8_t rx_from_radio[IPC_MSG_LEN_MAX] = {0};
-
-//    lcd111_set_text(0, "Queercon 15");
     lcd111_set_text(1, "UBER BADGE");
     lcd111_clear(0);
     lcd111_cursor_type(0, BIT0);
@@ -255,24 +287,14 @@ void main (void)
         1
     );
 
-    while (1) {
-        if (f_time_loop) {
-            f_time_loop = 0;
-            led_timestep();
-            poll_buttons();
-        }
+    uint8_t text[24] = {' ', 0};
+    uint8_t cursor_pos = 0;
 
-        if (f_ipc_rx) {
-            f_ipc_rx = 0;
-            if (ipc_get_rx(rx_from_radio)) {
-                handle_ipc_rx(rx_from_radio);
-            }
-        }
+    while (1) {
+        handle_global_signals();
 
         if (s_led_anim_done) {
             s_led_anim_done = 0;
-            led_set_anim((led_ring_animation_t *) &anim_rainbow,
-                         LED_ANIM_TYPE_SPIN, 2, 18);
         }
 
         if (s_buttons) {
