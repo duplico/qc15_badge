@@ -79,7 +79,7 @@ void ht_send_array(uint8_t txdat[], uint8_t len) {
     UCB0CTLW1 |= UCASTP_2; // Auto-stop.
 
     UCB0CTLW0 |= UCSWRST; // Stop the I2C engine (clears STPIFG, too)
-    UCB0TBCNT_L = len; // Set byte counter thresh (doesn't include addr)
+    UCB0TBCNT_L = len; // Set byte counter threshold (doesn't include address)
     UCB0CTLW0 &= ~UCSWRST; // Re-start engine.
 
     UCB0IFG &= ~UCTXIFG; // Clear TX flag.
