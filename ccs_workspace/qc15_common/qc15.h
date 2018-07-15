@@ -46,7 +46,7 @@ typedef struct {
 
 typedef struct {
     uint16_t badge_id;
-    uint32_t csecs_of_qc; // TODO
+    uint32_t qc_clock; // TODO
     uint8_t badges_seen[57];
     uint8_t badges_downloaded[57];
     uint8_t badges_uploaded[57];
@@ -64,6 +64,7 @@ extern qc15status badge_status;
 // The following items are specific to the RADIO MCU:
 #ifdef __MSP430FR2422__
 #define MCLK_FREQ_KHZ 1000
+extern volatile uint64_t qc_clock;
 #endif
 
 // The following are specific to the MAIN MCU:

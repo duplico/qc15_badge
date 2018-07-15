@@ -28,6 +28,7 @@ typedef struct {
 } radio_proto;
 
 typedef struct { // Beacon payload (broadcast)
+    /// 24 LSBits are the clock, and MSBit is `1` if the clock has authority.
     uint32_t time;
     uint8_t name[10];
 } radio_beacon_payload;
@@ -54,8 +55,11 @@ typedef struct { // Stats report payload (unicast to base???) (TODO: what is thi
     uint8_t handlers_uploaded_count;
 } radio_stats_payload;
 
+extern radio_proto curr_packet_tx;
+
 rfm75_rx_callback_fn radio_rx_done;
 rfm75_tx_callback_fn radio_tx_done;
 void radio_init();
+void radio_interval();
 
 #endif /* RADIO_H_ */
