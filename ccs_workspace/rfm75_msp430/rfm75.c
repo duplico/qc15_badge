@@ -502,6 +502,9 @@ uint8_t rfm75_deferred_interrupt() {
     return ret;
 }
 
+// TODO: For some reason, this ISR is no longer getting compiled into the
+//       code for the badge.
+
 ///The RFM75's interrupt pin ISR, which sets `f_rfm75_interrupt` to 1.
 #pragma vector=RFMISR_VECTOR
 __interrupt

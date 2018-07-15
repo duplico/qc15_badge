@@ -15,8 +15,10 @@
 #include "util.h"
 #include "ipc.h"
 
-// ugggh, this is SO wasteful. TODO: use a linked list or SOMETHING:
-uint8_t ids_in_range[QC15_HOSTS_IN_SYSTEM] = {0};
+/// An **insanely wasteful** array of all badges and bases we can currently see.
+uint_least8_t ids_in_range[QC15_HOSTS_IN_SYSTEM] = {0};
+/// The current radio packet we're sending (or just sent).
+radio_proto curr_packet_tx;
 
 uint8_t validate(radio_proto *msg, uint8_t len) {
     if (len != sizeof(radio_proto)) {
@@ -60,6 +62,11 @@ void radio_handle_beacon(uint16_t id, radio_beacon_payload *payload) {
     }
     // That was easy. The main MCU will handle the rest of the logic. All we
     //  care about is keeping track of who's in range.
+
+    // TODO: Handle clock setting
+    // TODO: if our crystal is broken, tend to accept updates from other
+    //  badges.
+
 }
 
 /// Another badge has connected to us and DOWNLOADED OUR INFORMATION BRAIN.
@@ -95,26 +102,63 @@ void radio_rx_done(uint8_t* data, uint8_t len, uint8_t pipe) {
     }
 }
 
+/// Called when the transmission of `curr_packet` has either finished or failed.
 void radio_tx_done(uint8_t ack) {
-    // TODO: flag if ack is false, so we can signal that a download has failed.
+    switch(curr_packet_tx.msg_type) {
+        case RADIO_MSG_TYPE_BEACON:
+            // We just sent a beacon.
+            // TODO: Clear any state that needs cleared.
+            break;
+        case RADIO_MSG_TYPE_DLOAD:
+            // We just attempted a download. Did it succeed?
+            if (ack) {
+                // yes.
+            } else {
+                // no.
+            }
+            break;
+        case RADIO_MSG_TYPE_PROGRESS:
+            // We just sent a progress message. Determine whether we need
+            //  to send another, or whether that was the last one.
+            // These are unicast messages subject to auto-acknowledgment, but
+            //  currently we're not bothering to check the result and resend;
+            //  we're just using the auto-ack mechanism to try to add a bit
+            //  more reliability.
+            // If we DO need to send another one, we can just do it from here,
+            //  rather than setting a flag; this is because we ARE allowed to
+            //  call rfm75_tx() from inside the callback.
+            break;
+        case RADIO_MSG_TYPE_STATS:
+            // We just sent our STATS somewhere.
+            // I don't actually know whether we need to do anything after
+            //  we've done this. In fact, I'm not sure whether we're even
+            //  actually ever going to do it.
+            break;
+    }
 }
 
 void radio_send_progress_frame(uint8_t frame_id) {
-    radio_proto packet;
-    radio_progress_payload *payload = (radio_progress_payload *) packet.msg_payload;
+    radio_progress_payload *payload = (radio_progress_payload *) curr_packet_tx.msg_payload;
 
-    packet.badge_id = badge_status.badge_id;
-    packet.msg_type = RADIO_MSG_TYPE_PROGRESS;
-    packet.proto_version = RADIO_PROTO_VER;
+    curr_packet_tx.badge_id = badge_status.badge_id;
+    curr_packet_tx.msg_type = RADIO_MSG_TYPE_PROGRESS;
+    curr_packet_tx.proto_version = RADIO_PROTO_VER;
 
     payload->part_id = badge_status.code_segment_ids[frame_id];
     memcpy(payload->part_data, badge_status.code_segment_unlocks[frame_id],
            CODE_SEGMENT_REP_LEN);
-    crc16_append_buffer(&packet, sizeof(radio_proto)-2);
+    crc16_append_buffer(&curr_packet_tx, sizeof(radio_proto)-2);
 
-    rfm75_tx(RFM75_BROADCAST_ADDR, 1, &packet, RFM75_PAYLOAD_SIZE);
+    rfm75_tx(RFM75_BROADCAST_ADDR, 1, &curr_packet_tx, RFM75_PAYLOAD_SIZE);
 }
 
+/// Do our regular radio and gaydar interval actions.
+/**
+ * This function MUST NOT be called if we are in a state where the radio is
+ * not allowed to initiate a transmission, because it will ALWAYS call
+ * `rfm75_tx()`. That guard MUST be done outside of this function, because
+ * this function has MANY side effects.
+ */
 void radio_interval() {
     for (uint16_t i=0; i<QC15_HOSTS_IN_SYSTEM; i++) {
         if (ids_in_range[i] == 1) {
@@ -131,23 +175,28 @@ void radio_interval() {
     }
 
     // Also, at each radio interval, we do need to do a beacon.
+    radio_beacon_payload *payload = (radio_beacon_payload *)
+                                            curr_packet_tx.msg_payload;
+    curr_packet_tx.badge_id = badge_status.badge_id;
+    curr_packet_tx.msg_type = RADIO_MSG_TYPE_BEACON;
+    curr_packet_tx.proto_version = RADIO_PROTO_VER;
 
-    // TODO: Do we want this on the stack, or as a global?
-    //  Probably, we don't want to do a freaking memcpy every time we call
-    //  this function. So let's switch it to a global, I think.
-    radio_proto packet;
-    radio_beacon_payload *payload = (radio_beacon_payload *) packet.msg_payload;
-    packet.badge_id = badge_status.badge_id;
-    packet.msg_type = RADIO_MSG_TYPE_BEACON;
-    packet.proto_version = RADIO_PROTO_VER;
+    payload->time = (qc_clock & 0x00FFFFFF); // Mask out the MSByte
+    // TODO: check whether our clock is authoritative.
 
-//    payload->time = csecs_of_queercon; // TODO
-    payload->time = 12345;
+    //  TODO: Don't do a freaking memcpy every time we call this function.
+    //        Only do it when we update our name.
     memcpy(payload->name, badge_status.person_name, QC15_PERSON_NAME_LEN);
-//    packet.crc16 = crc16_compute(&packet, sizeof(radio_proto)-2)
-    crc16_append_buffer(&packet, sizeof(radio_proto)-2);
+    crc16_append_buffer(&curr_packet_tx, sizeof(radio_proto)-2);
 
-    rfm75_tx(RFM75_BROADCAST_ADDR, 1, &packet, RFM75_PAYLOAD_SIZE);
+    // TODO: See if the following are the same, and if they aren't, swap the
+    //       Endianness of the CRC append and test functions.
+    volatile uint16_t test;
+    test = crc16_compute(&curr_packet_tx, sizeof(radio_proto)-2);
+    test = curr_packet_tx.crc16;
+
+    // Send our beacon.
+    rfm75_tx(RFM75_BROADCAST_ADDR, 1, &curr_packet_tx, RFM75_PAYLOAD_SIZE);
 }
 
 void radio_init() {

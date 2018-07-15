@@ -34,11 +34,30 @@
 
 volatile uint8_t f_time_loop = 0;
 uint8_t s_switch = 0;
-volatile uint64_t csecs_of_queercon = 0;
+uint8_t s_radio_interval = 0;
+
+volatile uint64_t qc_clock = 0;
 uint8_t sw_state = 0;
 
 qc15status badge_status = {0};
 
+void bootstrap();
+
+/// Initialize IO configuration for the radio MCU.
+/**
+ * Specifically, this module unlocks the IO pins from high-impedance mode,
+ * and then configures the peripheral and GPIO settings for:
+ * * IPC TX/RX
+ * * Crystal input/output
+ * * Power switch
+ *
+ * It leaves the remainder of the peripherals to be configured by their
+ * dedicated initialization functions.
+ *
+ * It also reads the initial value of the switch into `sw_state`, so that
+ * we don't have a signal fire if the switch is in a different position
+ * than the 0-initialized one when we turn on the device.
+ */
 void init_io() {
     // The magic FRAM make-it-work command:
     PMM_unlockLPM5();
@@ -66,7 +85,7 @@ void init_io() {
     // * P2.1 LFXT (Primary)
     // * P2.2 PWSW (GPIO in w/ pull-up) (right/down is HIGH)
     //
-    //   These are all the usable GPIO pins on the device.
+    //   There are no other usable GPIO pins on the device.
 
     P2SEL1 = 0b011; // MSB
     P2SEL0 = 0b000; // LSB
@@ -74,9 +93,12 @@ void init_io() {
     P2REN |= BIT2;  // Switch resistor enable
     P2OUT |= BIT2;  // Switch resistor pull UP direction
 
+    // TODO: Perhaps we DO want the switch to fire a signal if it's not
+    //  in the "ON" (0) position at startup.
     sw_state = P2IN & BIT2; // Read the switch's initial value.
 }
 
+/// Initialize all the clock sources for the radio MCU.
 void init_clocks() {
     // CLOCK SOURCES
     // =============
@@ -115,6 +137,8 @@ void init_clocks() {
     __bic_SR_register(SCG0);                // enable FLL
     while(CSCTL7 & (FLLUNLOCK0 | FLLUNLOCK1)); // Poll until FLL is locked
 
+    CS_clearAllOscFlagsWithTimeout(1000);
+
     // SYSTEM CLOCKS
     // =============
 
@@ -144,89 +168,53 @@ void init_clocks() {
 
 }
 
-// TODO: Is there any reason for this to be csecs and not 1/32 seconds?
-void timer_init() {
-    // We need timer A3 for our loop below.
-    Timer_A_initUpModeParam timer_param = {0};
-    timer_param.clockSource = TIMER_A_CLOCKSOURCE_SMCLK; // 1 MHz
-    // We want this to go every 10 ms, so at 100 Hz (every 10,000 ticks @ 1MHz)
-    //  (a centisecond clock!)
-    timer_param.clockSourceDivider = TIMER_A_CLOCKSOURCE_DIVIDER_1; // /1
-    timer_param.timerPeriod = 10000;
-    timer_param.timerInterruptEnable_TAIE = TIMER_A_TAIE_INTERRUPT_DISABLE;
-    timer_param.captureCompareInterruptEnable_CCR0_CCIE = TIMER_A_CCIE_CCR0_INTERRUPT_ENABLE;
-    timer_param.timerClear = TIMER_A_SKIP_CLEAR;
-    timer_param.startTimer = false;
-    Timer_A_initUpMode(TIMER_A1_BASE, &timer_param);
-    Timer_A_startCounter(TIMER_A1_BASE, TIMER_A_UP_MODE);
-}
+/// Set up the real time clock to give us a tick every 1/32 sec.
+/**
+ * This is a much less sophisticated RTC than we've used in the past on the
+ * higher-end F and FR series MSP430s, but it's very simple to configure.
+ * This configures it as a simple timer, firing an interrupt every 1/32
+ * second. In this configuration, the `qc_clock` ticks have the following
+ * values:
+ *
+ * * Second - 32 ticks
+ * * Minute - 1,920 ticks
+ * * Hour -  115,200 ticks
+ * * Day - 2,764,800 ticks
+ * * Conference - 11,059,200 ticks (approx 4 days)
+ *
+ * This means that 24 bits gives us about the right length to hold the
+ * ticks since the beginning of the conference, and then we can max out the
+ * counter at 2^24.
+ */
+void rtc_init() {
+    // This is a much less sophisticated RTC than we've used in the past, on
+    //  the higher end MSP430F and MSP430FR processors, but it's simple to
+    //  configure, leaving it to software to do any of the "alarms" or
+    //  interpretation of its value as actual dates and times. That's fine,
+    //  because binary coded decimals hurt my brain box.
 
-// TODO: Move these:
-#define POST_MCU 0
-#define POST_XT1 1
-#define POST_RFM 2
-#define POST_IPC 3
-#define POST_IPC_OK 4
-#define POST_OK 5
+    // The RTC counter will tick for every cycle of its clock source (XT1,
+    //  our external 32k crystal.)
+    // We want an interrupt to fire every 1/32 second, so we're going to set
+    //  the modulo register to be 0x0400 (1024, which is 32k/32).
+    RTCMOD = 0x0400;
+    // Now let's setup the control register. We're going to use ACLK as our
+    //  clock source, so that we can use its fallback methods for clock
+    //  sourcing to REFO, rather than having to mess around with that here.
+    //  This means that even if XT1 fails we should have a reasonably good
+    //  approximation of a 32k clock signal.
 
-void bootstrap() {
-    // We'll do our POST here, which involves:
-    // 1. MCU
-    // 2. Crystal
-    // 3. Radio
-    // 4. IPC
-    uint8_t rx_from_main[IPC_MSG_LEN_MAX] = {0};
-    uint8_t bootstrap_status = POST_MCU;
-    uint16_t time_csecs = 0; // TODO
-    uint8_t failure_flags = 0x00;
+    // In order to use SMCLK or ACLK as an input, we need to do two things.
+    //  We select that clock source for the RTC by setting RTCCTL.RTCSS=0b01,
+    //  but first we need to configure register SYSCFG2.RTCCLK=RTC_ACLK (0b1).
+//    SYSCFG2 |= RTCCKSEL__RTC_ACLK;
 
-    if (bootstrap_status == POST_MCU) {
-        if (!1) {
-            failure_flags |= BIT0; // General purpose flag.
-        }
-        bootstrap_status++;
-    }
+    // RTCSR_1 means "clear the counter and reload from RTCMOD."
+//    RTCCTL = RTCSS_1  | RTCSR_1;
+    RTCCTL = RTCSS__XT1CLK | RTCSR_1;
+//    RTCIV; // Read the vector to clear the interrupt.
 
-    if (bootstrap_status == POST_XT1) {
-        if (CSCTL7 & XT1OFFG)
-            failure_flags |= BIT1; // crystal fault
-        bootstrap_status++;
-    }
-
-    if (bootstrap_status == POST_RFM) {
-        if (!rfm75_post()) {
-            // Radio failure:
-            failure_flags |= BIT2;
-        }
-        bootstrap_status++;
-    }
-
-    ipc_tx_byte(IPC_MSG_POST | failure_flags);
-
-    while (1) {
-        if (f_time_loop) {
-            f_time_loop = 0;
-            time_csecs++;
-        }
-
-        if (f_ipc_rx) {
-            f_ipc_rx = 0;
-            if (ipc_get_rx(rx_from_main)) {
-                if (rx_from_main[0] == IPC_MSG_STATS_ANS) {
-                    // Read the current status into our volatile copy of it.
-                    memcpy(&badge_status, &rx_from_main[1], sizeof(qc15status));
-
-                    // POST/bootstrap process is done.
-                    return;
-                }
-            }
-        }
-
-        if (bootstrap_status == POST_IPC && time_csecs==50) {
-            time_csecs = 0;
-            ipc_tx_byte(IPC_MSG_POST | failure_flags);
-        }
-    }
+    RTCCTL |= RTCIE; // Enable the interrupt.
 }
 
 void poll_switch() {
@@ -267,7 +255,7 @@ void main (void)
     init_io();
     init_clocks();
     ipc_init();
-    timer_init();
+    rtc_init();
     radio_init();
 
 
@@ -275,17 +263,24 @@ void main (void)
 
     bootstrap();
 
-    // TODO: Clean up from bootstrap if needed.
-
     while (1) {
         if (f_rfm75_interrupt) {
             rfm75_deferred_interrupt();
         }
 
         if (f_time_loop) {
-            // centisecond.
             f_time_loop = 0;
             poll_switch();
+            if (qc_clock % 512) {
+                // Every 16 seconds,
+                s_radio_interval = 1;
+            }
+        }
+
+        if (s_radio_interval) {
+            // TODO: Check whether we're allowed to enter TX. If so:
+            s_radio_interval = 0;
+            radio_interval();
         }
 
         if (f_ipc_rx) {
@@ -312,12 +307,12 @@ void main (void)
     }
 }
 
-// 0xFFF4 Timer1_A3 CC0
-#pragma vector=TIMER1_A0_VECTOR
+#pragma vector=RTC_VECTOR
 __interrupt
-void TIMER_ISR() {
-    // All we have here is TA0CCR0 CCIFG0
-    f_time_loop = 1;
-    csecs_of_queercon++;
-    LPM_EXIT;
+void RTC_ISR() {
+    if (RTCIV == RTCIV__RTCIFG) {
+        f_time_loop = 1;
+        qc_clock++;
+        LPM_EXIT;
+    }
 }

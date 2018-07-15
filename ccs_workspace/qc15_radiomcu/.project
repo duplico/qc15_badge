@@ -42,6 +42,16 @@
 			<locationURI>WORKSPACE_LOC/qc15_common/qc15.h</locationURI>
 		</link>
 		<link>
+			<name>rfm75.c</name>
+			<type>1</type>
+			<locationURI>WORKSPACE_LOC/rfm75_msp430/rfm75.c</locationURI>
+		</link>
+		<link>
+			<name>rfm75.h</name>
+			<type>1</type>
+			<locationURI>WORKSPACE_LOC/rfm75_msp430/rfm75.h</locationURI>
+		</link>
+		<link>
 			<name>util.c</name>
 			<type>1</type>
 			<locationURI>WORKSPACE_LOC/qc15_common/util.c</locationURI>
