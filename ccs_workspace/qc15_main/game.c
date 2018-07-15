@@ -20,65 +20,26 @@
 
 void start_action_series(game_action_series_t* series);
 
-// I suspect these structs will ultimately look more like the following,
-//  but for now we're going to make them VERY FAT so that it's easy to
-//  test and get going:
-
-//typedef struct {
-//    /// The action type ID.
-//    uint8_t action_type;
-//    /// Action detail number.
-//    /**
-//     ** In the event of an animation or change state, this is the ID of the
-//     ** target. In the event of text, this signifies the address of the pointer
-//     ** to the text in our text-storage system.
-//     */
-//    uint16_t action_detail;
-//    /// The duration of the action, which may or may not be valid for this type.
-//    uint8_t duration;
-//} game_action_t;
-//
-//typedef struct {
-//    /// The duration of this timer, in 1/32 of seconds.
-//    uint32_t duration;
-//    /// True if this timer should repeat.
-//    uint8_t recurring;
-//    game_action_t *result_action_series;
-//} game_timer_t;
-//
-//typedef struct {
-//    char text[25];
-//    game_action_t *result_action_series;
-//} game_user_in_t;
-//
-//typedef struct {
-//    uint8_t id;
-//    uint8_t entry_series_len;
-//    game_action_t* entry_series;
-//    /// All applicable timers for this state.
-//    /**
-//     ** These MUST be sorted from MOST specific to LEAST specific. That is,
-//     ** any NON-recurring timers must come first, followed by recurring timers
-//     ** from largest to smallest interval.
-//     */
-//    uint8_t timer_series_len;
-//    game_timer_t* timer_series;
-//    uint8_t input_series_len;
-//    game_user_in_t* input_series;
-//} game_state_t;
-
-/*
- * Action types:
- * * LED animation (id, loop, duration)
- * * Display text  (text)
- * * Change state  (id)
- */
-
 #define GAME_ACTION_TYPE_TEXT 0
 #define GAME_ACTION_TYPE_ANIM_TEMP 1
 #define GAME_ACTION_TYPE_ANIM_BG 2
 #define GAME_ACTION_TYPE_STATE 3
 #define GAME_ACTION_TYPE_OTHER 4
+
+led_ring_animation_t animation_list[2];
+game_state_t initial_state = {0};
+game_state_t loaded_state = {0};
+game_state_t *current_state;
+game_state_t all_states[1];
+extern uint8_t s_down, s_up, s_left, s_right, s_clock_tick;
+
+uint8_t in_action_series = 0;
+game_action_series_t *curr_action_series;
+uint8_t curr_action_index = 0;
+uint16_t game_curr_elapsed = 0;
+
+uint8_t text_selection = 0;
+
 
 char all_text[][25] = {
                        "Entering initial state",
@@ -121,9 +82,15 @@ const led_ring_animation_t anim_pan = {
         "Pansexual"
 };
 
-led_ring_animation_t animation_list[2];
-game_state_t initial_state = {0};
-game_state_t *current_state;
+void game_set_state(game_state_t *state) {
+    in_action_series = 0;
+    curr_action_index = 0;
+    game_curr_elapsed = 0;
+    text_selection = 0;
+
+    current_state = state;
+    start_action_series(&(current_state->entry_series));
+}
 
 void game_begin() {
     animation_list[0] = anim_rainbow;
@@ -158,17 +125,10 @@ void game_begin() {
     initial_state.input_series[2].result_action_series.action_series[0].action_detail = 1;
     initial_state.input_series[2].result_action_series.action_series[0].duration = 0;
 
-//    memcpy(&current_state, &initial_state, sizeof(game_state_t));
+    memcpy(&loaded_state, &initial_state, sizeof(game_state_t));
 
-    current_state = &initial_state;
-    start_action_series(&(current_state->entry_series));
+    game_set_state(&loaded_state);
 }
-
-extern uint8_t s_down, s_up, s_left, s_right, s_clock_tick;
-
-uint8_t action_series_len = 0;
-uint8_t new_state = 1;
-
 
 void do_action(game_action_t *action) {
     switch(action->action_type) {
@@ -189,13 +149,6 @@ void do_action(game_action_t *action) {
     }
 }
 
-uint8_t in_action_series = 0;
-game_action_series_t *curr_action_series;
-uint8_t curr_action_index = 0;
-uint16_t game_curr_elapsed = 0;
-
-uint8_t text_selection = 0;
-
 /// Render bottom screen for the current state and value of `text_selection`.
 void draw_text_selection() {
     lcd111_clear(0);
@@ -203,8 +156,6 @@ void draw_text_selection() {
         lcd111_put_text(0, all_text[current_state->input_series[text_selection].text_addr], 24);
     }
 }
-
-// TODO: Make a "NEW STATE" function
 
 void start_action_series(game_action_series_t* series) {
     if (series->len > 0) {
@@ -242,7 +193,6 @@ void game_handle_loop() {
                 // That was the last action in the series, so now it's time
                 //  to leave the action series.
                 in_action_series = 0;
-                text_selection = 0;
                 draw_text_selection();
             } else {
                 // There are more actions in the series. We need to setup,
