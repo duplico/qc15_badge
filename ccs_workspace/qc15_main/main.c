@@ -1,3 +1,30 @@
+/// Main driver file for the Queercon 15 (2018) electronic badge.
+/**
+ ** This is for the main MCU on the badge, which is an MSP430FR5972. This file
+ ** handles all of the definitions of the following types of data:
+ **
+ ** * Interrupt flags (which start with `f_`)
+ ** * Non-interrupt signal flags (which start with `s_`).
+ ** * Our global status and configuration
+ **
+ ** And it implements the following types of functions:
+ **
+ ** * Initialization of MCU-local peripherals and components (e.g. clocks,
+ **    timers, GPIO for buttons, etc.
+ ** * Signal-handling to convert low-level signals and interrupt flags (set by
+ **    interrupt service routines, for example) into higher-level signals to be
+ **    interpreted by the game functions.
+ ** * The `main()` function, which calls all the initialization, bootstrapping,
+ **    and power-on self-test functions. It also implements the main loop,
+ **    which handles signals and calls other modules' loop body functions as
+ **    appropriate.
+ **
+ ** \file main.c
+ ** \author George Louthan
+ ** \date   2018
+ ** \copyright (c) 2018 George Louthan @duplico. MIT License.
+ */
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,44 +56,67 @@ uint8_t s_power_on = 0;
 uint8_t s_power_off = 0;
 qc15status badge_status = {0}; // TODO initialize elsewhere
 
+uint8_t rx_from_radio[IPC_MSG_LEN_MAX] = {0};
+
+const rgbcolor_t bw_colors[] = {
+        {0x20, 0x20, 0x20},
+        {0xff, 0xff, 0xff},
+        {0x00, 0x00, 0x00},
+        {0x00, 0x00, 0x00},
+};
+
+const led_ring_animation_t anim_bw = {
+        &bw_colors[0],
+        4,
+        10,
+        "bwtest"
+};
+
+/// Initialize the system clocks and clock sources.
+/**
+ ** CLOCK SOURCES
+ ** =============
+ **
+ ** Fixed sources:
+ ** * `VLO`: 10k Very Low-power low-frequency Oscillator
+ ** * `MODOSC`: A 5MHz clock for `MODCLK`
+ ** * `LFMODCLK`: A divided version of `MODCLK` (/128), which is 39 kHz
+ **
+ ** Configurable sources:
+ ** * `DCO` (Digitally-controlled oscillator): initialize to 8 MHz
+ ** * `LFXT` (Low frequency external crystal): unused
+ ** * `HFXT` (High frequency external crystal): unused
+ **
+ ** SYSTEM CLOCKS
+ ** =============
+ ** * `MCLK`:  Initialize to `DCO`/1, which is 8 MHz.
+ ** * `SMCLK`: Initialize to `DCO`/8, which is 1 MHz, the same as `SMCLK` on
+ **            the radio MCU.
+ ** * `ACLK`:  Initialize to `LFMODOSC`, which is 39 kHz.
+ */
 void init_clocks() {
-
-    // CLOCK SOURCES
-    // =============
-
-    // Fixed sources:
-    //      VLO      10k Very low power low-frequency oscillator
-    //      MODOSC   5M  for MODCLK
-    //      LFMODCLK (MODCLK/128, 39 kHz)
-
-    // Configurable sources:
-    //      DCO  (Digitally-controlled oscillator) (8 MHz)
-
-    //      LFXT (Low frequency external crystal) - unused
-    //      HFXT (High frequency external crystal) - unused
 
     // SYSTEM CLOCKS
     // =============
-
     // MCLK (8 MHz)
     //  Defaults to DCOCLK /8
     //  Available sources are HFXT, DCO, LFXT, VLO, or external digital clock.
     //   If it's above 8 MHz, we need to configure FRAM wait-states.
-    //   Set to 8 MHz (DCO /2)
-    CS_initClockSignal(CS_MCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_1); // 8 M
+    //   Set to 8 MHz (DCO /1)
+    CS_initClockSignal(CS_MCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_1);
 
     // SMCLK (1 MHz)
     //  Defaults to DCOCLK /8
     //  Same sources available as MCLK.
     //      NB: This is different from the SMCLK behavior of the FR2xxx series,
     //          which can only source SMCLK from a divided MCLK.
-    //  We'll use DCO /16
+    //  We'll use DCO /8 to get 1 MHz
     CS_initClockSignal(CS_SMCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_8); // 1 M
 
     // MODCLK (5 MHz)
     //  This comes from MODOSC. It's fixed.
 
-    // ACLK
+    // ACLK (39 kHz)
     //  Uses LFMODOSC, which is ~ 39k (MODCLK /128).
     CS_initClockSignal(CS_ACLK, CS_LFMODOSC_SELECT, CS_CLOCK_DIVIDER_1); // 39k
 }
@@ -81,6 +131,7 @@ void init_ipc_io() {
     UCA0CTLW0 |= UCSWRST;
 }
 
+/// Unlock the IO pins from LPM5, and initialize our GPIO.
 void init_io() {
     // The magic make-it-work command.
     //  Otherwise everything is stuck in high-impedance forever.
@@ -102,6 +153,7 @@ void init_io() {
     P9OUT |= 0xF0; // pull ups, please
 }
 
+// TODO: This needs to be changed to 32 Hz, to match the radio MCU
 /// Initialize the animation timer to about 30 Hz
 void timer_init() {
     // We need timer A3 for our loop below.
@@ -120,6 +172,7 @@ void timer_init() {
     Timer_A_startCounter(TIMER_A1_BASE, TIMER_A_UP_MODE);
 }
 
+/// The master init function, which calls IO and peripherals' init functions.
 void init() {
     WDT_A_hold(WDT_A_BASE);
 
@@ -141,20 +194,23 @@ void init() {
     srand(25);
 }
 
-const rgbcolor_t bw_colors[] = {
-        {0x20, 0x20, 0x20},
-        {0xff, 0xff, 0xff},
-        {0x00, 0x00, 0x00},
-        {0x00, 0x00, 0x00},
-};
-
-const led_ring_animation_t anim_bw = {
-        &bw_colors[0],
-        4,
-        10,
-        "bwtest"
-};
-
+/// Debounce the buttons by checking for consecutive similar values.
+/**
+ ** This function is a highly silly way to debounce four buttons. It takes
+ ** "advantage" of their being sequential on port P9. Because buttons 1, 2, 3,
+ ** and 4 are attached to port P9 pins 7, 6, 5, and 4 respectively, we just
+ ** mask the upper nibble of `P9IN` and use that for our current `button_read`,
+ ** which we check against the last read, `button_read_prev`. If they're the
+ ** same, we consider that to be a stable (debounced) button reading. Then we
+ ** determine whether we need to raise a signal to the main function by
+ ** comparing that to the current button state, which is in the upper nibble of
+ ** `button_state`.
+ **
+ ** If we do need to raise a signal, we use `s_button` for the
+ ** purpose: a 1 in its lower nibble indicates which button is being signaled,
+ ** and a corresponding 1 in the upper nibble indicates a "release" whereas
+ ** a 0 indicates a "press."
+ */
 void poll_buttons() {
     // The buttons are active LOW.
     static uint8_t button_read_prev = 0xF0;
@@ -185,10 +241,11 @@ void poll_buttons() {
         }
     }
     button_read_prev = button_read;
-} // poll_buttons
+}
 
-void handle_ipc_rx(uint8_t *rx_from_radio) {
-    switch(rx_from_radio[0] & 0xF0) {
+/// High-level message handler for IPC messages from the radio MCU.
+void handle_ipc_rx(uint8_t *rx) {
+    switch(rx[0] & 0xF0) {
     case IPC_MSG_POST:
         // The radio MCU has rebooted.
         // fall through:
@@ -198,7 +255,7 @@ void handle_ipc_rx(uint8_t *rx_from_radio) {
         break;
     case IPC_MSG_SWITCH:
         // The switch has been toggled.
-        if (rx_from_radio[0] & 0x0F) {
+        if (rx[0] & 0x0F) {
             s_power_off = 0;
             s_power_on = 1;
         } else {
@@ -208,12 +265,18 @@ void handle_ipc_rx(uint8_t *rx_from_radio) {
         break;
     }
 }
-uint8_t rx_from_radio[IPC_MSG_LEN_MAX] = {0};
 
+/// Low-level handler for global interrupt and status signals.
+/**
+ ** This function is ALWAYS called in the main loop, no matter what other
+ ** loop bodies need to be called. It handles basic LED tasks, button polling,
+ ** IPC messaging, the soft power switch, and interpreting the low-level
+ ** button signals into four individual signals for other loop bodies.
+ */
 void handle_global_signals() {
     if (f_time_loop) {
         f_time_loop = 0;
-        s_clock_tick = 1; // TODO: this should be a difference.
+        s_clock_tick = 1;
         led_timestep();
         poll_buttons();
     }
@@ -273,6 +336,23 @@ void handle_global_signals() {
     }
 }
 
+/// Clear any loop-iteration-specific signals not handled by a loop body.
+/**
+ ** Specifically, this function cleans up after `handle_global_signals()`. Only
+ ** signals set in that function are cleared here. Other signals may be
+ ** important to persist across loops (especially interrupt flags) because they
+ ** could have occurred between the invocations of `handle_global_signals()`
+ ** and this function.
+ */
+void cleanup_global_signals() {
+    s_left = 0;
+    s_right = 0;
+    s_down = 0;
+    s_up = 0;
+    s_clock_tick = 0;
+}
+
+/// The main initialization and loop function.
 void main (void)
 {
     init();
@@ -282,50 +362,26 @@ void main (void)
     // hold DOWN on turn-on for verbose boot:
     bootstrap(P9IN & BIT4);
 
-//    lcd111_set_text(1, "UBER BADGE");
-//    lcd111_clear(0);
-//    lcd111_cursor_type(0, BIT0);
-//    lcd111_put_text(0, "TYPING", 24);
-//    lcd111_cursor_pos(0, 3);
-//
-//    lcd111_clear(1);
-//    lcd111_cursor_type(1, BIT2);
-//    lcd111_put_text(1, "TYPING", 24);
-//    lcd111_cursor_pos(1, 3);
-//
-//    led_set_anim(
-//        (led_ring_animation_t *) &anim_bw,
-//        LED_ANIM_TYPE_SPIN,
-//        0xff,
-//        1
-//    );
-//
-//    uint8_t text[24] = {' ', 0};
-//    uint8_t cursor_pos = 0;
-
     game_begin();
 
     while (1) {
         handle_global_signals();
 
+        // Handle a completed LED animation.
         if (s_led_anim_done) {
             s_led_anim_done = 0;
         }
 
         game_handle_loop();
 
-        // Cleanup unhandled signals:
-        s_left = 0;
-        s_right = 0;
-        s_down = 0;
-        s_up = 0;
-        s_clock_tick = 0;
-        // Go to sleep.
-        LPM;
+        // If no further interrupt flags have been raised during this loop
+        //  iteration, go to sleep. Otherwise, loop.
+        if (!f_ipc_rx && !f_time_loop)
+            LPM;
     }
 }
 
-// 0xFFDE Timer1_A3 CC0
+/// The time loop ISR, at vector `0xFFDE` (`Timer1_A3 CC0`).
 #pragma vector=TIMER1_A0_VECTOR
 __interrupt
 void TIMER_ISR() {

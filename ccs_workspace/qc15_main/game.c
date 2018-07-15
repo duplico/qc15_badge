@@ -4,6 +4,7 @@
  ** code-breaking part of the game goes elsewhere. This file deals with the
  ** state machine that comes in from the spreadsheets.
  **
+ ** \file game.c
  ** \author George Louthan
  ** \date   2018
  ** \copyright (c) 2018 George Louthan @duplico. MIT License.

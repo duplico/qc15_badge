@@ -1,8 +1,9 @@
-/*
- * game.h
- *
- *  Created on: Jul 15, 2018
- *      Author: george
+/// Declarations for the on-badge game interaction state machine.
+/**
+ ** \file game.h
+ ** \author George Louthan
+ ** \date   2018
+ ** \copyright (c) 2018 George Louthan @duplico. MIT License.
  */
 
 #ifndef GAME_H_
