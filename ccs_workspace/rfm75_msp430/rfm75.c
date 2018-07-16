@@ -287,7 +287,6 @@ void rfm75_io_init() {
 
     // and enable!
     RFM75_UCxCTLW0 &= ~UCSWRST;
-
 }
 
 /// Initialize the RFM75 module with its address and callback functions.
