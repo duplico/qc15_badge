@@ -12,8 +12,8 @@
 #include <msp430fr2433.h>
 
 #include "radio.h"
-#include "ipc.h"
 #include "rfm75.h"
+#include "base_main.h"
 
 void delay_millis(unsigned long mils) {
     while (mils) {
@@ -43,6 +43,18 @@ void led_flash() {
     led_off();
 }
 
+void radio_tx_done(uint8_t ack) {
+
+}
+
+void radio_rx_done(uint8_t* data, uint8_t len, uint8_t pipe) {
+    // it was an rx:
+    // light some shit up!
+    led_flash();
+    send_char(pipe);
+    send_string(data, len);
+}
+
 void init_io() {
     // The magic FRAM make-it-work command:
     PMM_unlockLPM5(); // PM5CTL0 &= ~LOCKLPM5;
@@ -68,7 +80,7 @@ void serial_init() {
     UCA0CTLW0 |= UCSSEL__SMCLK;
     UCA0BR0 = 6; // 1000000/9600/16
     UCA0BR1 = 0x00;
-    UCA0MCTLW = 0x1100 | UCOS16 | UCBRF_8;
+    UCA0MCTLW = 0x2200 | UCOS16 | UCBRF_13;
     UCA0CTLW0 &= ~UCSWRST;                    // Initialize eUSCI
 }
 
@@ -107,13 +119,21 @@ void main (void) {
     // char message[] = "HELLO WORLD";
     init_io();
     serial_init();
+
     unsigned char * payload_msg = "HELLOWORLD";
     radio_progress_payload payload = create_payload('A', payload_msg);
 
-    while (1) {
-//        unsigned int length = (int) (sizeof(message) / sizeof(message[0]));
+//    rfm75_init(35, &radio_rx_done, &radio_tx_done);
+//    rfm75_post();
+//    __bis_SR_register(GIE);
 
+    while (1) {
+//        if (f_rfm75_interrupt) {
+//            f_rfm75_interrupt = 0;
+//            rfm75_deferred_interrupt();
+//        }
         send_progress_payload(payload);
-        led_flash();
+
+//        __bis_SR_register(LPM0_bits);
     }
  }
