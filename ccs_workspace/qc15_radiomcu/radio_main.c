@@ -36,7 +36,7 @@ volatile uint8_t f_time_loop = 0;
 uint8_t s_switch = 0;
 uint8_t s_radio_interval = 0;
 
-volatile uint64_t qc_clock = 0;
+volatile uint32_t qc_clock = 0;
 /// The current state of the switch's bit in its IN register (only BIT2 used).
 /**
  ** Because the main MCU assumes that the badge starts switched ON, and the
