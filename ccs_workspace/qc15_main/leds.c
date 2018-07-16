@@ -138,7 +138,7 @@ void led_load_colors() {
 void led_display_colors() {
     switch(led_anim_type) {
     case LED_ANIM_TYPE_SAME:
-        led_all_one_color_ring_only(led_ring_curr[0].r >> 7,
+        ht16d_all_one_color_ring_only(led_ring_curr[0].r >> 7,
                                     led_ring_curr[0].g >> 7,
                                     led_ring_curr[0].b >> 7);
         break;
@@ -196,7 +196,7 @@ uint8_t sleep_anim_type;
 
 void led_off() {
     // TODO: sleep mode, if it exists
-    led_all_one_color(0,0,0); // Turn all LEDs off.
+    ht16d_all_one_color(0,0,0); // Turn all LEDs off.
     sleep_anim_type = led_anim_type;
     led_anim_type = LED_ANIM_TYPE_NONE;
 }
