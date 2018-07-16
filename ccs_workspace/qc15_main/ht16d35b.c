@@ -1,8 +1,13 @@
-/*
- * ht16d35b.c
- *
- *  Created on: Jun 17, 2018
- *      Author: george
+/// Low-level driver for the HT16D35B LED controller.
+/**
+ ** This file is mostly used by `leds.c`, which is the high-level LED animation
+ ** module. Most functions in this module are preceded by `ht16d_` and
+ ** correspond to the direct control of the LED controller's functions, and the
+ ** mapping between our LED layout and its.
+ ** \file ht16d35b.c
+ ** \author George Louthan
+ ** \date   2018
+ ** \copyright (c) 2018 George Louthan @duplico. MIT License.
  */
 
 #include <stdint.h>
@@ -15,45 +20,64 @@
 
 // Command definitions:
 
+/// Write the buffer that follows to display memory.
 #define HTCMD_WRITE_DISPLAY 0x80
 #define HTCMD_READ_DISPLAY  0x81
+/// Read the status register.
 #define HTCMD_READ_STATUS   0x71
+/// Command to toggle between binary and grayscale mode.
 #define HTCMD_BWGRAY_SEL    0x31
+/// Payload for `HTCMD_BWGRAY_SEL` to select binary (black & white) mode.
+#define HTCMD_BWGRAY_SEL_BINARY 0x01
+/// Payload for `HTCMD_BWGRAY_SEL` to select 6-bit grayscale mode.
+#define HTCMD_BWGRAY_SEL_GRAYSCALE 0x00
+/// Select the number of COM (column) pins in use.
 #define HTCMD_COM_NUM       0x32
+/// Control blinking.
 #define HTCMD_BLINKING      0x33
+/// System and oscillator control command.
 #define HTCMD_SYS_OSC_CTL   0x35
+/// Set the constant-current ratio.
 #define HTCMD_I_RATIO       0x36
+/// Set the global brightness (0x40 is max).
 #define HTCMD_GLOBAL_BRTNS  0x37
 #define HTCMD_MODE_CTL      0x38
 #define HTCMD_COM_PIN_CTL   0x41
 #define HTCMD_ROW_PIN_CTL   0x42
 #define HTCMD_DIR_PIN_CTL   0x43
+/// Command to order a software reset of the HT16D35B.
 #define HTCMD_SW_RESET      0xCC
-
-// Master LED value and translation buffers:
+/// The number of RGB (3-channel) LEDs in the system.
+#define HT16D_LED_COUNT 24
 
 /// 8-bit values for the RGB LEDs, ring first, then line.
 /**
- ** Note that these values will be right-shifted by two bits when sent to
+ ** This is a 24-element array of 3-tuples of RGB color (1 byte / 8 bits per
+ ** channel). Note that, in this array, all 8 bits are significant; the
+ ** right-shifting by two is done in `led_send_gray()`, to send 6-bit data to
  ** the LED controller, because it only has 6 bits of grayscale.
+ **
+ ** The first 18 3-tuples are the outer ring, and the last 6 tuples are the
+ ** line between the LCD screens.
  */
-uint8_t led_values[24][3] = {0,};
+uint8_t ht16d_gs_values[HT16D_LED_COUNT][3] = {0,};
 
-uint8_t led_mapping[24][3][2] = {{{2, 15}, {2, 16}, {2, 17}}, {{1, 15}, {1, 16}, {1, 17}}, {{0, 15}, {0, 16}, {0, 17}}, {{2, 23}, {2, 24}, {2, 25}}, {{1, 23}, {1, 24}, {1, 25}}, {{0, 23}, {0, 24}, {0, 25}}, {{2, 18}, {2, 19}, {2, 20}}, {{1, 18}, {1, 19}, {1, 20}}, {{0, 18}, {0, 19}, {0, 20}}, {{2, 11}, {2, 10}, {2, 9}}, {{1, 11}, {1, 10}, {1, 9}}, {{0, 11}, {0, 10}, {0, 9}}, {{2, 6}, {2, 7}, {2, 8}}, {{1, 6}, {1, 7}, {1, 8}}, {{0, 6}, {0, 7}, {0, 8}}, {{2, 12}, {2, 13}, {2, 14}}, {{0, 12}, {0, 13}, {0, 14}}, {{1, 12}, {1, 13}, {1, 14}}, {{0, 0}, {0, 2}, {0, 1}}, {{1, 0}, {1, 2}, {1, 1}}, {{2, 0}, {2, 2}, {2, 1}}, {{2, 3}, {2, 5}, {2, 4}}, {{1, 3}, {1, 5}, {1, 4}}, {{0, 3}, {0, 5}, {0, 4}}};
-const uint8_t led_col_mapping[3][28][2] = {{{18, 0}, {18, 2}, {18, 1}, {23, 0}, {23, 2}, {23, 1}, {14, 0}, {14, 1}, {14, 2}, {11, 2}, {11, 1}, {11, 0}, {16, 0}, {16, 1}, {16, 2}, {2, 0}, {2, 1}, {2, 2}, {8, 0}, {8, 1}, {8, 2}, {0, 0}, {0, 0}, {5, 0}, {5, 1}, {5, 2}, {0, 0}, {0, 0}}, {{19, 0}, {19, 2}, {19, 1}, {22, 0}, {22, 2}, {22, 1}, {13, 0}, {13, 1}, {13, 2}, {10, 2}, {10, 1}, {10, 0}, {17, 0}, {17, 1}, {17, 2}, {1, 0}, {1, 1}, {1, 2}, {7, 0}, {7, 1}, {7, 2}, {0, 0}, {0, 0}, {4, 0}, {4, 1}, {4, 2}, {0, 0}, {0, 0}}, {{20, 0}, {20, 2}, {20, 1}, {21, 0}, {21, 2}, {21, 1}, {12, 0}, {12, 1}, {12, 2}, {9, 2}, {9, 1}, {9, 0}, {15, 0}, {15, 1}, {15, 2}, {0, 0}, {0, 1}, {0, 2}, {6, 0}, {6, 1}, {6, 2}, {0, 0}, {0, 0}, {3, 0}, {3, 1}, {3, 2}, {0, 0}, {0, 0}}};
+/// Correlate our LED_ID,COLOR to COL,ROW.
+/**
+ ** Note that the HT16D35B does include a feature to handle this mapping for us
+ ** onboard the chip. We are currently not using it, but there's not really
+ ** any reason that we couldn't.
+ */
+const uint8_t ht16d_col_mapping[3][28][2] = {{{18, 0}, {18, 2}, {18, 1}, {23, 0}, {23, 2}, {23, 1}, {14, 0}, {14, 1}, {14, 2}, {11, 2}, {11, 1}, {11, 0}, {16, 0}, {16, 1}, {16, 2}, {2, 0}, {2, 1}, {2, 2}, {8, 0}, {8, 1}, {8, 2}, {0, 0}, {0, 0}, {5, 0}, {5, 1}, {5, 2}, {0, 0}, {0, 0}}, {{19, 0}, {19, 2}, {19, 1}, {22, 0}, {22, 2}, {22, 1}, {13, 0}, {13, 1}, {13, 2}, {10, 2}, {10, 1}, {10, 0}, {17, 0}, {17, 1}, {17, 2}, {1, 0}, {1, 1}, {1, 2}, {7, 0}, {7, 1}, {7, 2}, {0, 0}, {0, 0}, {4, 0}, {4, 1}, {4, 2}, {0, 0}, {0, 0}}, {{20, 0}, {20, 2}, {20, 1}, {21, 0}, {21, 2}, {21, 1}, {12, 0}, {12, 1}, {12, 2}, {9, 2}, {9, 1}, {9, 0}, {15, 0}, {15, 1}, {15, 2}, {0, 0}, {0, 1}, {0, 2}, {6, 0}, {6, 1}, {6, 2}, {0, 0}, {0, 0}, {3, 0}, {3, 1}, {3, 2}, {0, 0}, {0, 0}}};
 
+/// Initialize GPIO and I2C peripheral (but don't enable the eUSCI yet).
 void ht16d_init_io() {
     // HT16D35B (LED Controller)
     // SDA  1.6 (UCB0)
     // SCL  1.7 (UCB0)
-    // These require pull-up resistors.
-    GPIO_setAsOutputPin(GPIO_PORT_P1, GPIO_PIN6 + GPIO_PIN7);
 
-    GPIO_setAsPeripheralModuleFunctionInputPin(
-            GPIO_PORT_P1,
-            GPIO_PIN6 + GPIO_PIN7,
-            GPIO_PRIMARY_MODULE_FUNCTION
-    );
+    P1SEL0 |= BIT6|BIT7;
+    P1SEL1 &= ~(BIT6|BIT7);
 
     EUSCI_B_I2C_initMasterParam param = {0};
     param.selectClockSource = EUSCI_B_I2C_CLOCKSOURCE_SMCLK;
@@ -62,15 +86,16 @@ void ht16d_init_io() {
     param.byteCounterThreshold = 1;
     param.autoSTOPGeneration = EUSCI_B_I2C_NO_AUTO_STOP;
 
-    // Set slave addr
-    // The slave address is: 0b110100X // X is floating right now.
-    //  We may need a helper wire on A0.
-    EUSCI_B_I2C_setSlaveAddress(EUSCI_B0_BASE, 0b1101000); //0b110100X
+    // The slave address is: 0b110100X,
+    //  where X is defined by the value of pin A0 (11) on the LED controller.
+    // We've connected it to ground, so the address is 0b1101000.
+    EUSCI_B_I2C_setSlaveAddress(EUSCI_B0_BASE, 0b1101000);
 
     EUSCI_B_I2C_initMaster(EUSCI_B0_BASE, &param);
 }
 
-void ht_send_array(uint8_t txdat[], uint8_t len) {
+/// Transmit a `len` byte array `txdat` to the HT16D35B.
+void ht16d_send_array(uint8_t txdat[], uint8_t len) {
     // START
     UCB0CTLW0 |= UCTR; // Transmit mode.
 
@@ -105,18 +130,21 @@ void ht_send_array(uint8_t txdat[], uint8_t len) {
     UCB0IFG &= ~UCSTPIFG; // Clear the auto-stop interrupt.
 }
 
-void ht_send_cmd_single(uint8_t cmd) {
-    ht_send_array(&cmd, 1);
+/// Transmit a single byte command to the HT16D35B.
+void ht16d_send_cmd_single(uint8_t cmd) {
+    ht16d_send_array(&cmd, 1);
 }
 
-void ht_send_two(uint8_t cmd, uint8_t dat) {
+/// Transmit two bytes to the HT16D35B.
+void ht16_d_send_cmd_dat(uint8_t cmd, uint8_t dat) {
     uint8_t v[2];
     v[0] = cmd;
     v[1] = dat;
-    ht_send_array(v, 2);
+    ht16d_send_array(v, 2);
 }
 
-void ht_read_reg(uint8_t reg[]) {
+/// Read 21 bytes of the status register into the supplied byte pointer.
+void ht16d_read_reg(uint8_t reg[]) {
     // START
     UCB0CTLW0 |= UCTR; // Transmit.
     UCB0CTLW0 |=  UCTXSTT; // Send a START.
@@ -161,19 +189,24 @@ void ht_read_reg(uint8_t reg[]) {
     }
 }
 
+/// Initialize the HT16D35B, and enable the eUSCI for talking to it.
+/**
+ ** Specifically, we initialize the device with the following characteristics:
+ ** * All LEDs off
+ ** * All rows in use except for 27, 26, 22, and 21
+ ** * Grayscale mode
+ ** * No fade, UCOM, USEG, or matrix masking
+ ** * Global brightness to `HT16D_INITIAL_BRIGHTNESS`
+ ** * Only columns 0, 1, and 2 in use
+ ** * Maximum constant current ratio
+ ** * HIGH SCAN mode (common-anode on columns)
+ */
 void ht16d_init() {
     // On POR:
     //  All registers reset to default, but DDRAM not cleared
     //  Oscillator off
     //  COM and ROW high impedance
     //  LED display OFF.
-
-    // In GRAY MODE (which we're using), the display RAM is 28x8x6.
-    // There's some extra RAM gizmos we probably don't really care about:
-    //  Fade
-    //  UCOM
-    //  USEG
-    //  Matrix masking
 
     EUSCI_B_I2C_enable(EUSCI_B0_BASE);
 
@@ -196,38 +229,42 @@ void ht16d_init() {
     }
 
     // SW Reset (HTCMD_SW_RESET)
-    ht_send_cmd_single(HTCMD_SW_RESET);
+    ht16d_send_cmd_single(HTCMD_SW_RESET);
 
-    // Set global brightness (HTCMD_GLOBAL_BRTNS)
-    ht_send_two(HTCMD_GLOBAL_BRTNS, 0x0f); // 0x40 is the most
+    // Set global brightness
+    ht16_d_send_cmd_dat(HTCMD_GLOBAL_BRTNS, HT16D_INITIAL_BRIGHTNESS);
     // Set BW/Binary display mode.
-    ht_send_two(HTCMD_BWGRAY_SEL, 0x00); // 0x01 = binary (LSB1=b/w; LSB0=gray)
+    ht16_d_send_cmd_dat(HTCMD_BWGRAY_SEL, HTCMD_BWGRAY_SEL_GRAYSCALE);
     // Set column pin control for in-use cols (HTCMD_COM_PIN_CTL)
-    ht_send_two(HTCMD_COM_PIN_CTL, 0b0000111);
+    ht16_d_send_cmd_dat(HTCMD_COM_PIN_CTL, 0b0000111);
     // Set constant current ratio (HTCMD_I_RATIO)
-    ht_send_two(HTCMD_I_RATIO, 0b0000); // This seems to be the max.
+    ht16_d_send_cmd_dat(HTCMD_I_RATIO, 0b0000);
     // Set columns to 3 (0--2), and HIGH SCAN mode (HTCMD_COM_NUM)
-    ht_send_two(HTCMD_COM_NUM, 0x02);
+    ht16_d_send_cmd_dat(HTCMD_COM_NUM, 0x02);
 
     // Set ROW pin control for in-use rows (HTCMD_ROW_PIN_CTL)
-    // All rows are in use, except 27,26,22,21
     uint8_t row_ctl[] = {HTCMD_ROW_PIN_CTL, 0b00111001, 0xff, 0xff, 0xff};
-    ht_send_array(row_ctl, 5);
-    ht_send_two(HTCMD_SYS_OSC_CTL, 0b10); // Activate oscillator.
+    ht16d_send_array(row_ctl, 5);
+    ht16_d_send_cmd_dat(HTCMD_SYS_OSC_CTL, 0b10); // Activate oscillator.
 
-    led_all_one_color(0,0,0); // Turn off all the LEDs.
+    ht16d_all_one_color(0,0,0); // Turn off all the LEDs.
 
-    ht_send_two(HTCMD_SYS_OSC_CTL, 0b11); // Activate oscillator & display.
+    ht16_d_send_cmd_dat(HTCMD_SYS_OSC_CTL, 0b11); // Activate oscillator & display.
 }
 
-/// A really crappy POST method.
+/// A really crappy POST method, returning true for pass.
 uint8_t ht16d_post() {
     volatile uint8_t ht_status_reg[22] = {0};
-    ht_read_reg((uint8_t *) ht_status_reg);
+    ht16d_read_reg((uint8_t *) ht_status_reg);
     return ht_status_reg[11] == 0b0000111;
 }
 
-void led_send_gray() {
+/// Transmit the data currently in `led_values` to the LED controller.
+/**
+ ** Here, and only here, we also convert the LED channel brightness values
+ ** from 8-bit to 6-bit.
+ */
+void ht16d_send_gray() {
     // the array, in this case, is:
     // COM0,ROW0 ... ROW27
     // COM1,ROW0 ...
@@ -239,113 +276,47 @@ void led_send_gray() {
     for (uint8_t col=0; col<3; col++) {
         light_array[1] = 0x20*col;
         for (uint8_t row=0; row<28; row++) {
-            uint8_t led_num = led_col_mapping[col][row][0];
-            uint8_t rgb_num = led_col_mapping[col][row][1];
+            uint8_t led_num = ht16d_col_mapping[col][row][0];
+            uint8_t rgb_num = ht16d_col_mapping[col][row][1];
 
-            light_array[row+2] = led_values[led_num][rgb_num]>>2;
+            light_array[row+2] = ht16d_gs_values[led_num][rgb_num]>>2;
         }
 
-        ht_send_array(light_array, 30);
+        ht16d_send_array(light_array, 30);
     }
 }
 
 /// Set some of the colors, and immediately send them to the LED controller.
 void ht16d_set_colors(uint8_t id_start, uint8_t id_len, rgbcolor16_t* colors) {
-    if (id_start >= 24 || id_start+id_len > 24) {
+    if (id_start >= HT16D_LED_COUNT || id_start+id_len > HT16D_LED_COUNT) {
         // ASSERT
         while (1);
     }
     for (uint8_t i=0; i<id_len; i++) {
-        led_values[17-(id_start+i)][0] = (uint8_t)(colors[i].r >> 7);
-        led_values[17-(id_start+i)][1] = (uint8_t)(colors[i].g >> 7);
-        led_values[17-(id_start+i)][2] = (uint8_t)(colors[i].b >> 7);
+        ht16d_gs_values[17-(id_start+i)][0] = (uint8_t)(colors[i].r >> 7);
+        ht16d_gs_values[17-(id_start+i)][1] = (uint8_t)(colors[i].g >> 7);
+        ht16d_gs_values[17-(id_start+i)][2] = (uint8_t)(colors[i].b >> 7);
     }
-    led_send_gray();
+    ht16d_send_gray();
 }
 
-void led_all_one_color(uint8_t r, uint8_t g, uint8_t b) {
-    // the array, in this case, is:
-    // COM0,ROW0 ... ROW27
-    // COM1,ROW0 ...
-
-    // So we only need to write the first three COMs.
-
-    uint8_t light_array[30] = {HTCMD_WRITE_DISPLAY, 0x00, 0};
-
-    for (uint8_t col=0; col<3; col++) {
-        light_array[1] = 0x20*col;
-        for (uint8_t row=0; row<28; row++) {
-            uint8_t rgb_num = led_col_mapping[col][row][1];
-
-            switch (rgb_num) {
-                case 0:
-                    //red
-                    light_array[row+2] = r>>2;
-                    break;
-                case 1:
-                    //green
-                    light_array[row+2] = g>>2;
-                    break;
-                case 2:
-                    //blue
-                    light_array[row+2] = b>>2;
-                    break;
-            }
-        }
-
-        ht_send_array(light_array, 30);
+/// Set all LEDs to the same R,G,B colors.
+void ht16d_all_one_color(uint8_t r, uint8_t g, uint8_t b) {
+    for (uint8_t i=0; i<24; i++) {
+        ht16d_gs_values[i][0] = r;
+        ht16d_gs_values[i][1] = g;
+        ht16d_gs_values[i][2] = b;
     }
+    ht16d_send_gray();
 }
 
-void led_all_one_color_ring_only(uint8_t r, uint8_t g, uint8_t b) {
-    // the array, in this case, is:
-    // COM0,ROW0 ... ROW27
-    // COM1,ROW0 ...
+/// Set all colors in the ring to a single color, preserving the center-line.
+void ht16d_all_one_color_ring_only(uint8_t r, uint8_t g, uint8_t b) {
 
-    // So we only need to write the first three COMs.
-
-    uint8_t light_array[30] = {HTCMD_WRITE_DISPLAY, 0x00, 0};
-
-    for (uint8_t col=0; col<3; col++) {
-        light_array[1] = 0x20*col;
-        for (uint8_t row=0; row<28; row++) {
-            uint8_t led_num = led_col_mapping[col][row][0];
-            uint8_t rgb_num = led_col_mapping[col][row][1];
-            if (led_num > 17) {
-                light_array[row+2] = led_values[led_num][rgb_num]>>2;
-            } else {
-                switch (rgb_num) {
-                    case 0:
-                        //red
-                        light_array[row+2] = r>>2;
-                        break;
-                    case 1:
-                        //green
-                        light_array[row+2] = g>>2;
-                        break;
-                    case 2:
-                        //blue
-                        light_array[row+2] = b>>2;
-                        break;
-                }
-            }
-        }
-
-        ht_send_array(light_array, 30);
+    for (uint8_t i=0; i<18; i++) {
+        ht16d_gs_values[i][0] = r;
+        ht16d_gs_values[i][1] = g;
+        ht16d_gs_values[i][2] = b;
     }
-}
-
-
-void light_channel(uint8_t ch) {
-    uint8_t light_array[30] = {HTCMD_WRITE_DISPLAY, 0, 0};
-
-    uint8_t byt=0;
-    uint8_t bit=0;
-
-    byt = 30 - ch/8;
-    bit = ch % 8;
-
-    light_array[byt] = (0x01 << bit);
-
-    ht_send_array(light_array, 30);
+    ht16d_send_gray();
 }

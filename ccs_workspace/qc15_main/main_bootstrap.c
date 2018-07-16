@@ -80,7 +80,7 @@ void bootstrap(uint8_t fastboot) {
             bootstrap_status++;
             if (!fastboot) {
                 lcd111_set_text(0, "LED driver POST: OK");
-                led_all_one_color(100, 100, 100);
+                ht16d_all_one_color(100, 100, 100);
                 delay_millis(200);
             }
         } else {
@@ -102,7 +102,7 @@ void bootstrap(uint8_t fastboot) {
         } else {
             lcd111_set_text(1, "QC15 BOOTSTRAP> FAIL");
             lcd111_set_text(0, "SPI NOR flash POST FAIL!");
-            led_all_one_color(200, 0, 0);
+            ht16d_all_one_color(200, 0, 0);
             delay_millis(2000);
             bootstrap_status++;
         }
@@ -132,7 +132,7 @@ void bootstrap(uint8_t fastboot) {
                         // There was some kind of failure reported on the
                         //  radio mcu side.
                         lcd111_set_text(1, "QC15 BOOTSTRAP> FAIL");
-                        led_all_one_color(200, 50, 0);
+                        ht16d_all_one_color(200, 50, 0);
 
                         // Decode it:
 
@@ -185,7 +185,7 @@ void bootstrap(uint8_t fastboot) {
             time_32nd_secs = 0;
             lcd111_set_text(1, "QC15 BOOTSTRAP> FAIL");
             lcd111_set_text(0, "IPC POST> general fail");
-            led_all_one_color(200, 0, 0);
+            ht16d_all_one_color(200, 0, 0);
             delay_millis(2000);
             bootstrap_status++;
         }
