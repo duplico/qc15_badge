@@ -102,7 +102,7 @@ void main (void)
             // it's been 1 centisecond.
             csecs++;
 
-            if (csecs == 200) {
+            if (1) {
 //                rfm75_tx(0xffff, 0, out_payload, RFM75_PAYLOAD_SIZE); // broadcast (no acks)
 //                rfm75_tx(35, 0, out_payload, RFM75_PAYLOAD_SIZE); // unicast (acked)
                 rfm75_tx(35, 0, hello_payload, RFM75_PAYLOAD_SIZE);

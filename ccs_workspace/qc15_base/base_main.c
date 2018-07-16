@@ -92,7 +92,6 @@ void serial_init() {
  */
 void send_char(char char_to_send) {
     EUSCI_A_UART_transmitData(EUSCI_A0_BASE, char_to_send);
-    delay_nanos(170);
 }
 
 /**
