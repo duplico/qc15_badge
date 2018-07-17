@@ -156,22 +156,6 @@ void set_unicast_addr(uint16_t addr) {
     rfm75_write_reg_buf(RX_ADDR_P0, rx_addr_p0, 3);
 }
 
-/// Perform a RFM75 self-test and return a 1 if it appears to be working.
-uint8_t rfm75_post() {
-    // The MSB of the status register is the active bank, and ACTIVATE 0x53
-    //  is supposed to change the active bank. Let's see if it works.
-    volatile uint8_t bank_one = rfm75_get_status() & 0x80;
-    send_rfm75_cmd(ACTIVATE_CMD, 0x53);
-    volatile uint8_t bank_two = rfm75_get_status() & 0x80;
-
-    rfm75_select_bank(0); // Go back to the normal bank.
-
-    if (bank_one == bank_two) {
-        return 0;
-    }
-    return 1;
-}
-
 /// Configure the RFM75 for Primary Receive mode.
 void rfm75_enter_prx() {
     rfm75_state = RFM75_RX_INIT;
@@ -182,7 +166,6 @@ void rfm75_enter_prx() {
                     CONFIG_MASK_MAX_RT + CONFIG_EN_CRC +
                     CONFIG_CRCO_2BYTE + CONFIG_PWR_UP +
                     CONFIG_PRIM_RX);
-
 
     // Clear interrupts: STATUS=BIT4|BIT5|BIT6
     rfm75_write_reg(STATUS, BIT4|BIT5|BIT6);
@@ -252,6 +235,111 @@ void rfm75_tx(uint16_t addr, uint8_t noack, uint8_t* data, uint8_t len) {
     rfm75_state = RFM75_TX_SEND;
     CE_ACTIVATE;
     // Now we wait for an IRQ to let us know it's sent.
+}
+
+/// Handle RFM75 IRQ, posting to the registered RX and TX callbacks as needed.
+/**
+ * This function needs to be called every time that the RFM75 IRQ is asserted,
+ * preferably as soon as possible. However, for performance reasons it's
+ * important that this not be called from inside the interrupt service routine
+ * itself. The ISR sets a flag called `f_rfm75_interrupt`, which signals to the
+ * main program that this function needs to be called. While this deferred
+ * interrupt is pending, the radio will have limited to no background
+ * functionality (depending on whether we are in PTX or PRX mode).
+ *
+ * This function will, as needed, clear the interrupt vector on the RFM75,
+ * and clear the interrupt flag that was set in this driver's ISR.
+ *
+ * This function will also invoke `tx_done()` or `rx_done()` as appropriate.
+ *
+ *
+ */
+uint8_t rfm75_deferred_interrupt() {
+    f_rfm75_interrupt = 0;
+    // Get the interrupt vector from the RFM75 module:
+    uint8_t iv = rfm75_get_status();
+    uint8_t ret = 0x00;
+
+    if (iv & BIT4) { // no ACK interrupt
+        // Clear the interrupt flag on the radio module:
+        rfm75_write_reg(STATUS, BIT5);
+        __no_operation();
+        ret |= 0b100;
+
+        // Complete the TX state machine activity:
+        rfm75_state = RFM75_TX_DONE;
+    }
+
+    if (iv & BIT5 && rfm75_state == RFM75_TX_SEND) { // TX interrupt
+        // We sent a thing.
+        // The ISR already took us back to standby.
+        // Clear the interrupt flag on the radio module:
+        rfm75_write_reg(STATUS, BIT5);
+        rfm75_state = RFM75_TX_DONE;
+        // It's a TX, so return 0b01:
+        ret |= 0b01;
+    }
+
+    // Determine whether we need to send a TX callback, which covers
+    //  all the cases of (a) we sent a non-ackable message,
+    //  (b) we sent an ackable message that was acked, and
+    //  (c) we sent an ackable message that was NOT acked.
+    if (ret & 0b101) { // TX or NOACK.
+        // We pass TRUE if we did NOT receive a NOACK flag from
+        //  the radio module (meaning EITHER, it was ACKed, OR
+        //  we did not request an ACK).
+        tx_done(!(ret & 0b100));
+
+        // It's important that our tx_done callback function is able to call
+        //  `rfm75_tx()`. All the cleanup we needed to do to re-TX has already
+        //  been done. So we need to check if we're still in `RFM75_TX_DONE`
+        //  after the callback returns. If we are, it's OK to return to PRX
+        //  mode. If not, we're elsewhere in the TX state machine and should
+        //  leave `rfm75_state` alone.
+        if (rfm75_state == RFM75_TX_DONE) {
+            rfm75_enter_prx();
+        }
+    }
+
+    if (iv & BIT6 && rfm75_state == RFM75_RX_LISTEN) { // RX interrupt
+        // We've received something.
+        rfm75_state = RFM75_RX_READY;
+
+        // Read the FIFO. No need to flush it; it's deleted when read.
+        read_rfm75_cmd_buf(RD_RX_PLOAD, payload, RFM75_PAYLOAD_SIZE);
+
+        // Invoke the registered callback function.
+        rx_done(payload, RFM75_PAYLOAD_SIZE,
+                (iv & 0b1110) >> 1); // This is the pipe ID
+
+        // After rx_done returns (and ONLY after it returns), the
+        //  payload_in is stale and is allowed to be overwritten.
+
+        // So now we can tell the radio module that we're done with it:
+        //  Clear the interrupt flag on the module...
+        rfm75_write_reg(STATUS, BIT6);
+        //  ... and assert CE, to listen more.
+        CE_ACTIVATE;
+        rfm75_state = RFM75_RX_LISTEN;
+        ret |= 0b10;
+    }
+    return ret;
+}
+
+/// Perform a RFM75 self-test and return a 1 if it appears to be working.
+uint8_t rfm75_post() {
+    // The MSB of the status register is the active bank, and ACTIVATE 0x53
+    //  is supposed to change the active bank. Let's see if it works.
+    volatile uint8_t bank_one = rfm75_get_status() & 0x80;
+    send_rfm75_cmd(ACTIVATE_CMD, 0x53);
+    volatile uint8_t bank_two = rfm75_get_status() & 0x80;
+
+    rfm75_select_bank(0); // Go back to the normal bank.
+
+    if (bank_one == bank_two) {
+        return 0;
+    }
+    return 1;
 }
 
 /// Initialize the GPIO and peripheral pins required for the RFM75.
@@ -399,95 +487,6 @@ void rfm75_init(uint16_t unicast_address, rfm75_rx_callback_fn* rx_callback,
 
     // And we're off to see the wizard!
     rfm75_enter_prx();
-}
-
-/// Handle RFM75 IRQ, posting to the registered RX and TX callbacks as needed.
-/**
- * This function needs to be called every time that the RFM75 IRQ is asserted,
- * preferably as soon as possible. However, for performance reasons it's
- * important that this not be called from inside the interrupt service routine
- * itself. The ISR sets a flag called `f_rfm75_interrupt`, which signals to the
- * main program that this function needs to be called. While this deferred
- * interrupt is pending, the radio will have limited to no background
- * functionality (depending on whether we are in PTX or PRX mode).
- *
- * This function will, as needed, clear the interrupt vector on the RFM75,
- * and clear the interrupt flag that was set in this driver's ISR.
- *
- * This function will also invoke `tx_done()` or `rx_done()` as appropriate.
- *
- *
- */
-uint8_t rfm75_deferred_interrupt() {
-    f_rfm75_interrupt = 0;
-    // Get the interrupt vector from the RFM75 module:
-    uint8_t iv = rfm75_get_status();
-    uint8_t ret = 0x00;
-
-    if (iv & BIT4) { // no ACK interrupt
-        // Clear the interrupt flag on the radio module:
-        rfm75_write_reg(STATUS, BIT5);
-        __no_operation();
-        ret |= 0b100;
-
-        // Complete the TX state machine activity:
-        rfm75_state = RFM75_TX_DONE;
-    }
-
-    if (iv & BIT5 && rfm75_state == RFM75_TX_SEND) { // TX interrupt
-        // We sent a thing.
-        // The ISR already took us back to standby.
-        // Clear the interrupt flag on the radio module:
-        rfm75_write_reg(STATUS, BIT5);
-        rfm75_state = RFM75_TX_DONE;
-        // It's a TX, so return 0b01:
-        ret |= 0b01;
-    }
-
-    // Determine whether we need to send a TX callback, which covers
-    //  all the cases of (a) we sent a non-ackable message,
-    //  (b) we sent an ackable message that was acked, and
-    //  (c) we sent an ackable message that was NOT acked.
-    if (ret & 0b101) { // TX or NOACK.
-        // We pass TRUE if we did NOT receive a NOACK flag from
-        //  the radio module (meaning EITHER, it was ACKed, OR
-        //  we did not request an ACK).
-        tx_done(!(ret & 0b100));
-
-        // It's important that our tx_done callback function is able to call
-        //  `rfm75_tx()`. All the cleanup we needed to do to re-TX has already
-        //  been done. So we need to check if we're still in `RFM75_TX_DONE`
-        //  after the callback returns. If we are, it's OK to return to PRX
-        //  mode. If not, we're elsewhere in the TX state machine and should
-        //  leave `rfm75_state` alone.
-        if (rfm75_state == RFM75_TX_DONE) {
-            rfm75_enter_prx();
-        }
-    }
-
-    if (iv & BIT6 && rfm75_state == RFM75_RX_LISTEN) { // RX interrupt
-        // We've received something.
-        rfm75_state = RFM75_RX_READY;
-
-        // Read the FIFO. No need to flush it; it's deleted when read.
-        read_rfm75_cmd_buf(RD_RX_PLOAD, payload, RFM75_PAYLOAD_SIZE);
-
-        // Invoke the registered callback function.
-        rx_done(payload, RFM75_PAYLOAD_SIZE,
-                (iv & 0b1110) >> 1); // This is the pipe ID
-
-        // After rx_done returns (and ONLY after it returns), the
-        //  payload_in is stale and is allowed to be overwritten.
-
-        // So now we can tell the radio module that we're done with it:
-        //  Clear the interrupt flag on the module...
-        rfm75_write_reg(STATUS, BIT6);
-        //  ... and assert CE, to listen more.
-        CE_ACTIVATE;
-        rfm75_state = RFM75_RX_LISTEN;
-        ret |= 0b10;
-    }
-    return ret;
 }
 
 ///The RFM75's interrupt pin ISR, which sets `f_rfm75_interrupt` to 1.
