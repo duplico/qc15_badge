@@ -62,7 +62,7 @@ volatile uint32_t qc_clock;
 
 // If I change this to NOINIT, it'll persist between flashings of the badge.
 #pragma PERSISTENT(badge_conf)
-qc15conf badge_conf;
+qc15conf badge_conf = {0};
 
 const rgbcolor_t bw_colors[] = {
         {0x20, 0x20, 0x20},
