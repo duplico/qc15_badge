@@ -37,7 +37,7 @@
 #define POST_OK 12
 
 extern volatile uint8_t f_time_loop;
-extern uint8_t s_buttons;
+extern uint8_t s_buttons, s_up;
 void poll_buttons();
 
 void flash_bootstrap() {
