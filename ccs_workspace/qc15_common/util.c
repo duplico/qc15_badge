@@ -31,7 +31,7 @@ uint16_t crc16_compute(uint8_t *buf, uint16_t len) {
  ** Note that `len` does NOT include the CRC. This matches the Endianness of
  ** the MSP430 device, so if `buf` points to a packed struct whose last
  ** member is a 16-bit integer, that integer will match the result of
- ** calling crc16_compute(buf, len).
+ ** calling crc16_compute(buf, sizeof(struct)-2).
  */
 void crc16_append_buffer(uint8_t *buf, uint16_t len) {
     uint16_t crc = crc16_compute(buf, len);

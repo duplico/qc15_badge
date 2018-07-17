@@ -36,7 +36,8 @@
 //     also have to change our radio validator.
 #define QC15_BADGES_IN_SYSTEM 450
 #define QC15_BASE_ID QC15_BADGES_IN_SYSTEM
-#define QC15_HOSTS_IN_SYSTEM 451
+#define QC15_CONTROL_ID QC15_BADGES_IN_SYSTEM
+#define QC15_HOSTS_IN_SYSTEM 452
 
 #define CODE_SEGMENT_REP_LEN 10
 
