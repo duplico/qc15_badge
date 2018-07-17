@@ -8,6 +8,8 @@
 #include <driverlib.h>
 #include <stdint.h>
 
+#include "qc15.h"
+
 const uint8_t FLASH_STATE_WREN  = BIT1;
 const uint8_t FLASH_STATE_SLEEP = BIT2;
 const uint8_t FLASH_STATE_BUSY  = BIT3;
@@ -253,8 +255,8 @@ void s25fl_init_io() {
     ucaparam.msbFirst = EUSCI_A_SPI_MSB_FIRST;
     ucaparam.spiMode = EUSCI_A_SPI_3PIN;
     ucaparam.selectClockSource = EUSCI_A_SPI_CLOCKSOURCE_SMCLK;
-    ucaparam.clockSourceFrequency = CS_getSMCLK(); // TODO: SMCLK_FREQ_KHZ
-    ucaparam.desiredSpiClock = 100000; // TODO
+    ucaparam.clockSourceFrequency = SMCLK_FREQ_HZ;
+    ucaparam.desiredSpiClock = 100000; // TODO: decide
 
     EUSCI_A_SPI_initMaster(EUSCI_A1_BASE, &ucaparam);
 }
