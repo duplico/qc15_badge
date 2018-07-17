@@ -259,41 +259,33 @@ void rfm75_tx(uint16_t addr, uint8_t noack, uint8_t* data, uint8_t len) {
  *
  *
  */
-uint8_t rfm75_deferred_interrupt() {
+void rfm75_deferred_interrupt() {
     f_rfm75_interrupt = 0;
     // Get the interrupt vector from the RFM75 module:
     uint8_t iv = rfm75_get_status();
-    uint8_t ret = 0x00;
 
     if (iv & BIT4) { // no ACK interrupt
         // Clear the interrupt flag on the radio module:
         rfm75_write_reg(STATUS, BIT5);
-        __no_operation();
-        ret |= 0b100;
-
-        // Complete the TX state machine activity:
         rfm75_state = RFM75_TX_DONE;
     }
 
     if (iv & BIT5 && rfm75_state == RFM75_TX_SEND) { // TX interrupt
-        // We sent a thing.
         // The ISR already took us back to standby.
         // Clear the interrupt flag on the radio module:
         rfm75_write_reg(STATUS, BIT5);
         rfm75_state = RFM75_TX_DONE;
-        // It's a TX, so return 0b01:
-        ret |= 0b01;
     }
 
     // Determine whether we need to send a TX callback, which covers
     //  all the cases of (a) we sent a non-ackable message,
     //  (b) we sent an ackable message that was acked, and
     //  (c) we sent an ackable message that was NOT acked.
-    if (ret & 0b101) { // TX or NOACK.
+    if (iv & (BIT4|BIT5)) { // TX or NOACK.
         // We pass TRUE if we did NOT receive a NOACK flag from
         //  the radio module (meaning EITHER, it was ACKed, OR
         //  we did not request an ACK).
-        tx_done(!(ret & 0b100));
+        tx_done(!(iv & BIT4));
 
         // It's important that our tx_done callback function is able to call
         //  `rfm75_tx()`. All the cleanup we needed to do to re-TX has already
@@ -314,10 +306,8 @@ uint8_t rfm75_deferred_interrupt() {
         read_rfm75_cmd_buf(RD_RX_PLOAD, payload, RFM75_PAYLOAD_SIZE);
 
         // Invoke the registered callback function.
-        rx_done(payload, RFM75_PAYLOAD_SIZE,
-                (iv & 0b1110) >> 1); // This is the pipe ID
-
-        ret |= 0b10;
+        // 0b1110 masks the pipe ID out of the IV.
+        rx_done(payload, RFM75_PAYLOAD_SIZE, (iv & 0b1110) >> 1);
 
         // After rx_done returns (and ONLY after it returns), the
         //  payload_in is stale and is allowed to be overwritten.
@@ -343,7 +333,6 @@ uint8_t rfm75_deferred_interrupt() {
             //  No cleanup is necessary.
         }
     }
-    return ret;
 }
 
 /// Perform a RFM75 self-test and return a 1 if it appears to be working.
