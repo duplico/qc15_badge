@@ -1,0 +1,43 @@
+7/16/2018
+
+* Center LEDs start the same color as each other simultaneously.
+* They go to the end of their range and then turn around and go back. The colors are circular.
+
+COLOR FINDING
+=============
+
+Color finder is a special state to transition into.
+
+The state has no intro or outro that I have to write. All of that is in the state machine. Transitioning to it begins the following behavior:
+
+7-12 seconds of this:
+
+* Badge begins a white LED animation.
+* Randomly, a color may appear.
+* If you hit the circle button during the color, you "learn" that color.
+* If you don't, or if no color appears, you learn nothing.
+* Regardless, return to previous state.
+
+COLOR FIND SUCCESS
+==================
+
+Check to see if now we have enough colors to make a flag
+
+STATUS MENU
+===========
+
+Build this:
+
+basically it's a/s/l from the tomagotchi.
+
+DOWNLOAD MODE
+=============
+
+Exactly how I think it is.
+
+If you HOLD the button down, it's a bigass ZAPPING THINGGGGG!!!!!
+
+NEED A SQUARE BUTTON EASTER EGG
+===============================
+
+!!!
