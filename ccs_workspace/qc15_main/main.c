@@ -60,8 +60,9 @@ uint8_t power_switch_status = 0;
 
 volatile uint32_t qc_clock;
 
+// If I change this to NOINIT, it'll persist between flashings of the badge.
 #pragma PERSISTENT(badge_conf)
-qc15conf badge_conf = {0};
+qc15conf badge_conf;
 
 const rgbcolor_t bw_colors[] = {
         {0x20, 0x20, 0x20},
@@ -412,7 +413,7 @@ uint8_t check_id_buf(uint16_t id, uint8_t *buf) {
     uint8_t bit;
     byte = id / 8;
     bit = id % 8;
-    return (buf[byte] | (BIT0 << bit)) ? 1 : 0;
+    return (buf[byte] & (BIT0 << bit)) ? 1 : 0;
 }
 
 void set_id_buf(uint16_t id, uint8_t *buf) {
