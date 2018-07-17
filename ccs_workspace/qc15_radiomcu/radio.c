@@ -23,7 +23,8 @@ radio_proto curr_packet_tx;
 uint8_t progress_tx_id = 0;
 
 void radio_send_progress_frame(uint8_t frame_id) {
-    radio_progress_payload *payload = (radio_progress_payload *) curr_packet_tx.msg_payload;
+    radio_progress_payload *payload = (radio_progress_payload *)
+                                            (curr_packet_tx.msg_payload);
 
     curr_packet_tx.badge_id = badge_status.badge_id;
     curr_packet_tx.msg_type = RADIO_MSG_TYPE_PROGRESS;
