@@ -31,19 +31,20 @@
 
 #include <msp430fr5972.h>
 #include <driverlib.h>
-#include <s25flash.h>
-
+#include <s25fl.h>
+#include <s25fl.h>
 #include "qc15.h"
 
 #include "lcd111.h"
 #include "ht16d35b.h"
-#include "s25flash.h"
 #include "ipc.h"
 #include "leds.h"
 #include "game.h"
 
 #include "util.h"
 #include "main_bootstrap.h"
+
+#include "flash_layout.h"
 
 volatile uint8_t f_time_loop = 0;
 uint8_t s_clock_tick = 0;
@@ -54,9 +55,13 @@ uint8_t s_left = 0;
 uint8_t s_right = 0;
 uint8_t s_power_on = 0;
 uint8_t s_power_off = 0;
-qc15status badge_status = {0}; // TODO initialize elsewhere
 
-uint8_t rx_from_radio[IPC_MSG_LEN_MAX] = {0};
+uint8_t power_switch_status = 0;
+
+volatile uint32_t qc_clock;
+
+#pragma PERSISTENT(badge_conf)
+qc15conf badge_conf = {0};
 
 const rgbcolor_t bw_colors[] = {
         {0x20, 0x20, 0x20},
@@ -103,6 +108,7 @@ void init_clocks() {
     //  Available sources are HFXT, DCO, LFXT, VLO, or external digital clock.
     //   If it's above 8 MHz, we need to configure FRAM wait-states.
     //   Set to 8 MHz (DCO /1)
+    // IF YOU CHANGE THIS, YOU **MUST** CHANGE MCLK_FREQ_KHZ IN qc15.h!!!
     CS_initClockSignal(CS_MCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_1);
 
     // SMCLK (1 MHz)
@@ -111,6 +117,7 @@ void init_clocks() {
     //      NB: This is different from the SMCLK behavior of the FR2xxx series,
     //          which can only source SMCLK from a divided MCLK.
     //  We'll use DCO /8 to get 1 MHz
+    // IF YOU CHANGE THIS, YOU **MUST** CHANGE SMCLK_FREQ_KHZ IN qc15.h!!!
     CS_initClockSignal(CS_SMCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_8); // 1 M
 
     // MODCLK (5 MHz)
@@ -139,7 +146,7 @@ void init_io() {
 
     lcd111_init_io();
     ht16d_init_io();
-    s25flash_init_io();
+    s25fl_init_io();
     init_ipc_io();
 
     // Screw post inputs with pull-ups
@@ -180,7 +187,7 @@ void init() {
 
     lcd111_init();
     ht16d_init();
-    s25flash_init();
+    s25fl_init();
     ipc_init();
     timer_init();
 
@@ -250,16 +257,20 @@ void handle_ipc_rx(uint8_t *rx) {
         // fall through:
     case IPC_MSG_STATS_REQ:
         // We need to prep and send a stats message for the radio.
-        ipc_tx_op_buf(IPC_MSG_STATS_ANS, (uint8_t *) &badge_status, sizeof(qc15status));
+        // Because badge_status is a subset of badge_conf that appears at
+        //  its beginning, that's what we copy from.
+        ipc_tx_op_buf(IPC_MSG_STATS_ANS, (uint8_t *) &badge_conf, sizeof(qc15status));
         break;
     case IPC_MSG_SWITCH:
         // The switch has been toggled.
         if (rx[0] & 0x0F) {
             s_power_off = 0;
             s_power_on = 1;
+            power_switch_status = POWER_SW_ON;
         } else {
             s_power_on = 0;
             s_power_off = 1;
+            power_switch_status = POWER_SW_OFF;
         }
         break;
     }
@@ -273,6 +284,8 @@ void handle_ipc_rx(uint8_t *rx) {
  ** button signals into four individual signals for other loop bodies.
  */
 void handle_global_signals() {
+    uint8_t rx_from_radio[IPC_MSG_LEN_MAX] = {0};
+
     if (f_time_loop) {
         f_time_loop = 0;
         s_clock_tick = 1;
@@ -351,6 +364,188 @@ void cleanup_global_signals() {
     s_clock_tick = 0;
 }
 
+
+/// Counts the bits set in all the bytes of a buffer and returns it.
+/**
+ ** This is the Brian Kernighan, Peter Wegner, and Derrick Lehmer way of
+ ** counting bits in a bitstring. See _The C Programming Language_, 2nd Ed.,
+ ** Exercise 2-9; or _CACM 3_ (1960), 322.
+ */
+uint16_t buffer_rank(uint8_t *buf, uint8_t len) {
+    uint16_t count = 0;
+    uint8_t c, v;
+    for (uint8_t i=0; i<len; i++) {
+        v = buf[i];
+        for (c = 0; v; c++) {
+            v &= v - 1; // clear the least significant bit set
+        }
+        count += c;
+    }
+    return count;
+}
+
+// TODO: Flash as noted (and more):
+void save_config() {
+    crc16_append_buffer(&badge_conf, sizeof(qc15conf)-2);
+
+    // Write the MAIN config to flash
+    s25fl_erase_block_64kb(FLASH_ADDR_CONF_MAIN);
+    // wr_en, wr_dis
+    s25fl_write_data(FLASH_ADDR_CONF_MAIN, &badge_conf, sizeof(qc15conf));
+
+    // After that's complete, write the BACKUP config to flash:
+    s25fl_erase_block_64kb(FLASH_ADDR_CONF_BACKUP);
+    // wr_en, wr_dis
+    s25fl_write_data(FLASH_ADDR_CONF_BACKUP, &badge_conf, sizeof(qc15conf));
+
+}
+
+uint8_t is_handler(uint16_t id) {
+    return ((id <= QC15_HANDLER_LAST) &&
+            (id >= QC15_HANDLER_START));
+}
+
+uint8_t is_uber(uint16_t id) {
+    return (id < QC15_UBER_COUNT);
+}
+
+uint8_t check_id_buf(uint16_t id, uint8_t *buf) {
+    uint8_t byte;
+    uint8_t bit;
+    byte = id / 8;
+    bit = id % 8;
+    return (buf[byte] | (BIT0 << bit)) ? 1 : 0;
+}
+
+void set_id_buf(uint16_t id, uint8_t *buf) {
+    uint8_t byte;
+    uint8_t bit;
+    byte = id / 8;
+    bit = id % 8;
+    buf[byte] |= (BIT0 << bit);
+}
+
+uint8_t badge_seen(uint16_t id) {
+    return check_id_buf(id, badge_conf.badges_seen);
+}
+
+uint8_t badge_uploaded(uint16_t id) {
+    return check_id_buf(id, badge_conf.badges_uploaded);
+}
+
+uint8_t badge_downloaded(uint16_t id) {
+    return check_id_buf(id, badge_conf.badges_downloaded);
+}
+
+void set_badge_seen(uint16_t id) {
+    if (badge_seen(id)) {
+        return;
+    }
+    set_id_buf(id, badge_conf.badges_seen);
+    badge_conf.badges_seen_count++;
+
+    // ubers
+    if (is_uber(id)) {
+        badge_conf.ubers_seen |= (BIT0 << id);
+        badge_conf.ubers_seen_count++;
+    }
+    // handlers
+    if (is_handler(id)) {
+        badge_conf.handlers_seen |= (BIT0 << (id - QC15_HANDLER_START));
+        badge_conf.handlers_seen_count++;
+    }
+
+    save_config();
+}
+
+void set_badge_uploaded(uint16_t id) {
+    if (badge_uploaded(id)) {
+        return;
+    }
+    set_id_buf(id, badge_conf.badges_uploaded);
+    badge_conf.badges_uploaded_count++;
+    // ubers
+    if (is_uber(id)) {
+        badge_conf.ubers_uploaded |= (BIT0 << id);
+        badge_conf.ubers_uploaded_count++;
+    }
+    // handlers
+    if (is_handler(id)) {
+        badge_conf.handlers_uploaded |= (BIT0 << (id - QC15_HANDLER_START));
+        badge_conf.handlers_uploaded_count++;
+    }
+
+    save_config();
+}
+
+// TODO: Break out the save_config part
+void set_badge_downloaded(uint16_t id) {
+    if (badge_downloaded(id)) {
+        return;
+    }
+    set_id_buf(id, badge_conf.badges_downloaded);
+    badge_conf.badges_downloaded_count++;
+    // ubers
+    if (is_uber(id)) {
+        badge_conf.ubers_downloaded |= (BIT0 << id);
+        badge_conf.ubers_downloaded_count++;
+    }
+    // handlers
+    if (is_handler(id)) {
+        badge_conf.handlers_downloaded |= (BIT0 << (id - QC15_HANDLER_START));
+        badge_conf.handlers_downloaded_count++;
+    }
+
+    save_config();
+}
+
+void generate_config() {
+    // All we start from, here, is our ID.
+
+    // The struct is no good. Zero it out.
+    memset(&badge_conf, 0x00, sizeof(qc15conf));
+
+    // Load ID from flash:
+    // TODO: Confirm Endianness
+    s25fl_read_data(&(badge_conf.badge_id), FLASH_ADDR_ID_MAIN, 2);
+    // TODO: Make sure this is a valid ID
+
+    // Person name stays blank.
+    // Load badge name from flash:
+    s25fl_read_data(badge_conf.badge_name, FLASH_ADDR_NAME_MAIN,
+                    QC15_BADGE_NAME_LEN);
+    // Determine which segment we have (and therefore which parts)
+    badge_conf.code_starting_part = (badge_conf.badge_id % 16) * 6;
+    set_badge_seen(badge_conf.badge_id);
+    set_badge_uploaded(badge_conf.badge_id);
+    set_badge_downloaded(badge_conf.badge_id);
+    save_config();
+}
+
+uint8_t config_is_valid() {
+    if (!crc16_check_buffer(&badge_conf, sizeof(qc15conf)-2))
+        return 0;
+    return 1;
+    // TODO: Check ID and such
+}
+
+void init_config() {
+    // Check the stored FRAM config:
+    if (config_is_valid()) return;
+
+    // Try loading the MAIN config from flash.
+    s25fl_read_data(&badge_conf, FLASH_ADDR_CONF_MAIN, sizeof(qc15conf));
+    if (config_is_valid()) return;
+
+    // Try loading the BACKUP config from flash.
+    s25fl_read_data(&badge_conf, FLASH_ADDR_CONF_BACKUP, sizeof(qc15conf));
+    if (config_is_valid()) return;
+
+    // If we're still here, none of the three config sources were valid, and
+    //  we must generate a new one.
+    generate_config();
+}
+
 /// The main initialization and loop function.
 void main (void)
 {
@@ -372,6 +567,8 @@ void main (void)
         }
 
         game_handle_loop();
+
+        cleanup_global_signals();
 
         // If no further interrupt flags have been raised during this loop
         //  iteration, go to sleep. Otherwise, loop.

@@ -1,3 +1,5 @@
+NB: The canonical copy of this definition is in flash_layout.h in the CCS workspace.
+
 LAYOUT:
 UNIFORM 64 KB BLOCKS:
 SA00: 0x00000000-0x0000FFFF
@@ -25,7 +27,7 @@ UNIFORM 64 KB BLOCKS.
 0x040000 - Second ID copy
 0x050000 - Backup config
 0x060000 - Badge name second copy
-0x070000 - Badge names (10 bytes each) (0x070000 - 0x071194)
+0x070000 - Badge names (11 bytes each) (0x070000 - 0x071194)
 READ NAMES:
 0x100000 -   0 -  24 (250 bytes)
 0x110000 -  25 -  49 (250 bytes)
