@@ -130,7 +130,7 @@ void s25fl_read_data(uint8_t* buffer, uint32_t address, uint32_t len_bytes) {
     s25fl_end();
 }
 
-void s25fl_write_data(uint32_t address, uint8_t* buffer, uint8_t len_bytes) {
+void s25fl_write_data(uint32_t address, uint8_t* buffer, uint32_t len_bytes) {
     // Length may not be any longer than 255.
     s25fl_block_while_wip();
     s25fl_begin();
@@ -139,7 +139,7 @@ void s25fl_write_data(uint32_t address, uint8_t* buffer, uint8_t len_bytes) {
     s25fl_usci_a1_send_sync((address & 0x0000FF00) >> 8); // Middle byte of address
     s25fl_usci_a1_send_sync((address & 0x000000FF)); // LSByte of address
     // TODO: should be done with DMA, probably.
-    for (uint8_t i = 0; i < len_bytes; i++) {
+    for (uint32_t i = 0; i < len_bytes; i++) {
         s25fl_usci_a1_send_sync(buffer[i]);
     }
     s25fl_end();
