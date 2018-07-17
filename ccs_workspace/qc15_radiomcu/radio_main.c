@@ -260,12 +260,12 @@ void main (void)
     init_clocks();
     ipc_init();
     rtc_init();
-    radio_init();
-
 
     __bis_SR_register(GIE);
 
     bootstrap();
+
+    radio_init(badge_status.badge_id);
 
     while (1) {
         if (f_rfm75_interrupt) {

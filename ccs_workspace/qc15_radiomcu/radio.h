@@ -59,7 +59,7 @@ extern radio_proto curr_packet_tx;
 
 rfm75_rx_callback_fn radio_rx_done;
 rfm75_tx_callback_fn radio_tx_done;
-void radio_init();
+void radio_init(uint16_t addr);
 void radio_interval();
 
 #endif /* RADIO_H_ */
