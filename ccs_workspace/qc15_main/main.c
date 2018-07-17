@@ -568,6 +568,8 @@ void main (void)
 
         game_handle_loop();
 
+        cleanup_global_signals();
+
         // If no further interrupt flags have been raised during this loop
         //  iteration, go to sleep. Otherwise, loop.
         if (!f_ipc_rx && !f_time_loop)
