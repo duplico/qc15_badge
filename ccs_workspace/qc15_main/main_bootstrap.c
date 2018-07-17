@@ -39,6 +39,8 @@
 extern volatile uint8_t f_time_loop;
 extern uint8_t s_buttons, s_up;
 void poll_buttons();
+void handle_global_signals();
+void cleanup_global_signals();
 
 void flash_bootstrap() {
     ht16d_all_one_color(0x00, 0x10, 0x00);
