@@ -59,8 +59,8 @@ void lcd111_sr_init_io() {
     p.clockPolarity = EUSCI_B_SPI_CLOCKPOLARITY_INACTIVITY_LOW;
     p.msbFirst = EUSCI_B_SPI_MSB_FIRST;
     p.spiMode = EUSCI_B_SPI_3PIN;
-    p.selectClockSource = EUSCI_B_SPI_CLOCKSOURCE_ACLK;
-    p.clockSourceFrequency = CS_getACLK();
+    p.selectClockSource = EUSCI_B_SPI_CLOCKSOURCE_SMCLK;
+    p.clockSourceFrequency = SMCLK_FREQ_HZ;
     p.desiredSpiClock = 10000;
     EUSCI_B_SPI_initMaster(EUSCI_B1_BASE, &p);
 }

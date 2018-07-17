@@ -16,7 +16,6 @@
 
 extern volatile uint8_t f_time_loop;
 extern uint8_t s_switch;
-extern volatile uint64_t qc_clock;
 extern uint8_t sw_state;
 void poll_switch();
 

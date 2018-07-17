@@ -12,8 +12,8 @@
 #include <msp430fr2433.h>
 
 #include "radio.h"
-#include "ipc.h"
 #include "rfm75.h"
+#include "base_main.h"
 
 void delay_millis(unsigned long mils) {
     while (mils) {
@@ -30,11 +30,11 @@ void delay_nanos(unsigned long nanos) {
 }
 
 void led_on() {
-    P1OUT |= BIT0;
+    P2OUT |= BIT2;
 }
 
 void led_off() {
-    P1OUT &= ~BIT0;
+    P2OUT &= ~BIT2;
 }
 
 void led_flash() {
@@ -43,12 +43,27 @@ void led_flash() {
     led_off();
 }
 
+void radio_tx_done(uint8_t ack) {
+
+}
+
+/**
+ * Callback function when msg is received to format data into progress struct.
+ */
+void radio_rx_done(uint8_t* data, uint8_t len, uint8_t pipe) {
+    // it was an rx:
+    // light some shit up!
+    led_flash();
+    radio_progress_payload payload = create_payload(data[0], &data[1]);
+    send_progress_payload(payload);
+}
+
 void init_io() {
     // The magic FRAM make-it-work command:
     PMM_unlockLPM5(); // PM5CTL0 &= ~LOCKLPM5;
 
-    P1DIR |= BIT0; // LED
-    P1OUT &= ~BIT0;
+    P2DIR |= BIT2; // LED
+    P2OUT &= ~BIT2;
 
     // TX/RX
     P1SEL0 |= BIT4+BIT5;
@@ -68,21 +83,29 @@ void serial_init() {
     UCA0CTLW0 |= UCSSEL__SMCLK;
     UCA0BR0 = 6; // 1000000/9600/16
     UCA0BR1 = 0x00;
-    UCA0MCTLW = 0x1100 | UCOS16 | UCBRF_8;
+    UCA0MCTLW = 0x2200 | UCOS16 | UCBRF_13;
     UCA0CTLW0 &= ~UCSWRST;                    // Initialize eUSCI
 }
 
+/**
+ * Sends a single character over serial.
+ */
 void send_char(char char_to_send) {
     EUSCI_A_UART_transmitData(EUSCI_A0_BASE, char_to_send);
-    delay_nanos(170);
 }
 
+/**
+ * Sends string over serial.
+ */
 void send_string(unsigned char * string_to_send, int length) {
     for (unsigned int i = length; i > 0; i--) {
         send_char(string_to_send[length-i]);
     }
 }
 
+/**
+ * Transmits a progress payload over serial.
+ */
 void send_progress_payload(radio_progress_payload payload) {
     send_string(&payload.part_id, 1);
     send_char(',');
@@ -91,6 +114,9 @@ void send_progress_payload(radio_progress_payload payload) {
     send_char(0x0A);
 }
 
+/**
+ * Constructor for
+ */
 radio_progress_payload create_payload(uint8_t part_id, uint8_t part_data[10]) {
     radio_progress_payload payload;
     payload.part_id = part_id;
@@ -107,13 +133,17 @@ void main (void) {
     // char message[] = "HELLO WORLD";
     init_io();
     serial_init();
-    unsigned char * payload_msg = "HELLOWORLD";
-    radio_progress_payload payload = create_payload('A', payload_msg);
+
+    rfm75_init(35, &radio_rx_done, &radio_tx_done);
+    rfm75_post();
+    __bis_SR_register(GIE);
 
     while (1) {
-//        unsigned int length = (int) (sizeof(message) / sizeof(message[0]));
+        if (f_rfm75_interrupt) {
+            f_rfm75_interrupt = 0;
+            rfm75_deferred_interrupt();
+        }
 
-        send_progress_payload(payload);
-        led_flash();
+        __bis_SR_register(LPM0_bits);
     }
  }
