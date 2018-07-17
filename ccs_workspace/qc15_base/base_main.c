@@ -54,7 +54,7 @@ void radio_rx_done(uint8_t* data, uint8_t len, uint8_t pipe) {
     // it was an rx:
     // light some shit up!
     led_flash();
-    radio_progress_payload payload = create_payload(data[0], &data[1]);
+    radio_progress_payload payload = create_progress_payload(data[0], &data[1]);
     send_progress_payload(payload);
 }
 
@@ -115,9 +115,9 @@ void send_progress_payload(radio_progress_payload payload) {
 }
 
 /**
- * Constructor for
+ * Constructor for creating progress payload messages.
  */
-radio_progress_payload create_payload(uint8_t part_id, uint8_t part_data[10]) {
+radio_progress_payload create_progress_payload(uint8_t part_id, uint8_t part_data[10]) {
     radio_progress_payload payload;
     payload.part_id = part_id;
     memcpy(payload.part_data, part_data, 10);

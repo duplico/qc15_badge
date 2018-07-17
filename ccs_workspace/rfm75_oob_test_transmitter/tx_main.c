@@ -83,14 +83,14 @@ void main (void)
     timer_param.timerClear = TIMER_A_SKIP_CLEAR;
     timer_param.startTimer = false;
 
-    rfm75_init(25, &radio_rx_done, &radio_tx_done);
+    rfm75_init(2, &radio_rx_done, &radio_tx_done);
     rfm75_post();
 
     Timer_A_initUpMode(TIMER_A1_BASE, &timer_param);
     Timer_A_startCounter(TIMER_A1_BASE, TIMER_A_UP_MODE);
 
     uint16_t csecs=0;
-    unsigned char * hello_payload = "!HELLOWORLD!";
+    unsigned char * hello_payload = "XIAMBADGE02";
     __bis_SR_register(GIE);
 
     while (1) {
@@ -102,7 +102,7 @@ void main (void)
             // it's been 1 centisecond.
             csecs++;
 
-            if (1) {
+            if (csecs == 200) {
 //                rfm75_tx(0xffff, 0, out_payload, RFM75_PAYLOAD_SIZE); // broadcast (no acks)
 //                rfm75_tx(35, 0, out_payload, RFM75_PAYLOAD_SIZE); // unicast (acked)
                 rfm75_tx(35, 0, hello_payload, RFM75_PAYLOAD_SIZE);
