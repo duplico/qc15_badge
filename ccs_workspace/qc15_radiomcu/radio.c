@@ -191,7 +191,7 @@ void radio_interval() {
     rfm75_tx(RFM75_BROADCAST_ADDR, 1, &curr_packet_tx, RFM75_PAYLOAD_SIZE);
 }
 
-void radio_init() {
-    rfm75_init(35, &radio_rx_done, &radio_tx_done);
+void radio_init(uint16_t addr) {
+    rfm75_init(addr, &radio_rx_done, &radio_tx_done);
     rfm75_post();
 }
