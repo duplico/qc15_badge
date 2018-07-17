@@ -258,7 +258,7 @@ void handle_ipc_rx(uint8_t *rx) {
         // We need to prep and send a stats message for the radio.
         // Because badge_status is a subset of badge_conf that appears at
         //  its beginning, that's what we copy from.
-        ipc_tx_op_buf(IPC_MSG_STATS_ANS, (uint8_t *) &badge_conf, sizeof(qc15status));
+        ipc_tx_op_buf(IPC_MSG_STATS_UPDATE, (uint8_t *) &badge_conf, sizeof(qc15status));
         break;
     case IPC_MSG_SWITCH:
         // The switch has been toggled.

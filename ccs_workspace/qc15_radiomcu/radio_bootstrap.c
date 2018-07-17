@@ -74,7 +74,7 @@ void bootstrap() {
         if (f_ipc_rx) {
             f_ipc_rx = 0;
             if (ipc_get_rx(rx_from_main)) {
-                if (rx_from_main[0] == IPC_MSG_STATS_ANS) {
+                if (rx_from_main[0] == IPC_MSG_STATS_UPDATE) {
                     // Read the current status into our volatile copy of it.
                     memcpy(&badge_status, &rx_from_main[1], sizeof(qc15status));
 
