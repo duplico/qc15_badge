@@ -182,22 +182,20 @@ void timer_init() {
 void init() {
     WDT_A_hold(WDT_A_BASE);
 
-    init_clocks();
-    init_io();
-
-    lcd111_init();
-    ht16d_init();
-    s25fl_init();
-    ipc_init();
-    timer_init();
-
     // We're storing at least one compute-intensive function in a special
     //  place in FRAM, and then copying it to RAM, where it will run
     //  with lower power consumption, and possible faster, when invoked.
     // Copy FRAM_EXECUTE to RAM_EXECUTE
     memcpy((void *)0x1C00,(const void*)0x10000,0x0200);
 
-    srand(25);
+    init_clocks();
+    init_io();
+
+    ht16d_init();
+    lcd111_init();
+    s25fl_init();
+    ipc_init();
+    timer_init();
 }
 
 /// Debounce the buttons by checking for consecutive similar values.
@@ -536,10 +534,12 @@ void generate_config() {
 uint8_t config_is_valid() {
     if (!crc16_check_buffer(&badge_conf, sizeof(qc15conf)-2))
         return 0;
+
     return 1;
     // TODO: Check ID and such
 }
 
+/// Validate, load, and/or generate this badge's configuration as appropriate.
 void init_config() {
     // Check the stored FRAM config:
     if (config_is_valid()) return;
@@ -555,6 +555,8 @@ void init_config() {
     // If we're still here, none of the three config sources were valid, and
     //  we must generate a new one.
     generate_config();
+
+    srand(badge_conf.badge_id);
 }
 
 /// The main initialization and loop function.
@@ -562,10 +564,18 @@ void main (void)
 {
     init();
 
+    uint8_t initial_buttons = P9IN;
+
+    if (!(initial_buttons & BIT5)) { // hold RIGHT button at startup for flash mode.
+        flash_bootstrap();
+    }
+
+    init_config();
+
     __bis_SR_register(GIE);
 
     // hold DOWN on turn-on for verbose boot:
-    bootstrap(P9IN & BIT4);
+    bootstrap(initial_buttons & BIT4);
 
     game_begin();
 
