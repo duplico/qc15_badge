@@ -18,12 +18,12 @@
 
 volatile uint8_t f_ipc_rx = 0;
 
-uint8_t ipc_state = 0;
+volatile uint8_t ipc_state = 0;
 uint8_t ipc_tx_index = 0;
 uint8_t ipc_tx_len = 0;
 uint8_t ipc_tx_buf[IPC_MSG_LEN_MAX+2] = {0};
-uint8_t ipc_rx_index = 0;
-uint8_t ipc_rx_len = 0;
+volatile uint8_t ipc_rx_index = 0;
+volatile uint8_t ipc_rx_len = 0;
 volatile uint8_t ipc_rx_buf[IPC_MSG_LEN_MAX+2] = {0};
 
 uint8_t ipc_tx_byte(uint8_t tx_byte) {
@@ -88,12 +88,12 @@ uint8_t ipc_get_rx(uint8_t *rx_buf) {
     //  cautious about this, since it's guarding against an interrupt.
 
     // If the CRC fails,
-    if (!crc16_check_buffer(ipc_rx_buf, ipc_rx_len-2)) {
+    if (!crc16_check_buffer((uint8_t *)ipc_rx_buf, ipc_rx_len-2)) {
         ipc_state &= ~IPC_STATE_RX_MASK;
         return 0;
     }
 
-    memcpy(rx_buf, ipc_rx_buf, ipc_rx_len-2);
+    memcpy(rx_buf, (uint8_t *)ipc_rx_buf, ipc_rx_len-2);
     ipc_state &= ~IPC_STATE_RX_MASK;
     return 1;
 }
