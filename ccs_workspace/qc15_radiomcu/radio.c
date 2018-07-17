@@ -69,13 +69,13 @@ void radio_handle_beacon(uint16_t id, radio_beacon_payload *payload) {
             // If it WASN'T already in range, we need to signal that it is now
             //  in range. But it's very important that this message actually get
             //  to the main MCU. So we're going to IGNORE the badge if our link
-            //  to the main MCU isn't available, and only treat it as in range if
-            //  we're OK to use the link. It's not very likely that it's
+            //  to the main MCU isn't available, and only treat it as in range
+            //  if we're OK to use the link. It's not very likely that it's
             //  unavailable, but we still want to avoid having an inconsistency
             //  between the two processors.
-            // Then again, a foolish consistency is the hobgoblin of little minds,
-            //  adored by little statemen and philosophers and divines. So what the
-            //  heck do I know?
+            // Then again, a foolish consistency is the hobgoblin of little
+            //  minds, adored by little statemen and philosophers and divines.
+            //  So what the heck do I know?
             ids_in_range[id] = RADIO_GD_INTERVAL;
         }
     } else if (id == QC15_BASE_ID) {
