@@ -108,6 +108,7 @@ void init_clocks() {
     //  Available sources are HFXT, DCO, LFXT, VLO, or external digital clock.
     //   If it's above 8 MHz, we need to configure FRAM wait-states.
     //   Set to 8 MHz (DCO /1)
+    // IF YOU CHANGE THIS, YOU **MUST** CHANGE MCLK_FREQ_KHZ IN qc15.h!!!
     CS_initClockSignal(CS_MCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_1);
 
     // SMCLK (1 MHz)
@@ -116,6 +117,7 @@ void init_clocks() {
     //      NB: This is different from the SMCLK behavior of the FR2xxx series,
     //          which can only source SMCLK from a divided MCLK.
     //  We'll use DCO /8 to get 1 MHz
+    // IF YOU CHANGE THIS, YOU **MUST** CHANGE SMCLK_FREQ_KHZ IN qc15.h!!!
     CS_initClockSignal(CS_SMCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_8); // 1 M
 
     // MODCLK (5 MHz)

@@ -89,18 +89,22 @@ typedef struct {
 extern volatile uint32_t qc_clock;
 
 #define SMCLK_FREQ_KHZ 1000
+#define SMCLK_FREQ_HZ 1000000
 
 // The following items are specific to the RADIO MCU:
 #ifdef __MSP430FR2422__
 #define MCLK_FREQ_KHZ 1000
+#define MCLK_FREQ_HZ 1000000
 extern qc15status badge_status;
 #endif
 
 // The following are specific to the MAIN MCU:
 #ifdef __MSP430FR5972__
 #define MCLK_FREQ_KHZ 8000
+#define MCLK_FREQ_HZ 8000000
 extern qc15conf badge_conf;
 #endif
+
 
 void handle_ipc_rx(uint8_t *);
 

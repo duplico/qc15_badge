@@ -148,10 +148,11 @@ void init_clocks() {
     // MCLK (1 MHz)
     //  All sources but MODOSC are available at up to /128
     //  Set to DCO/8 = 1 MHz
+    // IF YOU CHANGE THIS, YOU **MUST** CHANGE MCLK_FREQ_KHZ IN qc15.h!!!
     // SMCLK (1 MHz)
     //  Derived from MCLK with divider up to /8
     //  Set to MCLK/1, which we'll keep.
-
+    // IF YOU CHANGE THIS, YOU **MUST** CHANGE SMCLK_FREQ_KHZ IN qc15.h!!!
     CSCTL5 |= DIVM_3 | DIVS_0;
 
     // MODCLK (5 MHz)
