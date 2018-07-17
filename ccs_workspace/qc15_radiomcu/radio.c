@@ -145,8 +145,8 @@ void radio_send_progress_frame(uint8_t frame_id) {
     curr_packet_tx.msg_type = RADIO_MSG_TYPE_PROGRESS;
     curr_packet_tx.proto_version = RADIO_PROTO_VER;
 
-    payload->part_id = badge_status.code_segment_ids[frame_id];
-    memcpy(payload->part_data, badge_status.code_segment_unlocks[frame_id],
+    payload->part_id = badge_status.code_starting_part + frame_id;
+    memcpy(payload->part_data, badge_status.code_part_unlocks[frame_id],
            CODE_SEGMENT_REP_LEN);
     crc16_append_buffer(&curr_packet_tx, sizeof(radio_proto)-2);
 
