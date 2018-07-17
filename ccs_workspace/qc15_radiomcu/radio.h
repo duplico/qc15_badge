@@ -23,7 +23,7 @@ typedef struct {
     uint16_t badge_id;
     uint8_t proto_version;
     uint8_t msg_type;
-    uint8_t msg_payload[QC15_PERSON_NAME_LEN+4];
+    uint8_t msg_payload[QC15_PERSON_NAME_LEN+5];
     uint16_t crc16;
 } radio_proto;
 

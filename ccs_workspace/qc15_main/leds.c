@@ -22,6 +22,9 @@ uint8_t led_ring_anim_num_colors = 0;
 uint8_t led_ring_anim_len_padded = 0;
 uint8_t led_ring_anim_pad_loops = 0;
 led_ring_animation_t *led_ring_anim_curr;
+led_ring_animation_t *led_ring_anim_bg = 0;
+uint8_t led_ring_anim_pad_loops_bg = 0;
+uint8_t led_anim_type_bg = 0;
 rgbcolor16_t led_ring_curr[18];
 rgbcolor16_t led_ring_dest[18];
 rgbdelta_t led_ring_step[18];
@@ -155,6 +158,13 @@ void led_display_colors() {
 
 /// Set the current LED ring animation.
 void led_set_anim(led_ring_animation_t *anim, uint8_t anim_type, uint8_t loops, uint8_t use_pad_in_loops) {
+    if (led_ring_anim_loops == 0xFF && loops != 0xFF) {
+        // If the current animation is loop-forever (background), and this
+        //  one is not, then we should store it.
+        led_ring_anim_bg = led_ring_anim_curr;
+        led_ring_anim_pad_loops_bg = led_ring_anim_pad_loops;
+        led_anim_type_bg = led_anim_type;
+    }
     led_ring_anim_curr = anim;
     led_anim_type = anim_type;
     led_ring_anim_step = 0;
@@ -251,10 +261,18 @@ void led_timestep() {
                     led_ring_anim_index = led_ring_anim_num_colors;
                 }
             } else {
-                led_anim_type = LED_ANIM_TYPE_NONE;
-                s_led_anim_done = 1;
-                // No need to load any new colors, since the pad has taken care
-                //  of turning all the lights off for us.
+                if (led_ring_anim_bg) {
+                    // If we have a background animation stored, that this one
+                    //  was briefly superseding, then go ahead and start it
+                    //  up again.
+                    led_set_anim(led_ring_anim_bg, led_anim_type_bg,
+                                 0xff, led_ring_anim_pad_loops_bg);
+                } else {
+                    led_anim_type = LED_ANIM_TYPE_NONE;
+                    s_led_anim_done = 1;
+                    // No need to load any new colors, since the pad has taken care
+                    //  of turning all the lights off for us.
+                }
                 return;
             }
         }

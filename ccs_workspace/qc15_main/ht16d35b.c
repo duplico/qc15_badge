@@ -15,6 +15,8 @@
 #include <driverlib.h>
 #include <msp430.h>
 
+#include "qc15.h"
+
 #include "util.h"
 #include "ht16d35b.h"
 
@@ -81,7 +83,7 @@ void ht16d_init_io() {
 
     EUSCI_B_I2C_initMasterParam param = {0};
     param.selectClockSource = EUSCI_B_I2C_CLOCKSOURCE_SMCLK;
-    param.i2cClk = CS_getSMCLK();
+    param.i2cClk = SMCLK_FREQ_HZ;
     param.dataRate = EUSCI_B_I2C_SET_DATA_RATE_100KBPS;
     param.byteCounterThreshold = 1;
     param.autoSTOPGeneration = EUSCI_B_I2C_NO_AUTO_STOP;
@@ -308,6 +310,13 @@ void ht16d_all_one_color(uint8_t r, uint8_t g, uint8_t b) {
         ht16d_gs_values[i][2] = b;
     }
     ht16d_send_gray();
+}
+
+void ht16d_display_off() {
+    ht16_d_send_cmd_dat(HTCMD_SYS_OSC_CTL, 0b10); // Activate oscillator.
+}
+void ht16d_display_on() {
+    ht16_d_send_cmd_dat(HTCMD_SYS_OSC_CTL, 0b11); // Activate oscillator & display.
 }
 
 /// Set all colors in the ring to a single color, preserving the center-line.

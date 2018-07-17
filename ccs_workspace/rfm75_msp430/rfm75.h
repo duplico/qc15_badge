@@ -11,7 +11,7 @@
 #include <stdint.h>
 #include <msp430.h>
 
-#define RFM75_PAYLOAD_SIZE 12
+#define RFM75_PAYLOAD_SIZE 22
 #define UNICAST_LSB 0
 #define BROADCAST_LSB 0xEE
 #define RFM75_BROADCAST_ADDR 0xffff

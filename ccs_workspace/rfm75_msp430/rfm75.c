@@ -273,7 +273,7 @@ void rfm75_io_init() {
                                                 GPIO_PRIMARY_MODULE_FUNCTION);
     // Setup USCI
     RFM75_UCxCTLW0 |= UCSWRST;
-    RFM75_UCxBRW = (uint16_t)(CS_getSMCLK() / 1000000); // set clock scaler
+    RFM75_UCxBRW = 1; // Clock scaler: if SMCLK isn't 1 MHz this much change.
     // clear control word:
     RFM75_UCxCTLW0 &= ~(UCCKPH + UCCKPL + UC7BIT + UCMSB +
             UCMST + UCMODE_3 + UCSYNC + UCSSEL_3);
