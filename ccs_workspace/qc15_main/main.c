@@ -438,6 +438,8 @@ uint8_t badge_downloaded(uint16_t id) {
 }
 
 void set_badge_seen(uint16_t id) {
+    if (id >= QC15_BADGES_IN_SYSTEM)
+        return;
     if (badge_seen(id)) {
         return;
     }
@@ -459,6 +461,8 @@ void set_badge_seen(uint16_t id) {
 }
 
 void set_badge_uploaded(uint16_t id) {
+    if (id >= QC15_BADGES_IN_SYSTEM)
+        return;
     if (badge_uploaded(id)) {
         return;
     }
@@ -480,6 +484,8 @@ void set_badge_uploaded(uint16_t id) {
 
 // TODO: Break out the save_config part
 void set_badge_downloaded(uint16_t id) {
+    if (id >= QC15_BADGES_IN_SYSTEM)
+        return;
     if (badge_downloaded(id)) {
         return;
     }
@@ -508,12 +514,17 @@ void generate_config() {
     // Load ID from flash:
     // TODO: Confirm Endianness
     s25fl_read_data(&(badge_conf.badge_id), FLASH_ADDR_ID_MAIN, 2);
-    // TODO: Make sure this is a valid ID
+
+    if (badge_conf.badge_id >= QC15_BADGES_IN_SYSTEM) {
+        badge_conf.badge_id = 25;
+    }
 
     // Person name stays blank.
     // Load badge name from flash:
     s25fl_read_data(badge_conf.badge_name, FLASH_ADDR_NAME_MAIN,
-                    QC15_BADGE_NAME_LEN);
+                    QC15_BADGE_NAME_LEN-1); // retain the 0-term
+    // TODO: Validate the name
+
     // Determine which segment we have (and therefore which parts)
     badge_conf.code_starting_part = (badge_conf.badge_id % 16) * 6;
     set_badge_seen(badge_conf.badge_id);
