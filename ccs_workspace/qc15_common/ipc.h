@@ -20,7 +20,7 @@
  */
 
 // From MAIN to RADIO:
-#define IPC_MSG_STATS_ANS 0x01
+#define IPC_MSG_STATS_UPDATE 0x01
 #define IPC_MSG_REBOOT 0x02
 
 #define IPC_STATE_IDLE    0b0000
