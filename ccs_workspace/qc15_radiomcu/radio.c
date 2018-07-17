@@ -37,6 +37,7 @@ uint8_t validate(radio_proto *msg, uint8_t len) {
 
 void radio_handle_beacon(uint16_t id, radio_beacon_payload *payload) {
     // construct an alert to the main badge:
+    // TODO: consider bases
     ipc_msg_gd_arr_t ipc_out;
     ipc_out.badge_id = id;
     memcpy(ipc_out.name, payload->name, QC15_PERSON_NAME_LEN);

@@ -11,15 +11,14 @@
 
 #include <msp430fr5972.h>
 #include <driverlib.h>
-#include <s25flash.h>
-
+#include <s25fl.h>
+#include <s25fl.h>
 #include "qc15.h"
 
 #include "util.h"
 
 #include "lcd111.h"
 #include "ht16d35b.h"
-#include "s25flash.h"
 #include "ipc.h"
 #include "leds.h"
 
@@ -93,7 +92,8 @@ void bootstrap(uint8_t fastboot) {
     }
 
     if (bootstrap_status == POST_NOR) {
-        if (s25flash_post()) {
+        if (s25fl_post()) {
+            // TODO: Check whether the stored IDs are valid.
             bootstrap_status++;
             if (!fastboot) {
                 lcd111_set_text(0, "SPI NOR flash POST: OK");

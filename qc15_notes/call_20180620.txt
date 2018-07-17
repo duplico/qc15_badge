@@ -3,7 +3,7 @@
    6 80-character segments per badge
    
    
-Characters -> 30x characters = part -> 6x parts = segment -> all segments = file
+Characters -> 80x characters = part -> 6x parts = segment -> all segments = file
    
 These are contiguous. Think of the message as a long 1D character array.
 
