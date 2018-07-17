@@ -20,7 +20,7 @@ SA32: 0x007C0000-0x007FFFFF
 QC15 LAYOUT:
 UNIFORM 64 KB BLOCKS.
 
-0x000000 - reserved
+0x000000 - reserved for keyword 0xAB
 0x010000 - First ID
 0x020000 - main config
 0x030000 - Badge name
