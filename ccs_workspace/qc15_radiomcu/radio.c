@@ -194,11 +194,10 @@ void radio_interval() {
 
     // Also, at each radio interval, we do need to do a beacon.
     radio_beacon_payload *payload = (radio_beacon_payload *)
-                                            curr_packet_tx.msg_payload;
+                                            (curr_packet_tx.msg_payload);
     curr_packet_tx.badge_id = badge_status.badge_id;
     curr_packet_tx.msg_type = RADIO_MSG_TYPE_BEACON;
     curr_packet_tx.proto_version = RADIO_PROTO_VER;
-
     payload->time = (qc_clock & 0x00FFFFFF); // Mask out the MSByte
 
     memcpy(payload->name, badge_status.person_name, QC15_PERSON_NAME_LEN);
