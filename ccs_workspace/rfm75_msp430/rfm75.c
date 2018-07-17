@@ -178,7 +178,8 @@ void rfm75_enter_prx() {
 
 /// Query whether a call to rfm75_tx() is allowed right now.
 uint8_t rfm75_tx_avail() {
-    return rfm75_state == RFM75_RX_LISTEN || rfm75_state == RFM75_TX_DONE;
+    return rfm75_state == RFM75_RX_LISTEN || rfm75_state == RFM75_TX_DONE ||
+           rfm75_state == RFM75_RX_READY;
 }
 
 /// Transmit an RFM75 message to a given address, or RFM75_BROADCAST_ADDR.
@@ -192,6 +193,10 @@ uint8_t rfm75_tx_avail() {
  **
  ** Note that it's important for `len` to be the same as RFM75_PAYLOAD_SIZE,
  ** or else strange things may happen.
+ **
+ ** This function may be called any time `rfm75_tx_avail()` returns a true
+ ** value, which includes any time during either the `rx_done` or `tx_done`
+ ** callbacks.
  **
  */
 void rfm75_tx(uint16_t addr, uint8_t noack, uint8_t* data, uint8_t len) {
@@ -312,16 +317,31 @@ uint8_t rfm75_deferred_interrupt() {
         rx_done(payload, RFM75_PAYLOAD_SIZE,
                 (iv & 0b1110) >> 1); // This is the pipe ID
 
+        ret |= 0b10;
+
         // After rx_done returns (and ONLY after it returns), the
         //  payload_in is stale and is allowed to be overwritten.
 
-        // So now we can tell the radio module that we're done with it:
-        //  Clear the interrupt flag on the module...
-        rfm75_write_reg(STATUS, BIT6);
-        //  ... and assert CE, to listen more.
-        CE_ACTIVATE;
-        rfm75_state = RFM75_RX_LISTEN;
-        ret |= 0b10;
+        if (rfm75_state == RFM75_RX_READY) {
+            // The rx_done callback did NOT invoke a transmit:
+            // So now we can tell the radio module that we're done with it:
+            //  Clear the interrupt flag on the module...
+            rfm75_write_reg(STATUS, BIT6);
+            //  ... and assert CE, to listen more.
+            CE_ACTIVATE;
+            rfm75_state = RFM75_RX_LISTEN;
+        } else {
+            // rx_done has called rfm75_tx, so the following has happened:
+            //  1. rfm75_state is changed.
+            //      That's fine, we don't care.
+            //  2. CE_DEACTIVATE, then CE_ACTIVATE were called.
+            //      That means we don't need to handle it.
+            //  3. The CONFIG register was written.
+            //      Ok, great, we're in the proper TX config.
+            //  4. All interrupts are cleared
+            //      Awesome. We're done here.
+            //  No cleanup is necessary.
+        }
     }
     return ret;
 }
