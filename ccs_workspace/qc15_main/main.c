@@ -284,7 +284,7 @@ void handle_ipc_rx(uint8_t *rx) {
  ** button signals into four individual signals for other loop bodies.
  */
 void handle_global_signals() {
-    uint8_t rx_from_radio[IPC_MSG_LEN_MAX] = {0};
+    uint8_t rx_from_radio[IPC_MSG_LEN_MAX];
 
     if (f_time_loop) {
         f_time_loop = 0;
