@@ -34,9 +34,9 @@ uint8_t rfm75_state = RFM75_BOOT;
 volatile uint8_t f_rfm75_interrupt = 0;
 
 /// Function pointer to the callback for a message RX.
-rfm75_rx_callback_fn* rx_done;
+rfm75_rx_callback_fn* rfm75_rx_done_cb;
 /// Function pointer to the callback for a successful TX or a failed ACK.
-rfm75_tx_callback_fn* tx_done;
+rfm75_tx_callback_fn* rfm75_tx_done_cb;
 
 /// The size of bank0_init_data in its first dimension.
 #define BANK0_INITS 17
@@ -195,8 +195,8 @@ uint8_t rfm75_tx_avail() {
  ** or else strange things may happen.
  **
  ** This function may be called any time `rfm75_tx_avail()` returns a true
- ** value, which includes any time during either the `rx_done` or `tx_done`
- ** callbacks.
+ ** value, which includes any time during either the `rfm75_rx_done_cb()` or
+ ** `rfm75_tx_done_cb()` callbacks.
  **
  */
 void rfm75_tx(uint16_t addr, uint8_t noack, uint8_t* data, uint8_t len) {
@@ -255,7 +255,8 @@ void rfm75_tx(uint16_t addr, uint8_t noack, uint8_t* data, uint8_t len) {
  * This function will, as needed, clear the interrupt vector on the RFM75,
  * and clear the interrupt flag that was set in this driver's ISR.
  *
- * This function will also invoke `tx_done()` or `rx_done()` as appropriate.
+ * This function will also invoke `rfm75_tx_done_cb()` or `rfm75_rx_done_cb()`
+ * as appropriate.
  *
  *
  */
@@ -285,7 +286,7 @@ void rfm75_deferred_interrupt() {
         // We pass TRUE if we did NOT receive a NOACK flag from
         //  the radio module (meaning EITHER, it was ACKed, OR
         //  we did not request an ACK).
-        tx_done(!(iv & BIT4));
+        rfm75_tx_done_cb(!(iv & BIT4));
 
         // It's important that our tx_done callback function is able to call
         //  `rfm75_tx()`. All the cleanup we needed to do to re-TX has already
@@ -307,13 +308,13 @@ void rfm75_deferred_interrupt() {
 
         // Invoke the registered callback function.
         // 0b1110 masks the pipe ID out of the IV.
-        rx_done(payload, RFM75_PAYLOAD_SIZE, (iv & 0b1110) >> 1);
+        rfm75_rx_done_cb(payload, RFM75_PAYLOAD_SIZE, (iv & 0b1110) >> 1);
 
-        // After rx_done returns (and ONLY after it returns), the
+        // After rfm75_rx_done_cb returns (and ONLY after it returns), the
         //  payload_in is stale and is allowed to be overwritten.
 
         if (rfm75_state == RFM75_RX_READY) {
-            // The rx_done callback did NOT invoke a transmit:
+            // The rfm75_rx_done_cb callback did NOT invoke a transmit:
             // So now we can tell the radio module that we're done with it:
             //  Clear the interrupt flag on the module...
             rfm75_write_reg(STATUS, BIT6);
@@ -321,7 +322,7 @@ void rfm75_deferred_interrupt() {
             CE_ACTIVATE;
             rfm75_state = RFM75_RX_LISTEN;
         } else {
-            // rx_done has called rfm75_tx, so the following has happened:
+            // rfm75_rx_done_cb has called rfm75_tx, so the following happened:
             //  1. rfm75_state is changed.
             //      That's fine, we don't care.
             //  2. CE_DEACTIVATE, then CE_ACTIVATE were called.
@@ -399,8 +400,8 @@ void rfm75_init(uint16_t unicast_address, rfm75_rx_callback_fn* rx_callback,
 
     rfm75_io_init();
 
-    rx_done = rx_callback;
-    tx_done = tx_callback;
+    rfm75_rx_done_cb = rx_callback;
+    rfm75_tx_done_cb = tx_callback;
 
     // We're going totally synchronous on this; no interrupts at all.
     // We'll wait on the interrupt enables though, until after we've set up
