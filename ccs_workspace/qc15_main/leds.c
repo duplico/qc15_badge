@@ -163,6 +163,7 @@ void led_set_anim(led_ring_animation_t *anim, uint8_t anim_type, uint8_t loops, 
         //  one is not, then we should store it.
         led_ring_anim_bg = led_ring_anim_curr;
         led_ring_anim_pad_loops_bg = led_ring_anim_pad_loops;
+        led_anim_type_bg = led_anim_type;
     }
     led_ring_anim_curr = anim;
     led_anim_type = anim_type;
