@@ -1,0 +1,25 @@
+QC_15 Serial Output Format
+
+With markup:
+*progress message format:*
+`3,badge_id,part_id,part_data(10 bytes long)\CR\LF`
+`part_data` is rendered as as an unquoted 10-byte string with hex values escaped with `\x`.
+For example: `\x0A\x1B\x34\x00\x01\x34\x01\x10\xA5\x23`
+
+*stats message format:*
+`4,badge_id,badges_seen_count,badges_connected_count,badges_uploaded_count,ubers_seen_count,ubers_connected_count,ubers_uploaded_count,handlers_seen,handlers_connected,handlers_uploaded_count\CR\LF`
+
+*Other message format (for debug purposes; IGNORE THESE):*
+`#message_content\CR\LF`
+
+Without markup:
+progress message format:
+3,badge_id,part_id,part_data(10 bytes long)\CR\LF
+part_data is rendered as as an unquoted 10-byte string with hex values escaped with \x.
+For example: \x0A\x1B\x34\x00\x01\x34\x01\x10\xA5\x23
+
+stats message format:
+4,badge_id,badges_seen_count,badges_connected_count,badges_uploaded_count,ubers_seen_count,ubers_connected_count,ubers_uploaded_count,handlers_seen,handlers_connected,handlers_uploaded_count\CR\LF
+
+Other message format (for debug purposes; IGNORE THESE):
+#message_content\CR\LF
