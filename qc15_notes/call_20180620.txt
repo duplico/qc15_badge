@@ -1,8 +1,8 @@
 7680 character message
  480 characters per badge
-   6 80-character segments per badge
-   
-   
+   6 80-character parts per badge
+  96 80-character parts total
+
 Characters -> 80x characters = part -> 6x parts = segment -> all segments = file
    
 These are contiguous. Think of the message as a long 1D character array.
