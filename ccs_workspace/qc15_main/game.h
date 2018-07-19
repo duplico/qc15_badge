@@ -8,41 +8,52 @@
 
 #ifndef GAME_H_
 #define GAME_H_
+
+// TODO: Move to a conf.h
+#define MAX_CLOSED_STATES 10
+
+#define ACTION_NONE 0xFFFF
+
+/// A node in an action series and/or choice set.
 typedef struct {
     /// The action type ID.
-    uint8_t action_type;
+    uint16_t type;
     /// Action detail number.
     /**
      ** In the event of an animation or change state, this is the ID of the
      ** target. In the event of text, this signifies the address of the pointer
      ** to the text in our text-storage system.
      */
-    uint16_t action_detail;
+    uint16_t detail;
     /// The duration of the action, which may or may not be valid for this type.
-    uint8_t duration;
+    uint16_t duration;
+    /// The ID of the next action to fire after this one, or `ACTION_NONE`.
+    uint16_t next_action_id;
+    /// The ID of the next possible choice in this choice set, or `ACTION_NONE`.
+    uint16_t next_choice_id;
+    /// The share of the likelihood of this event firing.
+    uint16_t choice_share;
+    /// The total choice shares (denominator) of all choices in this choice set.
+    uint16_t choice_total;
 } game_action_t;
-
-typedef struct {
-    uint8_t len;
-    game_action_t action_series[5];
-} game_action_series_t;
 
 typedef struct {
     /// The duration of this timer, in 1/32 of seconds.
     uint32_t duration;
     /// True if this timer should repeat.
     uint8_t recurring;
-    game_action_series_t result_action_series;
+    uint16_t result_action_id;
 } game_timer_t;
 
 typedef struct {
     uint16_t text_addr;
-    game_action_series_t result_action_series;
+    uint16_t result_action_id;
 } game_user_in_t;
 
 typedef struct {
+    // TODO: this id shouldn't be here.
     uint8_t id;
-    game_action_series_t entry_series;
+    uint16_t entry_series_id;
     /// All applicable timers for this state.
     /**
      ** These MUST be sorted from MOST specific to LEAST specific. That is,
