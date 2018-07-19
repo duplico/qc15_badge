@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 #include "driverlib.h"
 #include <msp430fr2433.h>
 
@@ -16,6 +17,7 @@
 #include "base_main.h"
 
 #define RADIO_STATS_MSG_LEN 35
+#define RADIO_PROGRESS_MSG_LEN 48
 
 void delay_millis(unsigned long mils) {
     while (mils) {
@@ -132,7 +134,7 @@ void send_string(unsigned char * string_to_send, uint8_t length) {
 /**
  * Transmits a progress payload over serial.
  */
-void send_progress_payload(uint16_t badge_id, radio_progress_payload payload) {
+void send_progress_payload(uint16_t badge_id, radio_progress_payload *payload) {
     /**
      * Format:
      *
@@ -141,18 +143,27 @@ void send_progress_payload(uint16_t badge_id, radio_progress_payload payload) {
      * part_data is rendered as as an unquoted 10-byte string with hex values escaped with `\x`.
      * For example: `\x0A\x1B\x34\x00\x01\x34\x01\x10\xA5\x23`
      */
-    send_char(3);
-    send_string(&payload.part_id, 1);
-    send_char(',');
-    send_string(payload.part_data, 10);
-    // Carriage Return
+    uint8_t message[RADIO_PROGRESS_MSG_LEN] = {0};
+    sprintf(message, "3,%d,%d,\\x%x\\x%x\\x%x\\x%x\\x%x\\x%x\\x%x\\x%x\\x%x\\x%x",
+            badge_id,
+            payload->part_id,
+            payload->part_data[0],
+            payload->part_data[1],
+            payload->part_data[2],
+            payload->part_data[3],
+            payload->part_data[4],
+            payload->part_data[5],
+            payload->part_data[6],
+            payload->part_data[7],
+            payload->part_data[8],
+            payload->part_data[9]);
+    send_string(message, RADIO_PROGRESS_MSG_LEN);
+    // CRLF
     send_char(0x0D);
-    // Line Feed
     send_char(0x0A);
 }
 
 void send_stats_payload(uint16_t badge_id, radio_stats_payload *payload) {
-    // TODO: Test function
     /**
      * 4,badge_id,badges_seen_count,badges_connected_count,badges_uploaded_count,
      * ubers_seen_count,ubers_connected_count,ubers_uploaded_count,handlers_seen,
@@ -207,6 +218,19 @@ void main (void) {
     stats.handlers_connected = 0x03;
     stats.handlers_uploaded_count = 0x04;
 
+    radio_progress_payload progress = {0};
+    progress.part_id = 0x00;
+    progress.part_data[0] = 1;
+    progress.part_data[1] = 2;
+    progress.part_data[2] = 3;
+    progress.part_data[3] = 4;
+    progress.part_data[4] = 5;
+    progress.part_data[5] = 6;
+    progress.part_data[6] = 7;
+    progress.part_data[7] = 8;
+    progress.part_data[8] = 9;
+    progress.part_data[9] = 10;
+
     uint16_t badge_id = 0x00AF;
 
     while (1) {
@@ -217,6 +241,7 @@ void main (void) {
 
 //        __bis_SR_register(LPM0_bits);
         send_stats_payload(badge_id, &stats);
+        send_progress_payload(badge_id, &progress);
 //        delay_millis(250);
     }
  }
