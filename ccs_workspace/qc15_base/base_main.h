@@ -30,10 +30,10 @@ void serial_init();
 
 // USB Functions
 void send_char(char char_to_send);
-void send_string(unsigned char * string_to_send, int length);
-void send_progress_payload(radio_progress_payload payload);
-radio_progress_payload create_progress_payload(uint8_t part_id, uint8_t part_data[10]);
-
-void fix_registers();
+void send_uint16_t(uint16_t int_to_send);
+void send_string(unsigned char * string_to_send, uint8_t length);
+void send_progress_payload(uint16_t badge_id, radio_progress_payload payload);
+void send_stats_payload(uint16_t badge_id, radio_stats_payload *payload);
+void send_debug_payload(uint16_t badge_id, unsigned char* message);
 
 #endif /* BASE_MAIN_H_ */

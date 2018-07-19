@@ -30,11 +30,11 @@ typedef struct {
 typedef struct { // Beacon payload (broadcast)
     /// 24 LSBits are the clock, and MSBit is `1` if the clock has authority.
     uint32_t time;
-    uint8_t name[10];
+    uint8_t name[QC15_PERSON_NAME_LEN];
 } radio_beacon_payload;
 
 typedef struct { // Connect payload (unicast)
-    uint8_t name[10];
+    uint8_t name[QC15_PERSON_NAME_LEN];
     uint8_t connect_flags;
 } radio_connect_payload;
 
