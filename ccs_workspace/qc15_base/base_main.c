@@ -17,7 +17,7 @@
 #include "base_main.h"
 
 #define RADIO_STATS_MSG_LEN 35
-#define RADIO_PROGRESS_MSG_LEN 48
+#define RADIO_PROGRESS_MSG_LEN 30
 
 void delay_millis(unsigned long mils) {
     while (mils) {
@@ -141,22 +141,18 @@ void send_progress_payload(uint16_t badge_id, radio_progress_payload *payload) {
      * 3,badge_id,part_id,part_data(10 bytes long)\CR\LF
      *
      * part_data is rendered as as an unquoted 10-byte string with hex values escaped with `\x`.
-     * For example: `\x0A\x1B\x34\x00\x01\x34\x01\x10\xA5\x23`
+     * For example: `0x0A1B340001340110A523`
      */
     uint8_t message[RADIO_PROGRESS_MSG_LEN] = {0};
-    sprintf(message, "3,%d,%d,\\x%x\\x%x\\x%x\\x%x\\x%x\\x%x\\x%x\\x%x\\x%x\\x%x",
-            badge_id,
-            payload->part_id,
-            payload->part_data[0],
-            payload->part_data[1],
-            payload->part_data[2],
-            payload->part_data[3],
-            payload->part_data[4],
-            payload->part_data[5],
-            payload->part_data[6],
-            payload->part_data[7],
-            payload->part_data[8],
-            payload->part_data[9]);
+    sprintf(message, "3,%d,%d,0x", badge_id, payload->part_id);
+
+    for(int i = 0; i < 10; i++) {
+        if (payload->part_data[0] < 16) {
+            sprintf(message, "%s0%x", message, payload->part_data[i]);
+        } else {
+            sprintf(message, "%s%x", message, payload->part_data[i]);
+        }
+    }
     send_string(message, RADIO_PROGRESS_MSG_LEN);
     // CRLF
     send_char(0x0D);
