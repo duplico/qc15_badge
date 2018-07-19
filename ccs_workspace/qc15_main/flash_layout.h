@@ -61,6 +61,10 @@
  ** 0x210000 - 425 - 449 (250 bytes)
  ** 0x220000 - 450 - 474 (250 bytes)
  ** ...
+ ** 0x300000 - game start
+ ** 0x400000 - choice shares
+ **
+ ** ...
  ** 0x7C0000 - last block
  **
  ** \file flash_layout.h
