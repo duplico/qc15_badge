@@ -212,8 +212,9 @@ void led_off() {
 }
 
 void led_on() {
-    // TODO: Leave sleep mode, if it exists
-    led_anim_type = sleep_anim_type;
+    // TODO: We need a way to tell whether we're currently sleeping.
+    if (sleep_anim_type)
+        led_anim_type = sleep_anim_type;
 }
 
 /// LED timestep function, which should be called approx. 30x per second.
