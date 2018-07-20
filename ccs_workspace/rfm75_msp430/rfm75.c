@@ -337,6 +337,9 @@ void rfm75_deferred_interrupt() {
 }
 
 /// Perform a RFM75 self-test and return a 1 if it appears to be working.
+/**
+ ** This function MAY NOT be called prior to calling `rfm75_init()`.
+ */
 uint8_t rfm75_post() {
     // The MSB of the status register is the active bank, and ACTIVATE 0x53
     //  is supposed to change the active bank. Let's see if it works.

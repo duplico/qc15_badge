@@ -196,9 +196,9 @@ void bootstrap(uint8_t fastboot) {
                     (rx_from_radio[0] & 0xF0) == IPC_MSG_SWITCH) {
                 lcd111_set_text(0, "POST: Buttons OK");
                 delay_millis(1000);
+                lcd111_set_text(1, "QC15 BOOTSTRAP> PASS");
                 lcd111_set_text(0, "Click UP to leave POST");
                 bootstrap_status++;
-                break;
             }
 
         } else {
@@ -260,6 +260,8 @@ void bootstrap(uint8_t fastboot) {
                     if (bootstrap_status == POST_UP) {
                         lcd111_set_text(0, "POST: Click DOWN.");
                         bootstrap_status++;
+                    } else if (bootstrap_status == POST_OK) {
+                        break;
                     }
                 } else {
                     // press
