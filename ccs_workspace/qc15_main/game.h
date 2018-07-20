@@ -64,6 +64,7 @@ typedef struct {
     game_timer_t timer_series[5];
     uint8_t input_series_len;
     game_user_in_t input_series[5];
+    // TODO: Handle NET
 } game_state_t;
 
 void game_begin();
