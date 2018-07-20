@@ -23,6 +23,7 @@
 void start_action_series(uint16_t action_id);
 
 #define GAME_ACTION_TYPE_TEXT 0
+// TODO: TEXT_$variables
 #define GAME_ACTION_TYPE_ANIM_TEMP 1
 #define GAME_ACTION_TYPE_ANIM_BG 2
 #define GAME_ACTION_TYPE_STATE 3
