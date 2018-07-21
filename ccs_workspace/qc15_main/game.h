@@ -51,8 +51,6 @@ typedef struct {
 } game_user_in_t;
 
 typedef struct {
-    // TODO: this id shouldn't be here.
-    uint8_t id;
     uint16_t entry_series_id;
     /// All applicable timers for this state.
     /**

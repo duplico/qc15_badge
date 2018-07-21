@@ -33,9 +33,19 @@ void start_action_series(uint16_t action_id);
 #define GAME_ACTION_TYPE_CLOSE 7
 #define GAME_ACTION_TYPE_OTHER 10
 
-led_ring_animation_t animation_list[2];
+// The following data will be loaded from the script:
+led_ring_animation_t all_animations[2];
 game_state_t all_states[10];
 game_action_t all_actions[10];
+char all_text[][25] = {
+                       "Entering initial state",
+                       "Input 1",
+                       "Input 2",
+                       "Input 3",
+                       "Input 4",
+                       "This is text number 1",
+                       "text number 2",
+};
 
 game_state_t loaded_state;
 game_action_t loaded_action;
@@ -46,6 +56,7 @@ uint16_t closed_states[MAX_CLOSED_STATES] = {0};
 // TODO: persistent
 uint16_t stored_state_id = 0;
 uint16_t last_state_id = 0;
+uint16_t current_state_id;
 
 extern uint8_t s_down, s_up, s_left, s_right, s_clock_tick;
 
@@ -53,17 +64,6 @@ uint8_t in_action_series = 0;
 uint16_t game_curr_elapsed = 0;
 
 uint8_t text_selection = 0;
-
-
-char all_text[][25] = {
-                       "Entering initial state",
-                       "Input 1",
-                       "Input 2",
-                       "Input 3",
-                       "Input 4",
-                       "This is text number 1",
-                       "text number 2",
-};
 
 const rgbcolor_t rainbow_colors[] = {
         {255, 0, 0}, // Red
@@ -97,7 +97,7 @@ const led_ring_animation_t anim_pan = {
 };
 
 void game_set_state(uint16_t state_id) {
-    last_state_id = current_state->id;
+    last_state_id = current_state_id;
     in_action_series = 0;
     game_curr_elapsed = 0;
     text_selection = 0;
@@ -105,13 +105,14 @@ void game_set_state(uint16_t state_id) {
     memcpy(&loaded_state, &all_states[state_id], sizeof(game_state_t));
 
     current_state = &loaded_state;
+    current_state_id = state_id;
 
     start_action_series(current_state->entry_series_id);
 }
 
 void game_begin() {
-    animation_list[0] = anim_rainbow;
-    animation_list[1] = anim_pan;
+    all_animations[0] = anim_rainbow;
+    all_animations[1] = anim_pan;
 
     all_actions[0].type =  GAME_ACTION_TYPE_ANIM_BG;
     all_actions[0].detail = 0;
@@ -162,11 +163,11 @@ void do_action(game_action_t *action) {
         break;
     case GAME_ACTION_TYPE_ANIM_TEMP:
         // Set a temporary animation
-        led_set_anim(&animation_list[action->detail], LED_ANIM_TYPE_FALL, 0, 0);
+        led_set_anim(&all_animations[action->detail], LED_ANIM_TYPE_FALL, 0, 0);
         break;
     case GAME_ACTION_TYPE_ANIM_BG:
         // Set a new background animation
-        led_set_anim(&animation_list[action->detail], LED_ANIM_TYPE_FALL, 0xFF, 1);
+        led_set_anim(&all_animations[action->detail], LED_ANIM_TYPE_FALL, 0xFF, 1);
         break;
     case GAME_ACTION_TYPE_STATE:
         // Do a state transition
@@ -174,7 +175,7 @@ void do_action(game_action_t *action) {
         break;
     case GAME_ACTION_TYPE_PUSH:
         // Store the current state.
-        stored_state_id = current_state->id;
+        stored_state_id = current_state_id;
         break;
     case GAME_ACTION_TYPE_POP:
         // Retrieve a stored state.
