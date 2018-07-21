@@ -42,11 +42,16 @@ void poll_buttons();
 void handle_global_signals();
 void cleanup_global_signals();
 
+#pragma PERSISTENT(bootstrap_completed)
+uint8_t bootstrap_completed = 0;
+
 void flash_bootstrap() {
     ht16d_all_one_color(0x00, 0x10, 0x00);
     s25fl_hold_io();
     lcd111_set_text(1, "   FLASH PROGRAM MODE");
     lcd111_set_text(0, "Press UP for normal boot");
+    handle_global_signals();
+    cleanup_global_signals();
     while (1) {
         f_time_loop = 1;
         handle_global_signals();
@@ -81,6 +86,9 @@ void bootstrap(uint8_t fastboot) {
     // 9->10  SWITCH TOGGLE
     // 10->11 SWITCH TOGGLE
     // 11->12 OK w/ any feedback
+
+    if (!bootstrap_completed)
+        fastboot = 0;
 
     // Tell the radio module to reboot.
     ipc_tx_byte(IPC_MSG_REBOOT);
@@ -261,6 +269,7 @@ void bootstrap(uint8_t fastboot) {
                         lcd111_set_text(0, "POST: Click DOWN.");
                         bootstrap_status++;
                     } else if (bootstrap_status == POST_OK) {
+                        bootstrap_completed = 1;
                         break;
                     }
                 } else {
