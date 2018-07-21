@@ -567,16 +567,14 @@ void main (void)
 
     uint8_t initial_buttons = P9IN;
 
-    if (!(initial_buttons & BIT5)) { // hold RIGHT button at startup for flash mode.
-        flash_bootstrap();
-    }
-
     init_config();
 
     __bis_SR_register(GIE);
 
-    // hold DOWN on turn-on for verbose boot:
+    // Do verbose boot for the diagnostic code:
     bootstrap(initial_buttons & BIT4);
+    // Allow flash loading:
+    flash_bootstrap();
 
     game_begin();
 
