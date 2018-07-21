@@ -299,12 +299,12 @@ void handle_global_signals() {
         }
     }
 
-    if (s_power_off) {
+    if (s_power_off && power_switch_status == POWER_SW_OFF) {
         s_power_off = 0;
         led_off();
     }
 
-    if (s_power_on) {
+    if (s_power_on && power_switch_status == POWER_SW_ON) {
         s_power_on = 0;
         led_on();
     }
