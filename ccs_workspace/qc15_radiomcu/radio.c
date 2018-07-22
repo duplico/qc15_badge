@@ -82,6 +82,8 @@ void radio_handle_beacon(uint16_t id, radio_beacon_payload *payload) {
     } else if (id == QC15_BASE_ID) {
         // It's the suite base
         // Let's transmit our progress!
+        // TODO: we shouldn't do this on every single one.
+        // TODO: We should do the above badge interval logic with bases.
         progress_tx_id = 0;
         radio_send_progress_frame(0);
     } else if (id == QC15_CONTROL_ID) {
