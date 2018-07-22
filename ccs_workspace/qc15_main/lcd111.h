@@ -12,6 +12,13 @@
 #define LCD111_CMD_CH 0x02 // Return HOME
 #define LCD111_CMD_OSC 0x03
 
+#define LCD111_CURSOR_INVERTING 0b100
+#define LCD111_CURSOR_LINE 0b010
+#define LCD111_CURSOR_BLINK 0b001
+#define LCD111_CURSOR_NONE 0b000
+
+#define LCD_TOP 1
+#define LCD_BTM 0
 
 void lcd111_init_io();
 void lcd111_init();
