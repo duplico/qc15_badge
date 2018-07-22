@@ -226,6 +226,7 @@ void start_action_series(uint16_t action_id) {
     // We know we're in an action series, so set everything up:
     in_action_series = 1;
     game_curr_elapsed = 0;
+    lcd111_set_text(0, "");
     do_action(&loaded_action);
 }
 
