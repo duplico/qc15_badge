@@ -156,6 +156,13 @@ void led_display_colors() {
     }
 }
 
+void led_set_anim_none() {
+    led_anim_type = LED_ANIM_TYPE_NONE;
+    led_ring_anim_loops = 0;
+    ht16d_all_one_color_ring_only(0, 0, 0);
+    // TODO: Does this need to signal? Probably no...
+}
+
 /// Set the current LED ring animation.
 void led_set_anim(led_ring_animation_t *anim, uint8_t anim_type, uint8_t loops, uint8_t use_pad_in_loops) {
     if (led_ring_anim_loops == 0xFF && loops != 0xFF) {
