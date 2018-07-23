@@ -17,10 +17,10 @@
 
 // TODO: What of this will need to be persistent?
 
-char *text_entry_dest;
+char *textentry_dest;
 char curr_text[25];
 uint8_t text_entry_cursor_pos;
-uint8_t text_entry_len;
+uint8_t textentry_len;
 
 uint8_t text_entry_in_progress = 0;
 
@@ -28,19 +28,20 @@ uint8_t text_entry_in_progress = 0;
 #define CH_HEART 0x9D
 #define CH_ENTER 0x17
 
+/// The len here does NOT include a null terminator.
 void textentry_begin(char *destination, uint8_t len, uint8_t start_populated) {
     if (text_entry_in_progress || !len) {
         return; // TODO
     }
-    text_entry_dest = destination;
-    text_entry_len = len;
+    textentry_dest = destination;
+    textentry_len = len;
     text_entry_cursor_pos = 0;
     text_entry_in_progress = 1;
 
+    memset(curr_text, 0, len+1);
+
     if (start_populated) {
-        memcpy(curr_text, text_entry_dest, len);
-    } else {
-        memset(curr_text, 0, len);
+        memcpy(curr_text, textentry_dest, len);
     }
 
     if (!curr_text[0]) {
@@ -147,20 +148,30 @@ void prev_char() {
 }
 
 void textentry_update_single_char() {
-
     lcd111_cursor_pos(LCD_BTM, text_entry_cursor_pos);
-    lcd111_set_text(LCD_BTM, curr_text);
-
-    if (curr_text[text_entry_cursor_pos] == CH_ENTER &&
-            text_entry_cursor_pos < text_entry_len-1) {
-        // If we have ENTER selected, and this isn't the last character of
-        //  the field, we need to write some blanks to show that ENTER terms
-        //  the string.
-        lcd111_cursor_pos(LCD_BTM, text_entry_cursor_pos+1);
-        for (uint8_t i=text_entry_cursor_pos; i < text_entry_len; i++) {
+    uint8_t blanking = 0;
+    for (uint8_t i=text_entry_cursor_pos; i<=textentry_len; i++) {
+        if (!curr_text[i]) // null terminator
+            blanking = 1;
+        if (blanking) {
             lcd111_put_char(LCD_BTM, ' ');
+        } else {
+            lcd111_put_char(LCD_BTM, curr_text[i]);
+            if (curr_text[i] == CH_ENTER)
+                blanking = 1;
         }
     }
+
+//    if (curr_text[text_entry_cursor_pos] == CH_ENTER &&
+//            text_entry_cursor_pos < text_entry_len-1) {
+//        // If we have ENTER selected, and this isn't the last character of
+//        //  the field, we need to write some blanks to show that ENTER terms
+//        //  the string.
+//        lcd111_cursor_pos(LCD_BTM, text_entry_cursor_pos+1);
+//        for (uint8_t i=text_entry_cursor_pos; i < text_entry_len; i++) {
+//            lcd111_put_char(LCD_BTM, ' ');
+//        }
+//    }
 
     lcd111_cursor_pos(LCD_BTM, text_entry_cursor_pos);
 }
@@ -168,7 +179,7 @@ void textentry_update_single_char() {
 void textentry_complete() {
     curr_text[text_entry_cursor_pos] = 0; // Null term at the ENTER.
     lcd111_cursor_type(LCD_BTM, LCD111_CURSOR_NONE);
-    strcpy(text_entry_dest, curr_text);
+    memcpy(textentry_dest, curr_text, textentry_len+1);
     lcd111_clear(LCD_BTM);
     lcd111_clear(LCD_TOP);
     text_entry_in_progress = 0;
@@ -180,10 +191,10 @@ void textentry_handle_loop() {
     if (!s_clock_tick)
         return; // Only care about clock ticks (and therefore buttons)
 
-    if (s_up && (text_entry_cursor_pos < text_entry_len)) {
+    if (s_up && (text_entry_cursor_pos < textentry_len)) {
         next_char();
         textentry_update_single_char();
-    } else if (s_down && (text_entry_cursor_pos < text_entry_len)) {
+    } else if (s_down && (text_entry_cursor_pos < textentry_len)) {
         prev_char();
         textentry_update_single_char();
     } else if (s_right) {
@@ -193,11 +204,11 @@ void textentry_handle_loop() {
             textentry_complete();
             return;
         }
-        if (text_entry_cursor_pos < text_entry_len) {
+        if (text_entry_cursor_pos < textentry_len) {
             text_entry_cursor_pos++;
         }
         else {
-            text_entry_cursor_pos = text_entry_len;
+            text_entry_cursor_pos = textentry_len;
             curr_text[text_entry_cursor_pos] = CH_ENTER;
         }
 
