@@ -270,4 +270,7 @@ void bootstrap(uint8_t fastboot) {
             s_buttons = 0;
         }
     }
+
+    ht16d_all_one_color(0, 0, 0);
+
 }
