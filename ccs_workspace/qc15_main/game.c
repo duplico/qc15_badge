@@ -165,6 +165,9 @@ void game_set_state(uint16_t state_id) {
     // First, check for special stuff...
     for (uint8_t i=0; i<current_state->other_series_len; i++) {
         // Handle the specialized inputs that replace the ENTRY event:
+        if (leads_to_closed_state(current_state->other_series[i].result_action_id))
+            continue; // Mask events that lead to closed states.
+
         if (current_state->other_series[i].type_id == SPECIAL_BADGESNEARBY0 &&
                 badges_nearby==0) {
             start_action_series(current_state->other_series[i].result_action_id);
@@ -177,7 +180,9 @@ void game_set_state(uint16_t state_id) {
         }
     }
 
-    start_action_series(current_state->entry_series_id);
+    if (!leads_to_closed_state(current_state->entry_series_id)) {
+        start_action_series(current_state->entry_series_id);
+    }
 }
 
 void game_begin() {
@@ -384,15 +389,26 @@ void game_clock_tick() {
             //  the timers populate their array. So it's important that the
             //  instructions, above, on how to order them be followed.
             // TODO: clean this shit up (appearance-wise):
-            if (game_curr_elapsed && (
+            if ((game_curr_elapsed && (
                     (game_curr_elapsed == current_state->timer_series[i].duration) ||
-                    (current_state->timer_series[i].recurring && ((game_curr_elapsed % current_state->timer_series[i].duration) == 0)))) {
+                    (current_state->timer_series[i].recurring && ((game_curr_elapsed % current_state->timer_series[i].duration) == 0)))) &&
+                    !leads_to_closed_state(current_state->timer_series[i].result_action_id)) {
                 // Time `i` should fire.
                 start_action_series(current_state->timer_series[i].result_action_id);
                 break;
             }
         }
     }
+}
+
+void next_input() {
+    text_selection = (text_selection + current_state->input_series_len-1) % current_state->input_series_len;
+    draw_text_selection();
+}
+
+void prev_input() {
+    text_selection = (text_selection + 1) % current_state->input_series_len;
+    draw_text_selection();
 }
 
 /// Called repeatedly from the main loop to handle steps of the game states.
@@ -418,13 +434,12 @@ void game_handle_loop() {
     //  entry.
     if (current_state->input_series_len) {
         if (s_up) {
-            text_selection = (text_selection + current_state->input_series_len-1) % current_state->input_series_len;
-            draw_text_selection();
+            next_input();
         } else if (s_down) {
-            text_selection = (text_selection + 1) % current_state->input_series_len;
-            draw_text_selection();
+            prev_input();
         } else if (s_right) {
             // Select.
+            // TODO: only do this if there's a valid input.
             start_action_series(current_state->input_series[text_selection].result_action_id);
             return;
         }
