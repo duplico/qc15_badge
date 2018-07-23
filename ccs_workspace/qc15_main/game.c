@@ -402,12 +402,16 @@ void game_clock_tick() {
 }
 
 void next_input() {
-    text_selection = (text_selection + current_state->input_series_len-1) % current_state->input_series_len;
+    do {
+        text_selection = (text_selection + current_state->input_series_len-1) % current_state->input_series_len;
+    } while (leads_to_closed_state(current_state->input_series[text_selection].result_action_id));
     draw_text_selection();
 }
 
 void prev_input() {
-    text_selection = (text_selection + 1) % current_state->input_series_len;
+    do {
+        text_selection = (text_selection + 1) % current_state->input_series_len;
+    } while (leads_to_closed_state(current_state->input_series[text_selection].result_action_id));
     draw_text_selection();
 }
 
