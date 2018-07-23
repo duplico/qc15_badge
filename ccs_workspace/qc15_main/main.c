@@ -60,6 +60,8 @@ uint8_t power_switch_status = 0;
 
 volatile uint32_t qc_clock;
 
+uint16_t badges_nearby = 0;
+
 // If I change this to NOINIT, it'll persist between flashings of the badge.
 #pragma PERSISTENT(badge_conf)
 qc15conf badge_conf = {0};
