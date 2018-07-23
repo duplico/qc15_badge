@@ -33,6 +33,7 @@
 #include <driverlib.h>
 #include <s25fl.h>
 #include <s25fl.h>
+#include <textentry.h>
 #include "qc15.h"
 
 #include "lcd111.h"
@@ -40,7 +41,6 @@
 #include "ipc.h"
 #include "leds.h"
 #include "game.h"
-
 #include "util.h"
 #include "main_bootstrap.h"
 
@@ -57,6 +57,9 @@ uint8_t s_power_on = 0;
 uint8_t s_power_off = 0;
 
 uint8_t power_switch_status = 0;
+
+uint8_t mode_countdown, mode_status, mode_game, mode_sleep;
+// text_entry_in_progress
 
 volatile uint32_t qc_clock;
 
@@ -536,6 +539,12 @@ void generate_config() {
     set_badge_uploaded(badge_conf.badge_id);
     set_badge_downloaded(badge_conf.badge_id);
     save_config();
+
+    mode_game = 1;
+    mode_countdown = 0;
+    mode_status = 0;
+    mode_sleep = 0;
+
 }
 
 uint8_t config_is_valid() {
@@ -577,14 +586,16 @@ void main (void)
         flash_bootstrap();
     }
 
-    init_config();
-
     __bis_SR_register(GIE);
 
     // hold DOWN on turn-on for verbose boot:
     bootstrap(initial_buttons & BIT4);
 
-    game_begin();
+//    init_config();
+    mode_game = 1;
+
+    if (mode_game) // TODO: Requires changing for persistence:
+        game_begin();
 
     while (1) {
         handle_global_signals();
@@ -594,7 +605,17 @@ void main (void)
             s_led_anim_done = 0;
         }
 
-        game_handle_loop();
+        if (mode_sleep) {
+
+        } else if (mode_countdown) {
+
+        } else if (text_entry_in_progress) {
+            textentry_handle_loop();
+        } else if (mode_status) {
+
+        } else {
+            game_handle_loop();
+        }
 
         cleanup_global_signals();
 
