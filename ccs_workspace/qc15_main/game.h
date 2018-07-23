@@ -13,6 +13,8 @@
 #define MAX_CLOSED_STATES 10
 
 #define ACTION_NONE 0xFFFF
+#define ANIM_NONE   0xFFFF
+#define GAME_NULL   0xFFFF
 
 /// A node in an action series and/or choice set.
 typedef struct {
