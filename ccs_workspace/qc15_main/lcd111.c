@@ -61,7 +61,7 @@ void lcd111_sr_init_io() {
     p.spiMode = EUSCI_B_SPI_3PIN;
     p.selectClockSource = EUSCI_B_SPI_CLOCKSOURCE_SMCLK;
     p.clockSourceFrequency = SMCLK_FREQ_HZ;
-    p.desiredSpiClock = 10000;
+    p.desiredSpiClock = 100000;
     EUSCI_B_SPI_initMaster(EUSCI_B1_BASE, &p);
 }
 
@@ -107,7 +107,6 @@ void lcd111_wr(uint8_t lcd_id, uint8_t byte, uint8_t is_data) {
     P6OUT &= ~(lcd_id ? BIT4 : BIT3);
     // Hold data for >5ns
 
-
     // Keep the whole bus HIGH in between cycles.
     lcd111_sr_out(0xff);
 }
@@ -121,9 +120,8 @@ void lcd111_command(uint8_t lcd_id, uint8_t command) {
     //  takes 310 cycles, so we do need to wait a bit.
     if (command == LCD111_CMD_CLR) {
         // Clear.
-        delay_millis(2); // Experimentally, this is about the perfect length.
+        delay_millis(4); // Experimentally, this is about the perfect length.
     }
-
 }
 
 void lcd111_data(uint8_t lcd_id, uint8_t data) {
@@ -178,7 +176,12 @@ void lcd111_cursor_pos(uint8_t lcd_id, uint8_t pos) {
 
 /// Clear the display and reset the address to 0.
 void lcd111_clear(uint8_t lcd_id) {
-    lcd111_command(lcd_id, 0x01); // Clear display and reset address.
+    lcd111_command(lcd_id, LCD111_CMD_CLR); // Clear display and reset address.
+}
+
+/// Faster version of `lcd111_clear()` if it will be >4ms before it gets text.
+void lcd111_clear_nodelay(uint8_t lcd_id) {
+    lcd111_wr(lcd_id, command, 0);
 }
 
 /// Place `character` at the current cursor position in the LCD.
@@ -187,6 +190,9 @@ void lcd111_put_char(uint8_t lcd_id, char character) {
 }
 
 /// Put a text buffer into the display, for `len` characters or until NULL.
+/**
+ ** This is actually _faster_ than lcd111_clear().
+ */
 void lcd111_put_text(uint8_t lcd_id, char *text, uint8_t len) {
     uint8_t i=0;
     while (text[i] && i<len) {
