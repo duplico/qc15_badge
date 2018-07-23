@@ -1,0 +1,17 @@
+/*
+ * text_entry.h
+ *
+ *  Created on: Jul 23, 2018
+ *      Author: george
+ */
+
+#ifndef TEXTENTRY_H_
+#define TEXTENTRY_H_
+
+extern uint8_t text_entry_in_progress;
+
+void textentry_begin(char *destination, uint8_t len, uint8_t start_populated);
+void textentry_handle_loop();
+
+
+#endif /* TEXTENTRY_H_ */
