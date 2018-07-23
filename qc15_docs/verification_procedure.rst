@@ -15,10 +15,10 @@ Preparation
   and ``verify_all.bat``.
 
 * Place a badge on the programming jig and execute ``verify_all.bat``. 
-   * If the program output indicates incorrect MCU detection, please swap
-     3-pin programming connectors between the ports on the jig labeled 
-     "Game CPU" and "Display CPU". The "Flash" port is not used in this 
-     procedure.
+  If the program output indicates incorrect MCU detection, please swap
+  3-pin programming connectors between the ports on the jig labeled 
+  "Game CPU" and "Display CPU". The "Flash" port is not used in this 
+  procedure.
   
 * Ready to test!
 
