@@ -24,7 +24,7 @@ uint8_t textentry_len;
 
 uint8_t text_entry_in_progress = 0;
 
-#define CH_MUSIC 0x98
+#define CH_MUSIC 0x96
 #define CH_HEART 0x9D
 #define CH_ENTER 0x17
 
