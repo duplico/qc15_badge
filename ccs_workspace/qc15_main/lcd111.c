@@ -181,7 +181,7 @@ void lcd111_clear(uint8_t lcd_id) {
 
 /// Faster version of `lcd111_clear()` if it will be >4ms before it gets text.
 void lcd111_clear_nodelay(uint8_t lcd_id) {
-    lcd111_wr(lcd_id, command, 0);
+    lcd111_wr(lcd_id, LCD111_CMD_CLR, 0);
 }
 
 /// Place `character` at the current cursor position in the LCD.
@@ -191,12 +191,28 @@ void lcd111_put_char(uint8_t lcd_id, char character) {
 
 /// Put a text buffer into the display, for `len` characters or until NULL.
 /**
- ** This is actually _faster_ than lcd111_clear().
+ ** This is actually _much faster_ than lcd111_set_text().
  */
 void lcd111_put_text(uint8_t lcd_id, char *text, uint8_t len) {
     uint8_t i=0;
     while (text[i] && i<len) {
         lcd111_put_char(lcd_id, text[i++]);
+    }
+}
+
+/// Put `text` into the display until NULL, then pad with blanks to `len`.
+/**
+ ** This is actually _much faster_ than lcd111_set_text(), so please use this
+ ** whenever it's practical.
+ */
+void lcd111_put_text_pad(uint8_t lcd_id, char *text, uint8_t len) {
+    uint8_t i=0;
+    while (text[i] && i<len) {
+        lcd111_put_char(lcd_id, text[i++]);
+    }
+    while (i<len) {
+        lcd111_put_char(lcd_id, ' ');
+        i++;
     }
 }
 
