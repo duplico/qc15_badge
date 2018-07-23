@@ -74,6 +74,10 @@ game_state_t *current_state;
 uint16_t closed_states[CLOSABLE_STATES] = {0};
 uint8_t num_closed_states = 0;
 
+uint8_t current_text[25] = "";
+uint8_t current_text_len = 0;
+
+
 // TODO: persistent
 uint16_t stored_state_id = 0;
 uint16_t last_state_id = 0;
@@ -197,15 +201,14 @@ void game_begin() {
 
 /// Render bottom screen for the current state and value of `text_selection`.
 void draw_text_selection() {
-    lcd111_clear(0);
-    if (text_selection < current_state->input_series_len) {
-        lcd111_put_text(0, all_text[current_state->input_series[text_selection].text_addr], 24);
-    }
+    lcd111_cursor_pos(LCD_BTM, 0);
+    lcd111_put_char(LCD_BTM, 0xBB); // This is &raquo;
+    lcd111_put_text_pad(
+            LCD_BTM,
+            all_text[current_state->input_series[text_selection].text_addr],
+            23
+    );
 }
-
-
-uint8_t current_text[25] = "";
-uint8_t current_text_len = 0;
 
 uint8_t is_text_type(uint16_t type) {
     return (type >= GAME_ACTION_TYPE_TEXT && type < GAME_ACTION_TYPE_TEXT_END);
