@@ -25,6 +25,7 @@ void lcd111_init();
 void lcd111_cursor_type(uint8_t lcd_id, uint8_t cursor_type);
 void lcd111_cursor_pos(uint8_t lcd_id, uint8_t pos);
 void lcd111_clear(uint8_t lcd_id);
+void lcd111_clear_nodelay(uint8_t lcd_id);
 void lcd111_put_char(uint8_t lcd_id, char character);
 void lcd111_put_text(uint8_t lcd_id, char *text, uint8_t len);
 void lcd111_set_text(uint8_t lcd_id, char *text);

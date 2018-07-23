@@ -180,8 +180,8 @@ void textentry_complete() {
     curr_text[text_entry_cursor_pos] = 0; // Null term at the ENTER.
     lcd111_cursor_type(LCD_BTM, LCD111_CURSOR_NONE);
     memcpy(textentry_dest, curr_text, textentry_len+1);
-    lcd111_clear(LCD_BTM);
-    lcd111_clear(LCD_TOP);
+    lcd111_clear_nodelay(LCD_BTM);
+    lcd111_clear_nodelay(LCD_TOP);
     text_entry_in_progress = 0;
     // Do a SAVE, out of an abundance of caution.
     save_config();
