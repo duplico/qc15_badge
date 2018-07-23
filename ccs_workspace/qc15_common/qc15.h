@@ -104,6 +104,7 @@ extern qc15status badge_status;
 #define MCLK_FREQ_KHZ 8000
 #define MCLK_FREQ_HZ 8000000
 extern qc15conf badge_conf;
+extern uint16_t badges_nearby;
 #endif
 
 
