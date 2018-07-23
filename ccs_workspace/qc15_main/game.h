@@ -53,6 +53,11 @@ typedef struct {
 } game_user_in_t;
 
 typedef struct {
+    uint16_t type_id;
+    uint16_t result_action_id;
+} game_other_in_t;
+
+typedef struct {
     uint16_t entry_series_id;
     /// All applicable timers for this state.
     /**
@@ -61,10 +66,12 @@ typedef struct {
      ** from largest to smallest interval.
      */
     uint8_t timer_series_len;
-    game_timer_t timer_series[5];
     uint8_t input_series_len;
+    uint8_t other_series_len;
+
+    game_timer_t timer_series[5];
     game_user_in_t input_series[6];
-    // TODO: Handle NET
+    game_other_in_t other_series[3];
 } game_state_t;
 
 void game_begin();
