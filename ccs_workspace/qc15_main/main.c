@@ -399,6 +399,10 @@ void save_config() {
     // wr_en, wr_dis
     s25fl_write_data(FLASH_ADDR_CONF_BACKUP, &badge_conf, sizeof(qc15conf));
 
+    // And, update our friend:
+    // (spin until the send is successful)
+    while (!ipc_tx_op_buf(IPC_MSG_STATS_UPDATE, (uint8_t *) &badge_conf, sizeof(qc15status)));
+
 }
 
 uint8_t is_handler(uint16_t id) {
