@@ -42,6 +42,7 @@ void start_action_series(uint16_t action_id);
 
 // The following data will be loaded from the script:
 led_ring_animation_t all_animations[3];
+
 uint16_t all_actions_len = 569;
 uint16_t all_text_len = 428;
 uint16_t all_states_len = 34;
@@ -55,6 +56,7 @@ game_state_t all_states[] = {(game_state_t){.entry_series_id=0, .timer_series_le
 
 #define SPECIAL_BADGESNEARBY0 0
 #define SPECIAL_BADGESNEARBYMORETHAN1 1
+#define CLOSABLE_STATES 4
 
 
 
@@ -66,7 +68,8 @@ uint8_t text_cursor = 0;
 game_state_t loaded_state;
 game_action_t loaded_action;
 game_state_t *current_state;
-uint16_t closed_states[MAX_CLOSED_STATES] = {0};
+uint16_t closed_states[CLOSABLE_STATES] = {0};
+uint8_t num_closed_states = 0;
 
 // TODO: persistent
 uint16_t stored_state_id = 0;
@@ -111,7 +114,44 @@ const led_ring_animation_t anim_pan = {
         "Pansexual"
 };
 
+void load_action(game_action_t *dest, uint16_t id) {
+    // TODO: handle SPI flash
+    memcpy(dest, &all_actions[id],
+           sizeof(game_action_t));
+}
+
+uint8_t state_is_closed(uint16_t state_id) {
+    for (uint8_t i=0; i<num_closed_states; i++) {
+        if (closed_states[i] == state_id)
+            return 1;
+    }
+    return 0;
+}
+
+void close_state(uint16_t state_id) {
+    if (!state_is_closed(state_id)) {
+        closed_states[num_closed_states] = state_id;
+        num_closed_states++;
+    }
+}
+
+uint8_t leads_to_closed_state(uint16_t action_id) {
+    game_action_t action;
+    do {
+        load_action(&action, action_id);
+        if (action.type == GAME_ACTION_TYPE_STATE_TRANSITION &&
+                state_is_closed(action.detail))
+            return 1;
+    } while (action.next_action_id != GAME_NULL);
+    return 0;
+}
+
 void game_set_state(uint16_t state_id) {
+    if (state_is_closed(state_id)) {
+        // State transitions to closed states have no effect.
+        return;
+    }
+
     last_state_id = current_state_id;
     in_action_series = 0;
     game_curr_elapsed = 0;
@@ -211,7 +251,7 @@ void do_action(game_action_t *action) {
         game_set_state(last_state_id);
         break;
     case GAME_ACTION_TYPE_CLOSE:
-        // TODO: add this state to the list of blocked states.
+        close_state(current_state_id);
         break;
     case GAME_ACTION_TYPE_TEXT:
         // Display some text
@@ -236,12 +276,6 @@ void do_action(game_action_t *action) {
         // TODO: handle
         break;
     }
-}
-
-void load_action(game_action_t *dest, uint16_t id) {
-    // TODO: handle SPI flash
-    memcpy(dest, &all_actions[id],
-           sizeof(game_action_t));
 }
 
 /// Place the next action choice in `loaded_action`.
