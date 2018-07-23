@@ -274,22 +274,29 @@ void game_action_sequence_tick() {
 
         // If we haven't put all our text in yet...
         if (text_cursor < current_text_len) {
-            game_curr_elapsed = 0;
-            lcd111_put_char(LCD_TOP, current_text[text_cursor]);
-            text_cursor++;
-            if (text_cursor == current_text_len) {
-                // Done typing. Is there anything we need to _do_ here?
+            if (game_curr_elapsed == 2) {
+                game_curr_elapsed = 0;
+                lcd111_put_char(LCD_TOP, current_text[text_cursor]);
+                text_cursor++;
+                if ((text_cursor == current_text_len) || s_left) {
+                    // Done typing, or we were told to hurry up.
+                    text_cursor = current_text_len;
+                    lcd111_set_text(LCD_TOP, current_text);
+                }
+                // Now, we DON'T want this action to finish (or even for its
+                //  duration to start ticking) until the typewriter is finished.
+                // (if it just finished, we can wait an extra clock tick to take
+                //  advantage of the auto cleanup of signals).
+                return;
             }
-            // Now, we DON'T want this action to finish (or even for its
-            //  duration to start ticking) until the typewriter is finished.
-            return;
         }
     }
 
     // If we're in an action series, we block out user input.
     // Check whether the current action is completed and duration expired.
     //  If so, it's time to fire the next one.
-    if (game_curr_elapsed >= loaded_action.duration) {
+    if (game_curr_elapsed >= loaded_action.duration ||
+            ((is_text_type(loaded_action.type) && s_left))) {
         // Current action in series is over. Reset the clock.
         game_curr_elapsed = 0;
         // Time to select the next one, if there is one.
