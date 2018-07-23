@@ -9,9 +9,6 @@
 #ifndef GAME_H_
 #define GAME_H_
 
-// TODO: Move to a conf.h
-#define MAX_CLOSED_STATES 10
-
 #define ACTION_NONE 0xFFFF
 #define ANIM_NONE   0xFFFF
 #define GAME_NULL   0xFFFF
