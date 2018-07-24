@@ -101,7 +101,9 @@ const led_ring_animation_t anim_rainbow = {
         &rainbow_colors[0],
         6,
         5,
-        "Rainbow"
+        HT16D_BRIGHTNESS_DEFAULT,
+        LED_ANIM_TYPE_SPIN,
+        "Rainbow",
 };
 
 
@@ -116,7 +118,9 @@ const led_ring_animation_t anim_pan = {
         &pan_colors[0],
         4,
         6,
-        "Pansexual"
+        HT16D_BRIGHTNESS_DEFAULT,
+        LED_ANIM_TYPE_SPIN,
+        "Pansexual",
 };
 
 void load_action(game_action_t *dest, uint16_t id) {

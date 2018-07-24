@@ -234,7 +234,7 @@ void ht16d_init() {
     ht16d_send_cmd_single(HTCMD_SW_RESET);
 
     // Set global brightness
-    ht16_d_send_cmd_dat(HTCMD_GLOBAL_BRTNS, HT16D_INITIAL_BRIGHTNESS);
+    ht16_d_send_cmd_dat(HTCMD_GLOBAL_BRTNS, HT16D_BRIGHTNESS_DEFAULT);
     // Set BW/Binary display mode.
     ht16_d_send_cmd_dat(HTCMD_BWGRAY_SEL, HTCMD_BWGRAY_SEL_GRAYSCALE);
     // Set column pin control for in-use cols (HTCMD_COM_PIN_CTL)
