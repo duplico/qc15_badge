@@ -591,7 +591,7 @@ void main (void)
     // hold DOWN on turn-on for verbose boot:
     bootstrap(initial_buttons & BIT4);
 
-//    init_config();
+    init_config();
     mode_game = 1;
 
     if (mode_game) // TODO: Requires changing for persistence:
