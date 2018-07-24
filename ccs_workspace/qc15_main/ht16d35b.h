@@ -1,8 +1,9 @@
-/*
- * ht16d35b.h
- *
- *  Created on: Jun 17, 2018
- *      Author: george
+/// Header for low-level driver for the HT16D35B LED controller.
+/**
+ ** \file ht16d35b.h
+ ** \author George Louthan
+ ** \date   2018
+ ** \copyright (c) 2018 George Louthan @duplico. MIT License.
  */
 
 #ifndef HT16D35B_H_

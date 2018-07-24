@@ -295,9 +295,9 @@ void ht16d_set_colors(uint8_t id_start, uint8_t id_len, rgbcolor16_t* colors) {
         while (1);
     }
     for (uint8_t i=0; i<id_len; i++) {
-        ht16d_gs_values[17-(id_start+i)][0] = (uint8_t)(colors[i].r >> 7);
-        ht16d_gs_values[17-(id_start+i)][1] = (uint8_t)(colors[i].g >> 7);
-        ht16d_gs_values[17-(id_start+i)][2] = (uint8_t)(colors[i].b >> 7);
+        ht16d_gs_values[(id_start+i)][0] = (uint8_t)(colors[i].r >> 7);
+        ht16d_gs_values[(id_start+i)][1] = (uint8_t)(colors[i].g >> 7);
+        ht16d_gs_values[(id_start+i)][2] = (uint8_t)(colors[i].b >> 7);
     }
     ht16d_send_gray();
 }
@@ -309,7 +309,9 @@ void ht16d_all_one_color(uint8_t r, uint8_t g, uint8_t b) {
         ht16d_gs_values[i][1] = g;
         ht16d_gs_values[i][2] = b;
     }
+
     ht16d_send_gray();
+
 }
 
 void ht16d_display_off() {
