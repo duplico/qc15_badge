@@ -260,6 +260,7 @@ void main (void)
     init_clocks();
     ipc_init();
     rtc_init();
+    delay_millis(100);
     radio_init(0);
 
     __bis_SR_register(GIE);
