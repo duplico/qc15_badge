@@ -203,11 +203,26 @@ void game_begin() {
 void draw_text_selection() {
     lcd111_cursor_pos(LCD_BTM, 0);
     lcd111_put_char(LCD_BTM, 0xBB); // This is &raquo;
-    lcd111_put_text_pad(
-            LCD_BTM,
-            all_text[current_state->input_series[text_selection].text_addr],
-            23
-    );
+    if (text_selection) {
+        lcd111_cursor_type(LCD_BTM, LCD111_CURSOR_NONE);
+        lcd111_put_text_pad(
+                LCD_BTM,
+                all_text[current_state->input_series[text_selection-1].text_addr],
+                23
+        );
+    } else {
+        // Haven't used an arrow key yet.
+        if (current_state->input_series_len) {
+            lcd111_put_text_pad(LCD_BTM, "", 21);
+            lcd111_put_text_pad(LCD_BTM, "\x1E\x1F", 2);
+            lcd111_cursor_pos(LCD_BTM, 1);
+            lcd111_cursor_type(LCD_BTM, LCD111_CURSOR_BLINK);
+        } else {
+            lcd111_put_text_pad(LCD_BTM, "", 23);
+            lcd111_cursor_type(LCD_BTM, LCD111_CURSOR_NONE);
+        }
+
+    }
 }
 
 uint8_t is_text_type(uint16_t type) {
@@ -324,6 +339,8 @@ void start_action_series(uint16_t action_id) {
         return;
     }
 
+    lcd111_cursor_type(LCD_BTM, LCD111_CURSOR_NONE);
+
     // Now, we know we're dealing with a real action series.
     // Place the appropriate action choice into `loaded_action`.
     select_action_choice(action_id);
@@ -382,16 +399,28 @@ void game_action_sequence_tick() {
 }
 
 void next_input() {
-    do {
-        text_selection = (text_selection + current_state->input_series_len-1) % current_state->input_series_len;
-    } while (leads_to_closed_state(current_state->input_series[text_selection].result_action_id));
+    if (text_selection == 0) {
+        text_selection = 1;
+    } else {
+        do {
+            text_selection += 1;
+            if (text_selection == current_state->input_series_len+1)
+                text_selection = 1;
+        } while (leads_to_closed_state(current_state->input_series[text_selection-1].result_action_id));
+    }
     draw_text_selection();
 }
 
 void prev_input() {
-    do {
-        text_selection = (text_selection + 1) % current_state->input_series_len;
-    } while (leads_to_closed_state(current_state->input_series[text_selection].result_action_id));
+    if (text_selection == 0) {
+        text_selection = current_state->input_series_len;
+    } else {
+        do {
+            text_selection -= 1;
+            if (text_selection == 0)
+                text_selection = current_state->input_series_len;
+        } while (leads_to_closed_state(current_state->input_series[text_selection-1].result_action_id));
+    }
     draw_text_selection();
 }
 
@@ -407,9 +436,8 @@ void game_process_user_in() {
             prev_input();
         } else if (s_right) {
             // Select.
-            // TODO: only do this if there's a valid input.
-            start_action_series(current_state->input_series[text_selection].result_action_id);
-            return;
+            if (text_selection)
+                start_action_series(current_state->input_series[text_selection-1].result_action_id);
         }
     }
 }
