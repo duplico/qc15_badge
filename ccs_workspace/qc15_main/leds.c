@@ -194,6 +194,20 @@ void led_set_anim_none() {
 }
 
 /// Set the current LED ring animation.
+/**
+ ** \param anim Pointer to the animation to load.
+ ** \param anim_type The type of the animation, which may be
+ **                  LED_ANIM_TYPE_SPIN, LED_ANIM_TYPE_SAME, or
+ **                  LED_ANIM_TYPE_FALL to override the default animation
+ **                  type of the animation. It may also be LED_ANIM_TYPE_NONE,
+ **                  or any other False-evaluating value to avoid overriding
+ **                  the animation's default type.
+ ** \param loops The number of times to play the animation. As a special case,
+ **              setting loops to 0xFF will cause the animation to become the
+ **              new background animation, looping indefinitely. Values of
+ **              0 and 1 for `loops` have the same effect.
+ ** \param use_pad_in_loops
+ */
 void led_set_anim(const led_ring_animation_t *anim, uint8_t anim_type,
                   uint8_t loops, uint8_t use_pad_in_loops) {
     if (led_ring_anim_loops == 0xFF && loops != 0xFF) {
@@ -204,7 +218,7 @@ void led_set_anim(const led_ring_animation_t *anim, uint8_t anim_type,
         led_anim_type_bg = led_anim_type;
     }
     led_ring_anim_curr = anim;
-    led_anim_type = anim_type;
+    led_anim_type = anim_type? anim_type : led_ring_anim_curr->type;
     led_ring_anim_step = 0;
     led_ring_anim_index = 0;
     led_ring_anim_loops = loops? loops : 1; // No 0 loops allowed. See below.

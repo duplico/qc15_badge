@@ -30,6 +30,8 @@ typedef struct {
     const rgbcolor_t * colors;
     uint8_t len;
     uint8_t speed; // csecs per frame
+    uint8_t brightness;
+    uint8_t type;
     char anim_name[12];
 } led_ring_animation_t;
 
