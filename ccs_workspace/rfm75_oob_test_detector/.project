@@ -3,7 +3,6 @@
 	<name>rfm75_oob_test_detector</name>
 	<comment></comment>
 	<projects>
-		<project>rfm75_msp430</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
@@ -26,6 +25,16 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
 	<linkedResources>
+		<link>
+			<name>rfm75.c</name>
+			<type>1</type>
+			<locationURI>WORKSPACE_LOC/rfm75_msp430/rfm75.c</locationURI>
+		</link>
+		<link>
+			<name>rfm75.h</name>
+			<type>1</type>
+			<locationURI>WORKSPACE_LOC/rfm75_msp430/rfm75.h</locationURI>
+		</link>
 		<link>
 			<name>driverlib/MSP430FR2xx_4xx</name>
 			<type>2</type>
