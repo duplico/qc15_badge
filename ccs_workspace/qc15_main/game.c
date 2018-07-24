@@ -255,14 +255,14 @@ void do_action(game_action_t *action) {
     switch(action->type) {
     case GAME_ACTION_TYPE_ANIM_TEMP:
         // Set a temporary animation
-        led_set_anim(&all_animations[action->detail], LED_ANIM_TYPE_FALL, 0, 0);
+        led_set_anim(&all_animations[action->detail], 0, 0, 0);
         break;
     case GAME_ACTION_TYPE_SET_ANIM_BG:
         // Set a new background animation
         if (action->detail >= all_anims_len || action->detail == GAME_NULL) {
             led_set_anim_none();
         }
-        led_set_anim(&all_animations[action->detail], LED_ANIM_TYPE_FALL, 0xFF, 1);
+        led_set_anim(&all_animations[action->detail], 0, 0xFF, 1);
         break;
     case GAME_ACTION_TYPE_STATE_TRANSITION:
         // Do a state transition
