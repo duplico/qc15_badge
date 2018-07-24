@@ -157,6 +157,7 @@ void game_set_state(uint16_t state_id) {
         // State transitions to closed states have no effect.
         return;
     }
+    lcd111_clear(LCD_TOP);
 
     last_state_id = current_state_id;
     in_action_series = 0;
@@ -196,7 +197,7 @@ void game_begin() {
     all_animations[1] = anim_pan;
     all_animations[2] = anim_rainbow;
 
-    game_set_state(9);
+    game_set_state(0);
 }
 
 /// Render bottom screen for the current state and value of `text_selection`.
@@ -347,7 +348,7 @@ void start_action_series(uint16_t action_id) {
     // We know we're in an action series, so set everything up:
     in_action_series = 1;
     game_curr_elapsed = 0;
-    lcd111_set_text(0, "");
+    lcd111_set_text(0, ""); // TODO
     do_action(&loaded_action);
 }
 
