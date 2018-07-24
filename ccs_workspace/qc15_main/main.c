@@ -292,10 +292,6 @@ void handle_ipc_rx(uint8_t *rx) {
         }
         break;
     case IPC_MSG_GD_ARR:
-        // Somebody showed up!
-        led_set_anim(&anim_bw, LED_ANIM_TYPE_SAME, 0, 0);
-        break;
-    case IPC_MSG_GD_ARR:
         // rx = green
         led_set_anim(&anim_g, LED_ANIM_TYPE_SAME, 0, 0);
         break;
