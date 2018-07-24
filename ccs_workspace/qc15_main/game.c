@@ -361,17 +361,19 @@ void game_action_sequence_tick() {
                 game_curr_elapsed = 0;
                 lcd111_put_char(LCD_TOP, current_text[text_cursor]);
                 text_cursor++;
-                if ((text_cursor == current_text_len) || s_left) {
-                    // Done typing, or we were told to hurry up.
-                    text_cursor = current_text_len;
-                    lcd111_set_text(LCD_TOP, current_text);
-                }
-                // Now, we DON'T want this action to finish (or even for its
-                //  duration to start ticking) until the typewriter is finished.
-                // (if it just finished, we can wait an extra clock tick to take
-                //  advantage of the auto cleanup of signals).
-                return;
             }
+
+            if ((text_cursor == current_text_len) || s_left) {
+                // Done typing, or we were told to hurry up.
+                text_cursor = current_text_len;
+                lcd111_set_text(LCD_TOP, current_text);
+            }
+
+            // Now, we DON'T want this action to finish (or even for its
+            //  duration to start ticking) until the typewriter is finished.
+            // (if it just finished, we can wait an extra clock tick to take
+            //  advantage of the auto cleanup of signals).
+            return;
         }
     }
 
