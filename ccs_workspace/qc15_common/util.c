@@ -8,6 +8,7 @@
 #include <msp430.h>
 #include <driverlib.h>
 
+#include "util.h"
 #include "qc15.h"
 
 void delay_millis(unsigned long mils) {
