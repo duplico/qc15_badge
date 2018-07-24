@@ -279,8 +279,8 @@ void main (void)
         if (f_time_loop) {
             f_time_loop = 0;
             poll_switch();
-            if (qc_clock % 512 == 0) {
-                // Every 16 seconds,
+            if (qc_clock % 160 == 0) {
+                // Every 5 seconds
                 s_radio_interval = 1;
             }
         }
