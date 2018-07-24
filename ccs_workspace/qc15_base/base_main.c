@@ -14,10 +14,15 @@
 
 #include "radio.h"
 #include "rfm75.h"
+#include "qc15.h"
+#include "util.h"
 #include "base_main.h"
 
 #define RADIO_STATS_MSG_LEN 35
 #define RADIO_PROGRESS_MSG_LEN 30
+#define BASE_BEACON_INTERVAL_CENT_SEC 30
+
+volatile uint8_t f_time_loop;
 
 void delay_millis(unsigned long mils) {
     while (mils) {
@@ -66,7 +71,7 @@ void radio_rx_done(uint8_t* data, uint8_t len, uint8_t pipe) {
     switch (radio_msg->msg_type) {
     case RADIO_MSG_TYPE_PROGRESS :
         progress_payload = (radio_progress_payload *) radio_msg->msg_payload;
-//        send_progress_payload(radio_msg->badge_id, progress_payload);
+        send_progress_payload(radio_msg->badge_id, progress_payload);
         break;
     case RADIO_MSG_TYPE_STATS :
         stats_payload = (radio_stats_payload *) (radio_msg->msg_payload);
@@ -105,6 +110,23 @@ void serial_init() {
     UCA0BR1 = 0x00;
     UCA0MCTLW = 0x2200 | UCOS16 | UCBRF_13;
     UCA0CTLW0 &= ~UCSWRST;                    // Initialize eUSCI
+}
+
+void timer_init() {
+    // We need timer A3 for our loop below.
+    Timer_A_initUpModeParam timer_param = {0};
+    timer_param.clockSource = TIMER_A_CLOCKSOURCE_SMCLK; // 1 MHz
+    // We want this to go every 10 ms, so at 100 Hz (every 10,000 ticks @ 1MHz)
+    //  (a centisecond clock!)
+    timer_param.clockSourceDivider = TIMER_A_CLOCKSOURCE_DIVIDER_1; // /1
+    timer_param.timerPeriod = 10000;
+    timer_param.timerInterruptEnable_TAIE = TIMER_A_TAIE_INTERRUPT_DISABLE;
+    timer_param.captureCompareInterruptEnable_CCR0_CCIE = TIMER_A_CCIE_CCR0_INTERRUPT_ENABLE;
+    timer_param.timerClear = TIMER_A_SKIP_CLEAR;
+    timer_param.startTimer = false;
+
+    Timer_A_initUpMode(TIMER_A1_BASE, &timer_param);
+    Timer_A_startCounter(TIMER_A1_BASE, TIMER_A_UP_MODE);
 }
 
 /**
@@ -189,6 +211,18 @@ void send_debug_payload(uint16_t badge_id, unsigned char* message) {
 
 }
 
+void beacon() {
+    led_flash();
+    radio_beacon_payload payload = {0};
+    radio_proto radio_msg = {0};
+    radio_msg.badge_id = QC15_BASE_ID;
+    radio_msg.proto_version = RADIO_PROTO_VER;
+    radio_msg.msg_type = RADIO_MSG_TYPE_BEACON;
+    memcpy(radio_msg.msg_payload, &payload, sizeof(payload));
+    crc16_append_buffer((uint8_t *) &radio_msg, sizeof(radio_proto)-2);
+    rfm75_tx(RFM75_BROADCAST_ADDR, 0, (uint8_t *) &radio_msg, RFM75_PAYLOAD_SIZE);
+}
+
 void main (void) {
     WDTCTL = WDTPW | WDTHOLD; // Hold WDT
 
@@ -198,10 +232,11 @@ void main (void) {
     // char message[] = "HELLO WORLD";
     init_io();
     serial_init();
+    timer_init();
 
-//    rfm75_init(35, &radio_rx_done, &radio_tx_done);
-//    rfm75_post();
-//    __bis_SR_register(GIE);
+    rfm75_init(35, &radio_rx_done, &radio_tx_done);
+    rfm75_post();
+    __bis_SR_register(GIE);
 
     radio_stats_payload stats = {0};
     stats.badges_seen_count = 0x00AA;
@@ -229,15 +264,38 @@ void main (void) {
 
     uint16_t badge_id = 0x00AF;
 
+    uint16_t cent_secs_waiting = 0;
+
     while (1) {
-//        if (f_rfm75_interrupt) {
-//            f_rfm75_interrupt = 0;
-//            rfm75_deferred_interrupt();
-//        }
+        if (f_rfm75_interrupt) {
+            f_rfm75_interrupt = 0;
+            rfm75_deferred_interrupt();
+        }
 
 //        __bis_SR_register(LPM0_bits);
-        send_stats_payload(badge_id, &stats);
-        send_progress_payload(badge_id, &progress);
+//        send_stats_payload(badge_id, &stats);
+//        send_progress_payload(badge_id, &progress);
+
+        if (f_time_loop) {
+            f_time_loop = 0;
+
+            // Increment wait period timer.
+            cent_secs_waiting++;
+
+            if (BASE_BEACON_INTERVAL_CENT_SEC == cent_secs_waiting) {
+                beacon();
+                cent_secs_waiting = 0;
+            }
+        }
 //        delay_millis(250);
     }
  }
+
+// 0xFFF4 Timer1_A3 CC0
+#pragma vector=TIMER1_A0_VECTOR
+__interrupt
+void TIMER_ISR() {
+    // All we have here is TA0CCR0 CCIFG0
+    f_time_loop = 1;
+    LPM0_EXIT;
+}
