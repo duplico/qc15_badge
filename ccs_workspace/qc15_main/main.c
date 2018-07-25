@@ -84,6 +84,8 @@ const led_ring_animation_t anim_bw = {
         LED_ANIM_TYPE_SAME,
 };
 
+void set_badge_seen(uint16_t id, uint8_t *name);
+
 /// Initialize the system clocks and clock sources.
 /**
  ** CLOCK SOURCES
@@ -278,6 +280,27 @@ void handle_ipc_rx(uint8_t *rx) {
             power_switch_status = POWER_SW_OFF;
         }
         break;
+    case IPC_MSG_GD_ARR:
+        // Someone has arrived
+        set_badge_seen(
+                ((ipc_msg_gd_arr_t*)rx)->badge_id,
+                &(((ipc_msg_gd_arr_t*)rx)->name[0])
+        );
+        if (badges_nearby < 450)
+            badges_nearby++;
+        // TODO: Any signals?
+        break;
+    case IPC_MSG_GD_DEP:
+        // Someone has departed.
+        if (badges_nearby)
+            badges_nearby--;
+        break;
+    case IPC_MSG_GD_DL:
+        // We successfully downloaded from a badge
+        break;
+    case IPC_MSG_GD_UL:
+        // Someone downloaded from us.
+        break;
     }
 }
 
@@ -446,7 +469,15 @@ uint8_t badge_downloaded(uint16_t id) {
     return check_id_buf(id, badge_conf.badges_downloaded);
 }
 
-void set_badge_seen(uint16_t id) {
+/*
+ *
+ ** READ NAMES:
+ ** 0x100000 -   0 -  19 (220 bytes)
+ ** 0x110000 -  20 -  39 (220 bytes)
+ ** ...
+ */
+
+void set_badge_seen(uint16_t id, uint8_t *name) {
     if (id >= QC15_BADGES_IN_SYSTEM)
         return;
     if (badge_seen(id)) {
@@ -465,6 +496,12 @@ void set_badge_seen(uint16_t id) {
         badge_conf.handlers_seen |= (BIT0 << (id - QC15_HANDLER_START));
         badge_conf.handlers_seen_count++;
     }
+
+    uint32_t name_address =   0x100000;
+    name_address += (id/20) * 0x010000;
+    name_address += (id%20) * 11;
+
+    // TODO: read 220 byte block, write name.
 
     save_config();
 }
@@ -536,7 +573,8 @@ void generate_config() {
 
     // Determine which segment we have (and therefore which parts)
     badge_conf.code_starting_part = (badge_conf.badge_id % 16) * 6;
-    set_badge_seen(badge_conf.badge_id);
+    uint8_t name[11] = "Human";
+    set_badge_seen(badge_conf.badge_id, &name);
     set_badge_uploaded(badge_conf.badge_id);
     set_badge_downloaded(badge_conf.badge_id);
     save_config();
