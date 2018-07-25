@@ -11,11 +11,10 @@
 
 #include <stdint.h>
 
-/// The initial global brightness setting for the LED controller (0x40 is max).
+/// The initial global brightness setting for the LED controller.
 #define HT16D_BRIGHTNESS_DEFAULT 0x10
 #define HT16D_BRIGHTNESS_MIN 0x01
 #define HT16D_BRIGHTNESS_MAX 0x40
-
 
 typedef struct {
     uint8_t r;
@@ -36,5 +35,6 @@ void ht16d_send_gray();
 void ht16d_all_one_color(uint8_t r, uint8_t g, uint8_t b);
 void ht16d_all_one_color_ring_only(uint8_t r, uint8_t g, uint8_t b);
 void ht16d_set_colors(uint8_t id_start, uint8_t id_end, rgbcolor16_t* colors);
+void ht16d_set_global_brightness(uint8_t brightness);
 
 #endif /* HT16D35B_H_ */

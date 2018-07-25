@@ -103,9 +103,36 @@ const led_ring_animation_t anim_rainbow = {
         5,
         HT16D_BRIGHTNESS_DEFAULT,
         LED_ANIM_TYPE_SPIN,
-        "Rainbow",
 };
 
+const rgbcolor_t lsw_colors[] = {
+        {255, 255, 255},
+        {255, 255, 255},
+        {255, 255, 255},
+        {255, 255, 255},
+        {255, 255, 255},
+        {255, 255, 255},
+};
+
+const led_ring_animation_t anim_lsw = {
+        &lsw_colors[0],
+        6,
+        32,
+        HT16D_BRIGHTNESS_MAX,
+        LED_ANIM_TYPE_SAME,
+};
+
+const rgbcolor_t lwf_colors[] = {
+         {255, 255, 255},
+};
+
+const led_ring_animation_t anim_lwf = {
+        &lwf_colors[0],
+        1,
+        10,
+        HT16D_BRIGHTNESS_DEFAULT,
+        LED_ANIM_TYPE_SPIN,
+};
 
 const rgbcolor_t pan_colors[] = {
         {0xff, 0x21, 0x8c}, // 255,33,140
@@ -120,7 +147,6 @@ const led_ring_animation_t anim_pan = {
         6,
         HT16D_BRIGHTNESS_DEFAULT,
         LED_ANIM_TYPE_SPIN,
-        "Pansexual",
 };
 
 void load_action(game_action_t *dest, uint16_t id) {
@@ -197,8 +223,8 @@ void game_set_state(uint16_t state_id) {
 }
 
 void game_begin() {
-    all_animations[0] = anim_rainbow;
-    all_animations[1] = anim_pan;
+    all_animations[0] = anim_lsw;
+    all_animations[1] = anim_lwf;
     all_animations[2] = anim_rainbow;
 
     game_set_state(0);

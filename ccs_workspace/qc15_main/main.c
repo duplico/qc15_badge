@@ -600,7 +600,7 @@ void main (void)
     if (mode_game) // TODO: Requires changing for persistence:
         game_begin();
 
-    led_set_anim(&anim_rainbow, LED_ANIM_TYPE_FALL, 0xFF, 1);
+//    led_set_anim(&anim_rainbow, LED_ANIM_TYPE_FALL, 0xFF, 1);
 
     while (1) {
         handle_global_signals();

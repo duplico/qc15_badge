@@ -76,7 +76,6 @@ uint8_t next_anim_index(uint8_t index) {
     return (index + 1) % led_ring_anim_len_padded;
             // TODO:
 
-
     // (remember that the logic for reseting our index WON'T let us
     //  overflow here - see led_timestep())
     if (!led_ring_anim_loops || led_ring_anim_pad_loops ||
@@ -230,11 +229,11 @@ void led_set_anim(const led_ring_animation_t *anim, uint8_t anim_type,
     //     an animation to play once, you have to pass an argument of 0. So
     //     this way you get it with a 1.
 
-    if (anim_type == LED_ANIM_TYPE_SAME) {
+    if (led_anim_type == LED_ANIM_TYPE_SAME) {
         led_ring_anim_num_leds = 1;
-    } else if (anim_type == LED_ANIM_TYPE_SPIN) {
+    } else if (led_anim_type == LED_ANIM_TYPE_SPIN) {
         led_ring_anim_num_leds = 18;
-    } else if (anim_type == LED_ANIM_TYPE_FALL) {
+    } else if (led_anim_type == LED_ANIM_TYPE_FALL) {
         led_ring_anim_num_leds = 9;
     }
 
@@ -265,6 +264,8 @@ void led_set_anim(const led_ring_animation_t *anim, uint8_t anim_type,
 
     // Write the initial colors to the LED controller:
     led_display_colors();
+    // Now, the LEDs are blank. Make our brightness change.
+    ht16d_set_global_brightness(led_ring_anim_curr->brightness);
 }
 
 uint8_t sleep_anim_type;
