@@ -123,15 +123,20 @@ const led_ring_animation_t anim_lsw = {
 };
 
 const rgbcolor_t lwf_colors[] = {
-         {255, 255, 255},
+        {255, 255, 255},
+        {255, 255, 255},
+        {255, 255, 255},
+        {255, 255, 255},
+        {255, 255, 255},
+        {255, 255, 255},
 };
 
 const led_ring_animation_t anim_lwf = {
         &lwf_colors[0],
-        1,
-        10,
+        6,
+        96,
         HT16D_BRIGHTNESS_DEFAULT,
-        LED_ANIM_TYPE_SPIN,
+        LED_ANIM_TYPE_SAME,
 };
 
 const rgbcolor_t pan_colors[] = {

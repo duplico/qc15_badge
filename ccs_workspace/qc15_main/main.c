@@ -80,7 +80,8 @@ const led_ring_animation_t anim_bw = {
         &bw_colors[0],
         4,
         10,
-        "bwtest"
+        HT16D_BRIGHTNESS_DEFAULT,
+        LED_ANIM_TYPE_SAME,
 };
 
 /// Initialize the system clocks and clock sources.
@@ -575,9 +576,6 @@ void init_config() {
     srand(badge_conf.badge_id);
 }
 
-// TODO:
-extern const led_ring_animation_t anim_rainbow;
-
 /// The main initialization and loop function.
 void main (void)
 {
@@ -599,8 +597,6 @@ void main (void)
 
     if (mode_game) // TODO: Requires changing for persistence:
         game_begin();
-
-//    led_set_anim(&anim_rainbow, LED_ANIM_TYPE_FALL, 0xFF, 1);
 
     while (1) {
         handle_global_signals();
