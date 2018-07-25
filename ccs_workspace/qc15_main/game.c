@@ -118,7 +118,7 @@ const rgbcolor_t lsw_colors[] = {
 const led_ring_animation_t anim_lsw = { // "light solid white" (bright)
         &lsw_colors[0],
         6,
-        32,
+        72,
         HT16D_BRIGHTNESS_MAX,
         LED_ANIM_TYPE_SAME,
 };
@@ -441,28 +441,23 @@ void game_action_sequence_tick() {
 }
 
 void next_input() {
-    if (text_selection == 0) {
-        text_selection = 1;
-    } else {
-        do {
-            text_selection += 1;
-            if (text_selection == current_state->input_series_len+1)
-                text_selection = 1;
-        } while (leads_to_closed_state(current_state->input_series[text_selection-1].result_action_id));
-    }
+    do {
+        text_selection += 1;
+        if (text_selection == current_state->input_series_len+1)
+            text_selection = 1;
+    } while (leads_to_closed_state(current_state->input_series[text_selection-1].result_action_id));
     draw_text_selection();
 }
 
 void prev_input() {
     if (text_selection == 0) {
-        text_selection = current_state->input_series_len;
-    } else {
-        do {
-            text_selection -= 1;
-            if (text_selection == 0)
-                text_selection = current_state->input_series_len;
-        } while (leads_to_closed_state(current_state->input_series[text_selection-1].result_action_id));
+        text_selection = current_state->input_series_len+1;
     }
+    do {
+        text_selection -= 1;
+        if (text_selection == 0)
+            text_selection = current_state->input_series_len;
+    } while (leads_to_closed_state(current_state->input_series[text_selection-1].result_action_id));
     draw_text_selection();
 }
 
