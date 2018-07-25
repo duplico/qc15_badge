@@ -32,7 +32,6 @@ typedef struct {
     uint8_t speed; // csecs per frame
     uint8_t brightness;
     uint8_t type;
-    char anim_name[12];
 } led_ring_animation_t;
 
 extern uint8_t s_led_anim_done;
