@@ -219,7 +219,6 @@ void led_set_anim(const led_ring_animation_t *anim, uint8_t anim_type,
     led_ring_anim_curr = anim;
     led_anim_type = anim_type? anim_type : led_ring_anim_curr->type;
     led_ring_anim_step = 0;
-    led_ring_anim_index = 0;
     led_ring_anim_loops = loops? loops : 1; // No 0 loops allowed. See below.
     // We don't allow "0" loops for two reasons:
     //  1. In order to have a blank-padded entry to the animation, we actually
@@ -237,11 +236,9 @@ void led_set_anim(const led_ring_animation_t *anim, uint8_t anim_type,
         led_ring_anim_num_leds = 9;
     }
 
-    // TODO:
-//    if (use_pad_in_loops > led_ring_anim_num_leds)
-//        led_ring_anim_pad_loops = led_ring_anim_num_leds;
-//    else
-//        led_ring_anim_pad_loops = use_pad_in_loops;
+    // This allows a custom padding size:
+    led_ring_anim_pad_loops = use_pad_in_loops? use_pad_in_loops :
+                                                led_ring_anim_num_leds;
 
     // Here, we apply a pad to the animation. This is a number of dummy
     //  colors at the end of the list of colors, which the function
@@ -254,9 +251,9 @@ void led_set_anim(const led_ring_animation_t *anim, uint8_t anim_type,
     //  step is always going to be to set the current colors to OFF.
     // We do this by selecting a fake frame index below so that it's
     //  the first dummy color in the pad at the end of the color array:
-
+    led_ring_anim_index = led_ring_anim_len_padded-1;
     for (uint8_t led=0; led<led_ring_anim_num_leds; led++) {
-        led_stage_color(&led_ring_curr[led], led_ring_anim_len_padded-1, led);
+        led_stage_color(&led_ring_curr[led], led_ring_anim_index, led);
     }
 
     // Set the destination and steps for each of the LEDs in play:
