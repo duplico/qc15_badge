@@ -31,8 +31,8 @@
 
 #include <msp430fr5972.h>
 #include <driverlib.h>
-#include <s25fl.h>
-#include <s25fl.h>
+#include <s25fs.h>
+#include <s25fs.h>
 #include <textentry.h>
 #include "qc15.h"
 
@@ -155,7 +155,7 @@ void init_io() {
 
     lcd111_init_io();
     ht16d_init_io();
-    s25fl_init_io();
+    s25fs_init_io();
     init_ipc_io();
 
     // Screw post inputs with pull-ups
@@ -202,7 +202,7 @@ void init() {
 
     ht16d_init();
     lcd111_init();
-    s25fl_init();
+    s25fs_init();
     ipc_init();
     timer_init();
 }
@@ -414,21 +414,26 @@ uint16_t buffer_rank(uint8_t *buf, uint8_t len) {
 
 // TODO: Flash as noted (and more):
 void save_config() {
-    crc16_append_buffer(&badge_conf, sizeof(qc15conf)-2);
+    crc16_append_buffer((uint8_t *) (&badge_conf), sizeof(qc15conf)-2);
 
+    s25fs_wr_en();
     // Write the MAIN config to flash
-    s25fl_erase_block_64kb(FLASH_ADDR_CONF_MAIN);
-    // wr_en, wr_dis
-    s25fl_write_data(FLASH_ADDR_CONF_MAIN, &badge_conf, sizeof(qc15conf));
+    s25fs_erase_block_64kb(FLASH_ADDR_CONF_MAIN);
+    s25fs_write_data(FLASH_ADDR_CONF_MAIN, (uint8_t *) (&badge_conf), sizeof(qc15conf));
 
+    s25fs_block_while_wip();
+    s25fs_wr_dis();
+
+    s25fs_wr_en();
     // After that's complete, write the BACKUP config to flash:
-    s25fl_erase_block_64kb(FLASH_ADDR_CONF_BACKUP);
-    // wr_en, wr_dis
-    s25fl_write_data(FLASH_ADDR_CONF_BACKUP, &badge_conf, sizeof(qc15conf));
+    s25fs_erase_block_64kb(FLASH_ADDR_CONF_BACKUP);
+    s25fs_write_data(FLASH_ADDR_CONF_BACKUP, (uint8_t *) (&badge_conf), sizeof(qc15conf));
+    s25fs_block_while_wip();
+    s25fs_wr_dis();
 
-    // And, update our friend:
+    // And, update our friend the radio MCU:
     // (spin until the send is successful)
-    while (!ipc_tx_op_buf(IPC_MSG_STATS_UPDATE, (uint8_t *) &badge_conf, sizeof(qc15status)));
+    while (!ipc_tx_op_buf(IPC_MSG_STATS_UPDATE, (uint8_t *) (uint8_t *) (&badge_conf), sizeof(qc15status)));
 
 }
 
@@ -559,22 +564,26 @@ void generate_config() {
 
     // Load ID from flash:
     // TODO: Confirm Endianness
-    s25fl_read_data(&(badge_conf.badge_id), FLASH_ADDR_ID_MAIN, 2);
+    s25fs_read_data((uint8_t *)(&(badge_conf.badge_id)), FLASH_ADDR_ID_MAIN, 2);
 
     if (badge_conf.badge_id >= QC15_BADGES_IN_SYSTEM) {
-        badge_conf.badge_id = 25;
+        badge_conf.badge_id = 111;
     }
 
     // Person name stays blank.
     // Load badge name from flash:
-    s25fl_read_data(badge_conf.badge_name, FLASH_ADDR_NAME_MAIN,
+    s25fs_read_data(badge_conf.badge_name, FLASH_ADDR_NAME_MAIN,
                     QC15_BADGE_NAME_LEN-1); // retain the 0-term
-    // TODO: Validate the name
+    if (badge_conf.badge_name[0] == 0xFF) {
+        // Bad name.
+        // TODO:
+//        badge_conf.badge_name = "Skippy";
+    }
 
     // Determine which segment we have (and therefore which parts)
     badge_conf.code_starting_part = (badge_conf.badge_id % 16) * 6;
     uint8_t name[11] = "Human";
-    set_badge_seen(badge_conf.badge_id, &name);
+    set_badge_seen(badge_conf.badge_id, name);
     set_badge_uploaded(badge_conf.badge_id);
     set_badge_downloaded(badge_conf.badge_id);
     save_config();
@@ -583,11 +592,10 @@ void generate_config() {
     mode_countdown = 0;
     mode_status = 0;
     mode_sleep = 0;
-
 }
 
 uint8_t config_is_valid() {
-    if (!crc16_check_buffer(&badge_conf, sizeof(qc15conf)-2))
+    if (!crc16_check_buffer((uint8_t *) (&badge_conf), sizeof(qc15conf)-2))
         return 0;
 
     return 1;
@@ -600,11 +608,13 @@ void init_config() {
     if (config_is_valid()) return;
 
     // Try loading the MAIN config from flash.
-    s25fl_read_data(&badge_conf, FLASH_ADDR_CONF_MAIN, sizeof(qc15conf));
+    s25fs_read_data((uint8_t *) (&badge_conf), FLASH_ADDR_CONF_MAIN,
+                    sizeof(qc15conf));
     if (config_is_valid()) return;
 
     // Try loading the BACKUP config from flash.
-    s25fl_read_data(&badge_conf, FLASH_ADDR_CONF_BACKUP, sizeof(qc15conf));
+    s25fs_read_data((uint8_t *) (&badge_conf), FLASH_ADDR_CONF_BACKUP,
+                    sizeof(qc15conf));
     if (config_is_valid()) return;
 
     // If we're still here, none of the three config sources were valid, and

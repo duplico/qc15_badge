@@ -236,7 +236,7 @@ void game_begin() {
     all_animations[1] = anim_lwf;
     all_animations[2] = anim_rainbow;
 
-    game_set_state(0);
+    game_set_state(20);
 }
 
 /// Render bottom screen for the current state and value of `text_selection`.
