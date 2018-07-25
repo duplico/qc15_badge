@@ -188,7 +188,9 @@ void led_set_anim_none() {
  ** * LED_ANIM_TYPE_FALL: Padding length of 5 (the number of LEDs down the
  **                       side).
  **
- ** This behavior can be overridden with the `extra_padding` parameter.
+ ** This behavior can be overridden with the `extra_padding` parameter, but
+ ** overriding it may cause undesired behavior. See the description of the
+ ** parameter for more details on the constraints.
  **
  ** \param anim Pointer to the animation to load.
  ** \param anim_type The type of the animation, which may be
@@ -205,7 +207,11 @@ void led_set_anim_none() {
  **              and use the value of extra_padding as the pad. Note that,
  **              unless animation length + pad length >= number of LEDs active
  **              in the animation, the appearance of the first loop and last
- **              loop (if applicable) may not be satisfactory.
+ **              loop (if applicable) may not be satisfactory. Also, only up to
+ **              two copies of the animation are drawn on the LEDs at once,
+ **              so if ``(2*len)+pad < num_leds`` where ``num_leds`` is 9
+ **              for ``FALL`` moed and 18 for ``SPIN`` mode, the appearance
+ **              will not look correct at all.
  **
  */
 void led_set_anim(const led_ring_animation_t *anim, uint8_t anim_type,
