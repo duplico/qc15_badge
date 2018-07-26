@@ -13,32 +13,27 @@
 #include <stdint.h>
 
 #include "qc15.h"
-
-const uint8_t FLASH_STATE_WREN  = BIT1;
-const uint8_t FLASH_STATE_SLEEP = BIT2;
-const uint8_t FLASH_STATE_BUSY  = BIT3;
-const uint8_t FLASH_STATE_HOLD  = BIT4;
-
-uint8_t flash_state = 0;
+#include "flash_layout.h"
 
 uint8_t flash_status_register = 0;
 
 const uint8_t FLASH_SR_WIP = BIT0;
 
-const uint8_t FLASH_CMD_WREN = 0x06;
-const uint8_t FLASH_CMD_WRDIS = 0x04;
-const uint8_t FLASH_CMD_READ_STATUS = 0x05;
-const uint8_t FLASH_CMD_READ_ID = 0x9F;
-const uint8_t FLASH_CMD_READ_DATA = 0x03;
-const uint8_t FLASH_CMD_PAGE_PROGRAM = 0x02;
-const uint8_t FLASH_CMD_ERASE_BLOCK = 0xD8; // 64k blocks
-const uint8_t FLASH_CMD_ERASE_PARAM_SECTOR = 0x20; // These are the 4k things
-const uint8_t FLASH_CMD_WRAR = 0x71; // write any register
-const uint8_t FLASH_CMD_RDAR = 0x65; // read any register
+#define FLASH_CMD_WREN 0x06
+#define FLASH_CMD_WRDIS 0x04
+#define FLASH_CMD_READ_STATUS 0x05
+#define FLASH_CMD_READ_ID 0x9F
+#define FLASH_CMD_READ_DATA 0x03
+#define FLASH_CMD_PAGE_PROGRAM 0x02
+#define FLASH_CMD_ERASE_BLOCK 0xD8 // 64k blocks
+#define FLASH_CMD_ERASE_PARAM_SECTOR 0x20 // These are the 4k things
+#define FLASH_CMD_WRAR 0x71 // write any register
+#define FLASH_CMD_RDAR 0x65 // read any register
 
-const uint8_t FLASH_CMD_CHIP_ERASE = 0xC7; // TODO: delay after these three:
-const uint8_t FLASH_CMD_POWER_DOWN = 0xB9;
-const uint8_t FLASH_CMD_POWER_UP = 0xAB;
+#define FLASH_CMD_CHIP_ERASE 0xC7 // TODO: delay after these three:
+#define FLASH_CMD_POWER_DOWN 0xB9
+#define FLASH_CMD_POWER_UP 0xAB
+#define FLASH_CMD_CLSR 0x82
 
 #define FLASH_REG_ADDR_SR1V 0x800000
 #define FLASH_REG_ADDR_SR2V 0x800001
@@ -67,7 +62,6 @@ uint8_t s25fs_usci_a1_recv_sync(uint8_t data) {
 }
 
 void s25fs_begin() {
-    // CS#      P3.6 (idle high)
     P3OUT &= ~BIT7; // CS low, select
 }
 
@@ -117,22 +111,39 @@ uint8_t s25fs_get_status() {
     return retval;
 }
 
-void s25fs_wr_register(uint32_t addr, uint8_t val) {
+uint8_t s25fs_read_any_register(uint32_t addr) {
     s25fs_begin();
-    s25fs_usci_a1_send_sync(FLASH_CMD_WRAR);
+    s25fs_usci_a1_send_sync(FLASH_CMD_RDAR);
     /// THREE BYTES of address: (ALL are MSByte first)
     s25fs_usci_a1_send_sync((addr & 0xff0000) >> 16);
     s25fs_usci_a1_send_sync((addr & 0x00ff00) >> 8);
     s25fs_usci_a1_send_sync((addr & 0x0000ff));
-    // Then write the value.
-    s25fs_usci_a1_send_sync(val);
+
+    // try a dummy:
+    volatile uint8_t retval = s25fs_usci_a1_recv_sync(0xff);
+    retval = s25fs_usci_a1_recv_sync(0xff);
+    retval = s25fs_usci_a1_recv_sync(0xff);
     s25fs_end();
+    return retval;
 }
 
 void s25fs_block_while_wip() {
     // Make sure nothing is in progress:
+    // TODO: check & 0b01100000
     while (s25fs_get_status() & FLASH_SR_WIP)
         __delay_cycles(100); // TODO: this number came from nowhere.
+}
+
+void s25fs_wr_register(uint32_t addr, uint8_t val) {
+    s25fs_block_while_wip();
+    s25fs_begin();
+    s25fs_usci_a1_send_sync(FLASH_CMD_WRAR);
+    s25fs_usci_a1_send_sync((addr & 0x00FF0000) >> 16); // MSByte of address
+    s25fs_usci_a1_send_sync((addr & 0x0000FF00) >> 8); // Middle byte of address
+    s25fs_usci_a1_send_sync((addr & 0x000000FF)); // LSByte of address
+
+    s25fs_usci_a1_send_sync(val);
+    s25fs_end();
 }
 
 void s25fs_read_data(uint8_t* buffer, uint32_t address, uint32_t len_bytes) {
@@ -148,6 +159,8 @@ void s25fs_read_data(uint8_t* buffer, uint32_t address, uint32_t len_bytes) {
     s25fs_end();
 }
 
+// TODO: Writes and erases are not working for some reason.
+//
 void s25fs_write_data(uint32_t address, uint8_t* buffer, uint32_t len_bytes) {
     // Length may not be any longer than 255.
     s25fs_block_while_wip();
@@ -167,6 +180,7 @@ void s25fs_erase_chip() {
     s25fs_simple_cmd(FLASH_CMD_CHIP_ERASE);
 }
 
+// TODO: Confirm erase address. Currently it's erroring.
 void s25fs_erase_block_64kb(uint32_t address) {
     s25fs_block_while_wip();
     s25fs_begin();
@@ -175,6 +189,9 @@ void s25fs_erase_block_64kb(uint32_t address) {
     s25fs_usci_a1_send_sync((address & 0x0000FF00) >> 8); // Middle byte of address
     s25fs_usci_a1_send_sync((address & 0x000000FF)); // LSByte of address
     s25fs_end();
+
+    volatile uint8_t i = s25fs_get_status();
+    __no_operation();
 }
 
 void s25fs_sleep() {
@@ -188,7 +205,7 @@ void s25fs_wake() {
 }
 
 /// Basic power-on self-test of serial flash, returning 1 on success.
-uint8_t s25fs_post() {
+uint8_t s25fs_post1() {
     volatile uint8_t status;
     volatile uint8_t initial_status = s25fs_get_status();
 
@@ -204,8 +221,39 @@ uint8_t s25fs_post() {
         return 0;
     }
 
+
     return s25fs_rdid() == FLASH_RDID_VAL_S25FS064S;
 }
+
+uint8_t s25fs_post2() {
+
+    volatile uint8_t t;
+
+    s25fs_wr_en();
+    s25fs_erase_block_64kb(FLASH_ADDR_INTENTIONALLY_BLANK);
+    do {
+        if (s25fs_get_status() & 0b01100000) {
+            // program or erase error
+            s25fs_simple_cmd(FLASH_CMD_CLSR);
+            return 0;
+        }
+    } while (s25fs_get_status() & FLASH_SR_WIP);
+
+    s25fs_wr_en();
+    t = 0xAB;
+    s25fs_write_data(FLASH_ADDR_INTENTIONALLY_BLANK, &t, 1);
+    do {
+        if (s25fs_get_status() & 0b01100000) {
+            // program or erase error
+            s25fs_simple_cmd(FLASH_CMD_CLSR);
+            return 0;
+        }
+    } while (s25fs_get_status() & FLASH_SR_WIP);
+
+    return 1;
+}
+
+
 
 /// Decouple our pins from the flash chip, in order to allow external control.
 void s25fs_hold_io() {
@@ -269,16 +317,20 @@ void s25fs_init() {
 
     EUSCI_A_SPI_enable(EUSCI_A1_BASE);
 
-    s25fs_wr_en();
-    // Set device into 256 byte page size:
-    // Set 3 byte addressing, no QPI, no RESET, no dummy cycles:
-    // WRAR CR2V: 0b00000000
-    s25fs_wr_register(FLASH_REG_ADDR_CR2V, 0x00);
-    // Set device into uniform 64k mode:
-    // (BIT3 of CR3V (20h_V) , BIT1 of CR3V (D8h_V)
-    // CR3V: 0b00001000
-    s25fs_wr_register(FLASH_REG_ADDR_CR3V, 0b00001000);
-    s25fs_wr_dis();
+    // Clear status register.
+    s25fs_simple_cmd(FLASH_CMD_CLSR);
+
+    uint8_t t = s25fs_read_any_register(0x000004);
+
+    if (!(t & BIT3)) {
+        // 4k erase needs to be DISABLED!
+        s25fs_wr_en();
+        s25fs_wr_register(0x000004, 0b00001000);
+        t = s25fs_get_status();
+        s25fs_block_while_wip();
+        t = s25fs_get_status();
+        __no_operation();
+    }
 
     // Ok, now we're in a known state. Good to go.
 }
