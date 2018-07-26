@@ -19,6 +19,9 @@
 
 #define RADIO_PROTO_VER 1
 
+#define RADIO_CONNECT_FLAG_LISTENING 1
+#define RADIO_CONNECT_FLAG_DOWNLOAD 2
+
 typedef struct {
     uint16_t badge_id;
     uint8_t proto_version;
@@ -56,6 +59,7 @@ typedef struct { // Stats report payload (unicast to base???)
 } radio_stats_payload;
 
 extern radio_proto curr_packet_tx;
+extern uint_least8_t ids_in_range[QC15_HOSTS_IN_SYSTEM];
 
 rfm75_rx_callback_fn radio_rx_done;
 rfm75_tx_callback_fn radio_tx_done;

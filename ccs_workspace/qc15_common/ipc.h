@@ -19,10 +19,6 @@
  *  Send CRC16
  */
 
-// From MAIN to RADIO:
-#define IPC_MSG_STATS_UPDATE 0x01
-#define IPC_MSG_REBOOT 0x02
-
 #define IPC_STATE_IDLE    0b0000
 #define IPC_STATE_RX_LEN  0b0010
 #define IPC_STATE_RX_BUSY 0b0100
@@ -38,29 +34,42 @@
 //  [x] POST/bootstrap (R->M)
 //  [ ] Time setting (manual, not time virus) (M->R)
 //  [ ] Time event (R->M)
-//  [x] Update stats (M->R)
-//  [ ] Successful download (R->M)
-//  [ ] Successful upload (R->M)
-//  [ ] Gaydar updates:
-//  [ ]  Person arrived (w/ name) (R->M)
-//  [ ]  Person departs (id only) (R->M)
+//  [x] Update status (M->R)
+//  [ ] Make me connectable (M->R)      (GD_EN)
+//  [ ] Attempt to download (M->R)      (GD_DL)
+//  [ ] Successful download (R->M)      (GD_DL)
+//  [ ] Successful upload (R->M)        (GD_UL)
+//  [x] Person arrived (w/ name) (R->M) (GD_ARR)
+//  [x] Person departs (id only) (R->M) (GD_DEP)
+//  [ ] Get next neighbor id (M->R)     (ID_NEXT)
+//  [ ] Next neighbor id (R->M)         (ID_NEXT)
 //  [x] Power switch status update (R->M)
 //  [ ] ????
 //  [ ] Profit
 
-// From RADIO to MAIN:
 // Single-byte messages:
 #define IPC_MSG_STATS_REQ 0x90
 #define IPC_MSG_POST 0xa0
 #define IPC_MSG_SWITCH 0xb0
+/// Request the radio MCU to set ourselves as connectable.
+#define IPC_MSG_GD_EN 0xc0
+/// A request for the recipient to reboot.
+#define IPC_MSG_REBOOT 0x02
 
 // Buffer messages:
+/// A badge has arrived in range.
 #define IPC_MSG_GD_ARR 0x10 // cmd, id, name
+/// A badge has departed.
 #define IPC_MSG_GD_DEP 0x20 // cmd, id
-/// Occurs when we've successfully downloaded another badge
+/// Occurs when we've successfully downloaded another badge, or to request DL.
 #define IPC_MSG_GD_DL 0x30
 /// Occurs when another badge has downloaded from us
 #define IPC_MSG_GD_UL 0x40
+/// Request or return the next neighbor ID after the current one.
+#define IPC_MSG_ID_NEXT 0x50
+/// An updates badge_status payload.
+#define IPC_MSG_STATS_UPDATE 0x01
+
 
 typedef struct {
     uint16_t badge_id;
