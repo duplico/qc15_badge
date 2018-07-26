@@ -9,10 +9,9 @@
 #ifndef GAME_H_
 #define GAME_H_
 
-// TODO: Move to a conf.h
-#define MAX_CLOSED_STATES 10
-
 #define ACTION_NONE 0xFFFF
+#define ANIM_NONE   0xFFFF
+#define GAME_NULL   0xFFFF
 
 /// A node in an action series and/or choice set.
 typedef struct {
@@ -51,8 +50,11 @@ typedef struct {
 } game_user_in_t;
 
 typedef struct {
-    // TODO: this id shouldn't be here.
-    uint8_t id;
+    uint16_t type_id;
+    uint16_t result_action_id;
+} game_other_in_t;
+
+typedef struct {
     uint16_t entry_series_id;
     /// All applicable timers for this state.
     /**
@@ -61,10 +63,12 @@ typedef struct {
      ** from largest to smallest interval.
      */
     uint8_t timer_series_len;
-    game_timer_t timer_series[5];
     uint8_t input_series_len;
-    game_user_in_t input_series[5];
-    // TODO: Handle NET
+    uint8_t other_series_len;
+
+    game_timer_t timer_series[5];
+    game_user_in_t input_series[6];
+    game_other_in_t other_series[3];
 } game_state_t;
 
 void game_begin();

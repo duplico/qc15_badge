@@ -36,7 +36,7 @@
 //     also have to change our radio validator.
 #define QC15_BADGES_IN_SYSTEM 450
 #define QC15_BASE_ID QC15_BADGES_IN_SYSTEM
-#define QC15_CONTROL_ID QC15_BADGES_IN_SYSTEM
+#define QC15_CONTROL_ID (QC15_BADGES_IN_SYSTEM+1)
 #define QC15_HOSTS_IN_SYSTEM 452
 
 #define CODE_SEGMENT_REP_LEN 10
@@ -104,6 +104,8 @@ extern qc15status badge_status;
 #define MCLK_FREQ_KHZ 8000
 #define MCLK_FREQ_HZ 8000000
 extern qc15conf badge_conf;
+extern uint16_t badges_nearby;
+void save_config();
 #endif
 
 

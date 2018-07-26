@@ -65,6 +65,8 @@ void main (void)
     //Stop watchdog timer
     WDT_A_hold(WDT_A_BASE);
 
+    delay_millis(100);
+
     init_io();
 
     // On boot, the clock system is as follows:
@@ -103,9 +105,9 @@ void main (void)
             csecs++;
 
             if (csecs == 200) {
-//                rfm75_tx(0xffff, 0, out_payload, RFM75_PAYLOAD_SIZE); // broadcast (no acks)
+                rfm75_tx(0xffff, 0, out_payload, RFM75_PAYLOAD_SIZE); // broadcast (no acks)
 //                rfm75_tx(35, 0, out_payload, RFM75_PAYLOAD_SIZE); // unicast (acked)
-                rfm75_tx(35, 0, hello_payload, RFM75_PAYLOAD_SIZE);
+//                rfm75_tx(35, 0, hello_payload, RFM75_PAYLOAD_SIZE);
                 csecs = 0;
             }
 

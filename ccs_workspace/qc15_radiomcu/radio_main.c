@@ -240,7 +240,7 @@ void handle_ipc_rx(uint8_t *rx_from_radio) {
     switch(rx_from_radio[0]) {
     case IPC_MSG_REBOOT:
         PMMCTL0 |= PMMSWPOR; // Software reboot.
-        break; // though this hardly seems necessary.
+        break; // this hardly seems necessary.
     case IPC_MSG_STATS_UPDATE:
         // A stats update, which may be solicited or unsolicited:
         memcpy(&badge_status, &rx_from_radio[1], sizeof(qc15status));

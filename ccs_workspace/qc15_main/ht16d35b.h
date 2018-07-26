@@ -1,8 +1,9 @@
-/*
- * ht16d35b.h
- *
- *  Created on: Jun 17, 2018
- *      Author: george
+/// Header for low-level driver for the HT16D35B LED controller.
+/**
+ ** \file ht16d35b.h
+ ** \author George Louthan
+ ** \date   2018
+ ** \copyright (c) 2018 George Louthan @duplico. MIT License.
  */
 
 #ifndef HT16D35B_H_
@@ -10,8 +11,10 @@
 
 #include <stdint.h>
 
-/// The initial global brightness setting for the LED controller (0x40 is max).
-#define HT16D_INITIAL_BRIGHTNESS 0x10
+/// The initial global brightness setting for the LED controller.
+#define HT16D_BRIGHTNESS_DEFAULT 0x10
+#define HT16D_BRIGHTNESS_MIN 0x01
+#define HT16D_BRIGHTNESS_MAX 0x40
 
 typedef struct {
     uint8_t r;
@@ -32,5 +35,6 @@ void ht16d_send_gray();
 void ht16d_all_one_color(uint8_t r, uint8_t g, uint8_t b);
 void ht16d_all_one_color_ring_only(uint8_t r, uint8_t g, uint8_t b);
 void ht16d_set_colors(uint8_t id_start, uint8_t id_end, rgbcolor16_t* colors);
+void ht16d_set_global_brightness(uint8_t brightness);
 
 #endif /* HT16D35B_H_ */

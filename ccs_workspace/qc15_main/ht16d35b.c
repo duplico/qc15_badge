@@ -198,7 +198,7 @@ void ht16d_read_reg(uint8_t reg[]) {
  ** * All rows in use except for 27, 26, 22, and 21
  ** * Grayscale mode
  ** * No fade, UCOM, USEG, or matrix masking
- ** * Global brightness to `HT16D_INITIAL_BRIGHTNESS`
+ ** * Global brightness to `HT16D_BRIGHTNESS_DEFAULT`
  ** * Only columns 0, 1, and 2 in use
  ** * Maximum constant current ratio
  ** * HIGH SCAN mode (common-anode on columns)
@@ -234,7 +234,7 @@ void ht16d_init() {
     ht16d_send_cmd_single(HTCMD_SW_RESET);
 
     // Set global brightness
-    ht16_d_send_cmd_dat(HTCMD_GLOBAL_BRTNS, HT16D_INITIAL_BRIGHTNESS);
+    ht16_d_send_cmd_dat(HTCMD_GLOBAL_BRTNS, HT16D_BRIGHTNESS_DEFAULT);
     // Set BW/Binary display mode.
     ht16_d_send_cmd_dat(HTCMD_BWGRAY_SEL, HTCMD_BWGRAY_SEL_GRAYSCALE);
     // Set column pin control for in-use cols (HTCMD_COM_PIN_CTL)
@@ -259,6 +259,23 @@ uint8_t ht16d_post() {
     volatile uint8_t ht_status_reg[22] = {0};
     ht16d_read_reg((uint8_t *) ht_status_reg);
     return ht_status_reg[11] == 0b0000111;
+}
+
+/// Set the global brightness of the display module.
+/**
+ **
+ ** This is a scale of 0 to 64. This is the WRONG way to turn all the lights
+ ** off, so expected values to this function should be between
+ ** HT16D_BRIGHTNESS_MIN (1) and HT16D_BRIGHTNESS_MAX (64). This function DOES
+ ** do bounds checking.
+ **
+ ** \param brightness The new brightness value from 1 to 64.
+ **
+ */
+void ht16d_set_global_brightness(uint8_t brightness) {
+    if (brightness > HT16D_BRIGHTNESS_MAX)
+        brightness = HT16D_BRIGHTNESS_MAX;
+    ht16_d_send_cmd_dat(HTCMD_GLOBAL_BRTNS, brightness);
 }
 
 /// Transmit the data currently in `led_values` to the LED controller.
@@ -295,9 +312,9 @@ void ht16d_set_colors(uint8_t id_start, uint8_t id_len, rgbcolor16_t* colors) {
         while (1);
     }
     for (uint8_t i=0; i<id_len; i++) {
-        ht16d_gs_values[17-(id_start+i)][0] = (uint8_t)(colors[i].r >> 7);
-        ht16d_gs_values[17-(id_start+i)][1] = (uint8_t)(colors[i].g >> 7);
-        ht16d_gs_values[17-(id_start+i)][2] = (uint8_t)(colors[i].b >> 7);
+        ht16d_gs_values[(id_start+i)][0] = (uint8_t)(colors[i].r >> 7);
+        ht16d_gs_values[(id_start+i)][1] = (uint8_t)(colors[i].g >> 7);
+        ht16d_gs_values[(id_start+i)][2] = (uint8_t)(colors[i].b >> 7);
     }
     ht16d_send_gray();
 }
@@ -309,7 +326,9 @@ void ht16d_all_one_color(uint8_t r, uint8_t g, uint8_t b) {
         ht16d_gs_values[i][1] = g;
         ht16d_gs_values[i][2] = b;
     }
+
     ht16d_send_gray();
+
 }
 
 void ht16d_display_off() {

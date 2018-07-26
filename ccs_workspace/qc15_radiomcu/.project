@@ -3,7 +3,6 @@
 	<name>qc15_radiomcu</name>
 	<comment></comment>
 	<projects>
-		<project>rfm75_msp430</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
