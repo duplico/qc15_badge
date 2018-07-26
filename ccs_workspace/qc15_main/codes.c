@@ -13,3 +13,5 @@
 
 uint8_t my_segment_ids[6] = {0};
 
+// This is the equivalent of badge.c from years past.
+

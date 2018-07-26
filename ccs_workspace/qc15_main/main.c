@@ -31,8 +31,9 @@
 
 #include <msp430fr5972.h>
 #include <driverlib.h>
-#include <s25fl.h>
-#include <s25fl.h>
+#include <s25fs.h>
+#include <s25fs.h>
+#include <textentry.h>
 #include "qc15.h"
 
 #include "lcd111.h"
@@ -40,7 +41,6 @@
 #include "ipc.h"
 #include "leds.h"
 #include "game.h"
-
 #include "util.h"
 #include "main_bootstrap.h"
 
@@ -58,11 +58,18 @@ uint8_t s_power_off = 0;
 
 uint8_t power_switch_status = 0;
 
+uint8_t mode_countdown, mode_status, mode_game, mode_sleep;
+// text_entry_in_progress
+
 volatile uint32_t qc_clock;
+
+uint16_t badges_nearby = 0;
 
 // If I change this to NOINIT, it'll persist between flashings of the badge.
 #pragma PERSISTENT(badge_conf)
 qc15conf badge_conf = {0};
+#pragma PERSISTENT(backup_conf)
+qc15conf backup_conf = {0};
 
 const rgbcolor_t bw_colors[] = {
         {0x20, 0x20, 0x20},
@@ -75,8 +82,11 @@ const led_ring_animation_t anim_bw = {
         &bw_colors[0],
         4,
         10,
-        "bwtest"
+        HT16D_BRIGHTNESS_DEFAULT,
+        LED_ANIM_TYPE_SAME,
 };
+
+void set_badge_seen(uint16_t id, uint8_t *name);
 
 /// Initialize the system clocks and clock sources.
 /**
@@ -147,7 +157,7 @@ void init_io() {
 
     lcd111_init_io();
     ht16d_init_io();
-    s25fl_init_io();
+    s25fs_init_io();
     init_ipc_io();
 
     // Screw post inputs with pull-ups
@@ -166,10 +176,10 @@ void timer_init() {
     // We need timer A3 for our loop below.
     Timer_A_initUpModeParam timer_param = {0};
     timer_param.clockSource = TIMER_A_CLOCKSOURCE_SMCLK; // 1 MHz
-    // We want this to go every 1/32 of a second, so at 3125 Hz.
-    //  (Every 3125 ticks @ 1 MHz)
+    // We want this to go every 1/32 of a second (32 Hz).
+    //  (Every 31250 ticks @ 1 MHz)
     timer_param.clockSourceDivider = TIMER_A_CLOCKSOURCE_DIVIDER_1; // /1
-    timer_param.timerPeriod = 3125;
+    timer_param.timerPeriod = 31250;
     timer_param.timerInterruptEnable_TAIE = TIMER_A_TAIE_INTERRUPT_DISABLE;
     timer_param.captureCompareInterruptEnable_CCR0_CCIE =
             TIMER_A_CCIE_CCR0_INTERRUPT_ENABLE;
@@ -194,7 +204,7 @@ void init() {
 
     ht16d_init();
     lcd111_init();
-    s25fl_init();
+    s25fs_init();
     ipc_init();
     timer_init();
 }
@@ -271,6 +281,26 @@ void handle_ipc_rx(uint8_t *rx) {
             s_power_off = 1;
             power_switch_status = POWER_SW_OFF;
         }
+        break;
+    case IPC_MSG_GD_ARR:
+        // Someone has arrived
+        set_badge_seen(
+                ((ipc_msg_gd_arr_t*)rx)->badge_id,
+                &(((ipc_msg_gd_arr_t*)rx)->name[0])
+        );
+        if (badges_nearby < 450)
+            badges_nearby++;
+        break;
+    case IPC_MSG_GD_DEP:
+        // Someone has departed.
+        if (badges_nearby)
+            badges_nearby--;
+        break;
+    case IPC_MSG_GD_DL:
+        // We successfully downloaded from a badge
+        break;
+    case IPC_MSG_GD_UL:
+        // Someone downloaded from us.
         break;
     }
 }
@@ -383,19 +413,15 @@ uint16_t buffer_rank(uint8_t *buf, uint8_t len) {
     return count;
 }
 
-// TODO: Flash as noted (and more):
 void save_config() {
-    crc16_append_buffer(&badge_conf, sizeof(qc15conf)-2);
+    // We only save our config in FRAM; for now the flash is READ ONLY.
+    crc16_append_buffer((uint8_t *) (&badge_conf), sizeof(qc15conf)-2);
 
-    // Write the MAIN config to flash
-    s25fl_erase_block_64kb(FLASH_ADDR_CONF_MAIN);
-    // wr_en, wr_dis
-    s25fl_write_data(FLASH_ADDR_CONF_MAIN, &badge_conf, sizeof(qc15conf));
+    memcpy(&backup_conf, &badge_conf, sizeof(qc15conf));
 
-    // After that's complete, write the BACKUP config to flash:
-    s25fl_erase_block_64kb(FLASH_ADDR_CONF_BACKUP);
-    // wr_en, wr_dis
-    s25fl_write_data(FLASH_ADDR_CONF_BACKUP, &badge_conf, sizeof(qc15conf));
+    // And, update our friend the radio MCU:
+    // (spin until the send is successful)
+    while (!ipc_tx_op_buf(IPC_MSG_STATS_UPDATE, (uint8_t *) (uint8_t *) (&badge_conf), sizeof(qc15status)));
 
 }
 
@@ -436,7 +462,15 @@ uint8_t badge_downloaded(uint16_t id) {
     return check_id_buf(id, badge_conf.badges_downloaded);
 }
 
-void set_badge_seen(uint16_t id) {
+/*
+ *
+ ** READ NAMES:
+ ** 0x100000 -   0 -  19 (220 bytes)
+ ** 0x110000 -  20 -  39 (220 bytes)
+ ** ...
+ */
+
+void set_badge_seen(uint16_t id, uint8_t *name) {
     if (id >= QC15_BADGES_IN_SYSTEM)
         return;
     if (badge_seen(id)) {
@@ -455,6 +489,12 @@ void set_badge_seen(uint16_t id) {
         badge_conf.handlers_seen |= (BIT0 << (id - QC15_HANDLER_START));
         badge_conf.handlers_seen_count++;
     }
+
+    uint32_t name_address =   0x100000;
+    name_address += (id/20) * 0x010000;
+    name_address += (id%20) * 11;
+
+    // TODO: read 220 byte block, write name.
 
     save_config();
 }
@@ -512,32 +552,48 @@ void generate_config() {
 
     // Load ID from flash:
     // TODO: Confirm Endianness
-    s25fl_read_data(&(badge_conf.badge_id), FLASH_ADDR_ID_MAIN, 2);
+    s25fs_read_data((uint8_t *)(&(badge_conf.badge_id)), FLASH_ADDR_ID_MAIN, 2);
 
-    if (badge_conf.badge_id >= QC15_BADGES_IN_SYSTEM) {
-        badge_conf.badge_id = 25;
+    uint8_t sentinel;
+    s25fs_read_data(&sentinel, FLASH_ADDR_sentinel, 1);
+
+    // TODO: we need a global flag for "flash no workie".
+    // Check the handful of things we know to check in the flash to see if
+    //  it's looking sensible:
+    if (sentinel != FLASH_sentinel_BYTE ||
+            badge_conf.badge_id >= QC15_BADGES_IN_SYSTEM ||
+            badge_conf.badge_name[0] == 0xFF)
+    {
+        badge_conf.badge_id = 111;
+        char backup_name[] ="Skippy";
+        strcpy(badge_conf.badge_name, backup_name);
     }
-
-    // Person name stays blank.
-    // Load badge name from flash:
-    s25fl_read_data(badge_conf.badge_name, FLASH_ADDR_NAME_MAIN,
-                    QC15_BADGE_NAME_LEN-1); // retain the 0-term
-    // TODO: Validate the name
 
     // Determine which segment we have (and therefore which parts)
     badge_conf.code_starting_part = (badge_conf.badge_id % 16) * 6;
-    set_badge_seen(badge_conf.badge_id);
+    uint8_t name[11] = "Human";
+    set_badge_seen(badge_conf.badge_id, name);
     set_badge_uploaded(badge_conf.badge_id);
     set_badge_downloaded(badge_conf.badge_id);
     save_config();
+
+    mode_game = 1;
+    mode_countdown = 0;
+    mode_status = 0;
+    mode_sleep = 0;
 }
 
 uint8_t config_is_valid() {
-    if (!crc16_check_buffer(&badge_conf, sizeof(qc15conf)-2))
+    if (!crc16_check_buffer((uint8_t *) (&badge_conf), sizeof(qc15conf)-2))
+        return 0;
+
+    if (badge_conf.badge_id > QC15_BADGES_IN_SYSTEM)
+        return 0;
+
+    if (badge_conf.badge_name[0] == 0xFF)
         return 0;
 
     return 1;
-    // TODO: Check ID and such
 }
 
 /// Validate, load, and/or generate this badge's configuration as appropriate.
@@ -545,12 +601,8 @@ void init_config() {
     // Check the stored FRAM config:
     if (config_is_valid()) return;
 
-    // Try loading the MAIN config from flash.
-    s25fl_read_data(&badge_conf, FLASH_ADDR_CONF_MAIN, sizeof(qc15conf));
-    if (config_is_valid()) return;
-
-    // Try loading the BACKUP config from flash.
-    s25fl_read_data(&badge_conf, FLASH_ADDR_CONF_BACKUP, sizeof(qc15conf));
+    // If that's bad, try the backup:
+    memcpy(&badge_conf, &backup_conf, sizeof(qc15conf));
     if (config_is_valid()) return;
 
     // If we're still here, none of the three config sources were valid, and
@@ -567,8 +619,6 @@ void main (void)
 
     uint8_t initial_buttons = P9IN;
 
-    init_config();
-
     __bis_SR_register(GIE);
 
     // Do verbose boot for the diagnostic code:
@@ -576,25 +626,13 @@ void main (void)
     // Allow flash loading:
     flash_bootstrap();
 
-    game_begin();
-
+    // TODO: Radio test.
     while (1) {
         handle_global_signals();
 
-        // Handle a completed LED animation.
-        if (s_led_anim_done) {
-            s_led_anim_done = 0;
-        }
-
-        game_handle_loop();
-
         cleanup_global_signals();
-
-        // If no further interrupt flags have been raised during this loop
-        //  iteration, go to sleep. Otherwise, loop.
-        if (!f_ipc_rx && !f_time_loop)
-            LPM;
     }
+
 }
 
 /// The time loop ISR, at vector `0xFFDE` (`Timer1_A3 CC0`).

@@ -11,8 +11,8 @@
 
 #include <msp430fr5972.h>
 #include <driverlib.h>
-#include <s25fl.h>
-#include <s25fl.h>
+#include <s25fs.h>
+#include <s25fs.h>
 #include "qc15.h"
 
 #include "util.h"
@@ -21,6 +21,8 @@
 #include "ht16d35b.h"
 #include "ipc.h"
 #include "leds.h"
+
+#include "flash_layout.h"
 
 #define POST_MCU 0
 #define POST_LCD 1
@@ -47,7 +49,7 @@ uint8_t bootstrap_completed = 0;
 
 void flash_bootstrap() {
     ht16d_all_one_color(0x00, 0x10, 0x00);
-    s25fl_hold_io();
+    s25fs_hold_io();
     lcd111_set_text(1, "   FLASH PROGRAM MODE");
     lcd111_set_text(0, "Press UP for normal boot");
     handle_global_signals();
@@ -65,8 +67,8 @@ void flash_bootstrap() {
 
     // Cleanup from flash programming mode.
     ht16d_all_one_color(0x00, 0x00, 0x00);
-    s25fl_init_io();
-    s25fl_init();
+    s25fs_init_io();
+    s25fs_init();
 }
 
 void bootstrap(uint8_t fastboot) {
@@ -124,16 +126,25 @@ void bootstrap(uint8_t fastboot) {
     }
 
     if (bootstrap_status == POST_NOR) {
-        if (s25fl_post()) {
-            // TODO: Check whether the stored IDs are valid.
-            bootstrap_status++;
-            if (!fastboot) {
-                lcd111_set_text(0, "SPI NOR flash POST: OK");
-                delay_millis(200);
+        if (s25fs_post1()) {
+            uint8_t sentinel = 0;
+            s25fs_read_data(&sentinel, FLASH_ADDR_sentinel, 1);
+            if (s25fs_post2()) {
+                bootstrap_status++;
+                if (!fastboot) {
+                    lcd111_set_text(0, "SPI NOR flash POST: OK");
+                    delay_millis(200);
+                }
+            } else {
+                lcd111_set_text(1, "QC15 BOOTSTRAP> FAIL");
+                lcd111_set_text(0, "SPI NOR bad I/O ops");
+                ht16d_all_one_color(200, 0, 0);
+                delay_millis(2000);
+                bootstrap_status++;
             }
         } else {
             lcd111_set_text(1, "QC15 BOOTSTRAP> FAIL");
-            lcd111_set_text(0, "SPI NOR flash POST FAIL!");
+            lcd111_set_text(0, "SPI NOR general FAIL!");
             ht16d_all_one_color(200, 0, 0);
             delay_millis(2000);
             bootstrap_status++;
@@ -279,4 +290,7 @@ void bootstrap(uint8_t fastboot) {
             s_buttons = 0;
         }
     }
+
+    ht16d_all_one_color(0, 0, 0);
+
 }
