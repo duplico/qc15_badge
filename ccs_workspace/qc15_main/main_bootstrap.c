@@ -118,18 +118,26 @@ void bootstrap(uint8_t fastboot) {
     }
 
     if (bootstrap_status == POST_NOR) {
-        if (s25fs_post()) {
-            uint8_t sentinal = 0;
-            s25fs_read_data(&sentinal, FLASH_ADDR_SENTINAL, 1);
-            if (sentinal == FLASH_SENTINAL_BYTE) {
-                bootstrap_status++;
-                if (!fastboot) {
-                    lcd111_set_text(0, "SPI NOR flash POST: OK");
-                    delay_millis(200);
+        if (s25fs_post1()) {
+            uint8_t sentinel = 0;
+            s25fs_read_data(&sentinel, FLASH_ADDR_sentinel, 1);
+            if (sentinel == FLASH_sentinel_BYTE) {
+                if (s25fs_post2()) {
+                    bootstrap_status++;
+                    if (!fastboot) {
+                        lcd111_set_text(0, "SPI NOR flash POST: OK");
+                        delay_millis(200);
+                    }
+                } else {
+                    lcd111_set_text(1, "QC15 BOOTSTRAP> FAIL");
+                    lcd111_set_text(0, "SPI NOR bad I/O ops");
+                    ht16d_all_one_color(200, 0, 0);
+                    delay_millis(2000);
+                    bootstrap_status++;
                 }
             } else {
                 lcd111_set_text(1, "QC15 BOOTSTRAP> FAIL");
-                lcd111_set_text(0, "SPI NOR bad sentinal");
+                lcd111_set_text(0, "SPI NOR bad sentinel");
                 ht16d_all_one_color(200, 0, 0);
                 delay_millis(2000);
                 bootstrap_status++;

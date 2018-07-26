@@ -12,7 +12,8 @@
 void s25fs_init();
 void s25fs_init_io();
 void s25fs_hold_io();
-uint8_t s25fs_post();
+uint8_t s25fs_post1();
+uint8_t s25fs_post2();
 void s25fs_erase_block_64kb(uint32_t address);
 
 void s25fs_wr_en();
