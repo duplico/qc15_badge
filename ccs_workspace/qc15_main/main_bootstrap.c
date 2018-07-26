@@ -118,37 +118,39 @@ void bootstrap(uint8_t fastboot) {
     }
 
     if (bootstrap_status == POST_NOR) {
-        if (s25fs_post1()) {
-            uint8_t sentinel = 0;
-            s25fs_read_data(&sentinel, FLASH_ADDR_sentinel, 1);
-            if (sentinel == FLASH_sentinel_BYTE) {
-                if (s25fs_post2()) {
-                    bootstrap_status++;
-                    if (!fastboot) {
-                        lcd111_set_text(0, "SPI NOR flash POST: OK");
-                        delay_millis(200);
-                    }
-                } else {
-                    lcd111_set_text(1, "QC15 BOOTSTRAP> FAIL");
-                    lcd111_set_text(0, "SPI NOR bad I/O ops");
-                    ht16d_all_one_color(200, 0, 0);
-                    delay_millis(2000);
-                    bootstrap_status++;
-                }
-            } else {
-                lcd111_set_text(1, "QC15 BOOTSTRAP> FAIL");
-                lcd111_set_text(0, "SPI NOR bad sentinel");
-                ht16d_all_one_color(200, 0, 0);
-                delay_millis(2000);
-                bootstrap_status++;
-            }
-        } else {
-            lcd111_set_text(1, "QC15 BOOTSTRAP> FAIL");
+        uint8_t fail = 0;
+        if (!s25fs_post1()) { // General test for correct model & WREN.
             lcd111_set_text(0, "SPI NOR flash POST FAIL!");
             ht16d_all_one_color(200, 0, 0);
             delay_millis(2000);
-            bootstrap_status++;
+            fail = 1;
         }
+        uint8_t sentinel = 0;
+        s25fs_read_data(&sentinel, FLASH_ADDR_sentinel, 1);
+        if (sentinel != FLASH_sentinel_BYTE) { // Is the first byte correct?
+            lcd111_set_text(0, "SPI NOR bad sentinel");
+            ht16d_all_one_color(200, 0, 50);
+            delay_millis(2000);
+            fail = 1;
+        }
+
+        if (!s25fs_post2()) { // Can we erase and write to the chip?
+            lcd111_set_text(0, "SPI NOR bad I/O ops");
+            ht16d_all_one_color(200, 50, 0);
+            delay_millis(2000);
+            fail = 1;
+        }
+
+        if (!fail) {
+            if (!fastboot) {
+                lcd111_set_text(0, "SPI NOR flash POST: OK");
+                delay_millis(200);
+            }
+        } else {
+            lcd111_set_text(1, "QC15 BOOTSTRAP> FAIL");
+        }
+        bootstrap_status++;
+
     }
 
     while (1) {

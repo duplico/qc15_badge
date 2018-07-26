@@ -260,6 +260,8 @@ void poll_buttons() {
 
 /// High-level message handler for IPC messages from the radio MCU.
 void handle_ipc_rx(uint8_t *rx) {
+    // Grab the payload, since rx[0] is an opcode.
+    uint8_t *rx_pl;
     switch(rx[0] & 0xF0) {
     case IPC_MSG_POST:
         // The radio MCU has rebooted.
@@ -283,15 +285,17 @@ void handle_ipc_rx(uint8_t *rx) {
         }
         break;
     case IPC_MSG_GD_ARR:
+        rx_pl = &(rx[1]);
         // Someone has arrived
         set_badge_seen(
-                ((ipc_msg_gd_arr_t*)rx)->badge_id,
-                &(((ipc_msg_gd_arr_t*)rx)->name[0])
+                rx[1] + ((uint16_t)rx[2] << 8),
+                &(rx[3])
         );
         if (badges_nearby < 450)
             badges_nearby++;
         break;
     case IPC_MSG_GD_DEP:
+        rx_pl = &(rx[1]);
         // Someone has departed.
         if (badges_nearby)
             badges_nearby--;
@@ -414,10 +418,21 @@ uint16_t buffer_rank(uint8_t *buf, uint8_t len) {
 }
 
 void save_config() {
-    // We only save our config in FRAM; for now the flash is READ ONLY.
     crc16_append_buffer((uint8_t *) (&badge_conf), sizeof(qc15conf)-2);
 
+    s25fs_wr_en();
+    s25fs_erase_block_64kb(FLASH_ADDR_CONF_MAIN);
+    s25fs_wr_en();
+    s25fs_write_data(FLASH_ADDR_CONF_MAIN, (uint8_t *) (&badge_conf),
+                     sizeof(qc15conf))
+
     memcpy(&backup_conf, &badge_conf, sizeof(qc15conf));
+
+    s25fs_wr_en();
+    s25fs_erase_block_64kb(FLASH_ADDR_CONF_BACKUP);
+    s25fs_wr_en();
+    s25fs_write_data(FLASH_ADDR_CONF_BACKUP, (uint8_t *) (&badge_conf),
+                     sizeof(qc15conf))
 
     // And, update our friend the radio MCU:
     // (spin until the send is successful)
@@ -473,9 +488,9 @@ uint8_t badge_downloaded(uint16_t id) {
 void set_badge_seen(uint16_t id, uint8_t *name) {
     if (id >= QC15_BADGES_IN_SYSTEM)
         return;
-    if (badge_seen(id)) {
-        return;
-    }
+//    if (badge_seen(id)) {
+//        return;
+//    }
     set_id_buf(id, badge_conf.badges_seen);
     badge_conf.badges_seen_count++;
 
@@ -493,33 +508,35 @@ void set_badge_seen(uint16_t id, uint8_t *name) {
     uint32_t name_page_address = 0x100000 + (0x010000 * (id / 20));
     uint8_t name_offset = (id % 20) * QC15_PERSON_NAME_LEN;
 
-    uint8_t name_block[222];
-    s25fs_read_data(name_block, name_page_address, 222);
-    if (crc16_check_buffer(name_block, 220)) {
-        // CRC good.
-        // What do?
-    } else {
-        // CRC bad. What do? Clear it? // TODO: We probably shouldn't do this.
-        memset(name_block, 0x00, 220);
-    }
+    uint8_t name_block[QC15_PERSON_NAME_LEN*20];
 
-    if (!strcmp((const char *) &name_block[name_offset], (const char *)name)) {
-        // We have a different name for it.
-        // Put the newly seen name into the buffer.
-        if (name_block[name_offset] != 0xff) {
-            // If it's 0xff, we don't have to erase because it's never been
-            //  set. But if it's not, we're overwriting something.
+    s25fs_read_data(name_block, name_page_address + name_offset,
+                    QC15_PERSON_NAME_LEN);
+
+    if (strcmp((const char *) name_block, (const char *)name)) {
+        // Different name than what's saved. From here there are two options:
+        //  we may have to do a big write, or a little write.
+        if (name_block[0] == 0xFF) {
+            // Little write! :-)
+            s25fs_wr_en();
+            s25fs_write_data(name_page_address + name_offset, name,
+                             QC15_PERSON_NAME_LEN);
+        } else {
+            // Big write. :-(
+            // We have to read the entire useful part of the block...
+            s25fs_read_data(name_block, name_page_address,
+                            QC15_PERSON_NAME_LEN*20);
+            // Put our name into it in the right spot...
+            memcpy(&name_block[name_offset], name, QC15_PERSON_NAME_LEN);
+            // Clear the whole block...
             s25fs_wr_en();
             s25fs_erase_block_64kb(name_page_address);
+            s25fs_block_while_wip(); // TODO: We should really use signals.
+            s25fs_wr_en();
+            // Then stick the new data in.
+            s25fs_write_data(name_page_address, name_block, 222);
         }
-        memcpy(&name_block[name_offset], name, QC15_PERSON_NAME_LEN);
-        crc16_append_buffer(name_block, 220);
-
-        // And save it.
-        s25fs_block_while_wip(); // TODO: We should really do this with signals.
-        s25fs_write_data(name_page_address, name_block, 222);
     }
-
 
     save_config();
 }

@@ -159,8 +159,7 @@ void s25fs_read_data(uint8_t* buffer, uint32_t address, uint32_t len_bytes) {
     s25fs_end();
 }
 
-// TODO: Writes and erases are not working for some reason.
-//
+/// Write data to the flash device, blocking if a write is in progress.
 void s25fs_write_data(uint32_t address, uint8_t* buffer, uint32_t len_bytes) {
     // Length may not be any longer than 255.
     s25fs_block_while_wip();
@@ -180,7 +179,7 @@ void s25fs_erase_chip() {
     s25fs_simple_cmd(FLASH_CMD_CHIP_ERASE);
 }
 
-// TODO: Confirm erase address. Currently it's erroring.
+// TODO: Nonblocking versions of these.
 void s25fs_erase_block_64kb(uint32_t address) {
     s25fs_block_while_wip();
     s25fs_begin();
