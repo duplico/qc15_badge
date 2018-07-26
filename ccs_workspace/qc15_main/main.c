@@ -490,11 +490,36 @@ void set_badge_seen(uint16_t id, uint8_t *name) {
         badge_conf.handlers_seen_count++;
     }
 
-    uint32_t name_address =   0x100000;
-    name_address += (id/20) * 0x010000;
-    name_address += (id%20) * 11;
+    uint32_t name_page_address = 0x100000 + (0x010000 * (id / 20));
+    uint8_t name_offset = (id % 20) * QC15_PERSON_NAME_LEN;
 
-    // TODO: read 220 byte block, write name.
+    uint8_t name_block[222];
+    s25fs_read_data(name_block, name_page_address, 222);
+    if (crc16_check_buffer(name_block, 220)) {
+        // CRC good.
+        // What do?
+    } else {
+        // CRC bad. What do? Clear it? // TODO: We probably shouldn't do this.
+        memset(name_block, 0x00, 220);
+    }
+
+    if (!strcmp((const char *) &name_block[name_offset], (const char *)name)) {
+        // We have a different name for it.
+        // Put the newly seen name into the buffer.
+        if (name_block[name_offset] != 0xff) {
+            // If it's 0xff, we don't have to erase because it's never been
+            //  set. But if it's not, we're overwriting something.
+            s25fs_wr_en();
+            s25fs_erase_block_64kb(name_page_address);
+        }
+        memcpy(&name_block[name_offset], name, QC15_PERSON_NAME_LEN);
+        crc16_append_buffer(name_block, 220);
+
+        // And save it.
+        s25fs_block_while_wip(); // TODO: We should really do this with signals.
+        s25fs_write_data(name_page_address, name_block, 222);
+    }
+
 
     save_config();
 }
@@ -566,7 +591,7 @@ void generate_config() {
     {
         badge_conf.badge_id = 111;
         char backup_name[] ="Skippy";
-        strcpy(badge_conf.badge_name, backup_name);
+        strcpy((char *) &(badge_conf.badge_name[0]), backup_name);
     }
 
     // Determine which segment we have (and therefore which parts)

@@ -227,7 +227,7 @@ uint8_t s25fs_post1() {
 
 uint8_t s25fs_post2() {
 
-    volatile uint8_t t;
+    uint8_t t;
 
     s25fs_wr_en();
     s25fs_erase_block_64kb(FLASH_ADDR_INTENTIONALLY_BLANK);
