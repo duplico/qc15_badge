@@ -20,16 +20,16 @@
 
 #define RADIO_STATS_MSG_LEN 35
 #define RADIO_PROGRESS_MSG_LEN 30
-#define BASE_BEACON_INTERVAL_CENT_SEC 30
+#define BASE_BEACON_INTERVAL_CENT_SEC 500
 
 volatile uint8_t f_time_loop;
 
-void delay_millis(unsigned long mils) {
-    while (mils) {
-        __delay_cycles(1000);
-        mils--;
-    }
-}
+//void delay_millis(unsigned long mils) {
+//    while (mils) {
+//        __delay_cycles(1000);
+//        mils--;
+//    }
+//}
 
 void delay_nanos(unsigned long nanos) {
     while (nanos) {
@@ -52,8 +52,14 @@ void led_flash() {
     led_off();
 }
 
-void radio_tx_done(uint8_t ack) {
+void flash_p2_6() {
+    P2OUT |= BIT6;
+    delay_millis(10);
+    P2OUT &= ~BIT6;
+}
 
+void radio_tx_done(uint8_t ack) {
+    flash_p2_6();
 }
 
 /**
@@ -87,8 +93,8 @@ void init_io() {
     // The magic FRAM make-it-work command:
     PMM_unlockLPM5(); // PM5CTL0 &= ~LOCKLPM5;
 
-    P2DIR |= BIT2; // LED
-    P2OUT &= ~BIT2;
+    P2DIR |= BIT2 + BIT6; // LED
+    P2OUT &= ~(BIT2|BIT6);
 
     // TX/RX
     P1SEL0 |= BIT4+BIT5;
@@ -181,6 +187,9 @@ void send_progress_payload(uint16_t badge_id, radio_progress_payload *payload) {
     send_char(0x0A);
 }
 
+/**
+ * Sends badge stats payload struct over serial.
+ */
 void send_stats_payload(uint16_t badge_id, radio_stats_payload *payload) {
     /**
      * 4,badge_id,badges_seen_count,badges_connected_count,badges_uploaded_count,
@@ -211,6 +220,9 @@ void send_debug_payload(uint16_t badge_id, unsigned char* message) {
 
 }
 
+/**
+ * Sends a payload out to all of the badges in the nearby vicinity.
+ */
 void beacon() {
     led_flash();
     radio_beacon_payload payload = {0};
@@ -267,11 +279,12 @@ void main (void) {
     uint16_t cent_secs_waiting = 0;
 
     while (1) {
+        // Interrupt catch when receiving data.
         if (f_rfm75_interrupt) {
             f_rfm75_interrupt = 0;
             rfm75_deferred_interrupt();
         }
-
+        // This block is used for Jake to have a working launchpad which spits out data to use.
 //        __bis_SR_register(LPM0_bits);
 //        send_stats_payload(badge_id, &stats);
 //        send_progress_payload(badge_id, &progress);
@@ -281,13 +294,13 @@ void main (void) {
 
             // Increment wait period timer.
             cent_secs_waiting++;
-
+            // When we've waited the allotted time
             if (BASE_BEACON_INTERVAL_CENT_SEC == cent_secs_waiting) {
+                // Send out a beacon to all nearby badges.
                 beacon();
                 cent_secs_waiting = 0;
             }
         }
-//        delay_millis(250);
     }
  }
 
