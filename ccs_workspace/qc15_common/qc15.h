@@ -99,6 +99,11 @@ extern volatile uint32_t qc_clock;
 extern qc15status badge_status;
 #endif
 
+#ifdef __MSP430FR2433__
+#define MCLK_FREQ_KHZ 1000
+#define MCLK_FREQ_HZ 1000000
+#endif
+
 // The following are specific to the MAIN MCU:
 #ifdef __MSP430FR5972__
 #define MCLK_FREQ_KHZ 8000

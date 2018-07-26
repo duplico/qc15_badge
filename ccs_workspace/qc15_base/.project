@@ -3,7 +3,6 @@
 	<name>qc15_base</name>
 	<comment></comment>
 	<projects>
-		<project>rfm75_msp430</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
@@ -27,9 +26,29 @@
 	</natures>
 	<linkedResources>
 		<link>
+			<name>qc15.h</name>
+			<type>1</type>
+			<location>C:/Users/tommy/ti/src/ccs_workspace/qc15_common/qc15.h</location>
+		</link>
+		<link>
 			<name>radio.h</name>
 			<type>1</type>
 			<locationURI>WORKSPACE_LOC/qc15_radiomcu/radio.h</locationURI>
+		</link>
+		<link>
+			<name>rfm75.h</name>
+			<type>1</type>
+			<location>C:/Users/tommy/ti/src/ccs_workspace/rfm75_msp430/rfm75.h</location>
+		</link>
+		<link>
+			<name>util.c</name>
+			<type>1</type>
+			<location>C:/Users/tommy/ti/src/ccs_workspace/qc15_common/util.c</location>
+		</link>
+		<link>
+			<name>util.h</name>
+			<type>1</type>
+			<location>C:/Users/tommy/ti/src/ccs_workspace/qc15_common/util.h</location>
 		</link>
 		<link>
 			<name>driverlib/MSP430FR2xx_4xx</name>
