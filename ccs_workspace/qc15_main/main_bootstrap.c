@@ -51,24 +51,15 @@ void flash_bootstrap() {
     ht16d_all_one_color(0x00, 0x10, 0x00);
     s25fs_hold_io();
     lcd111_set_text(1, "   FLASH PROGRAM MODE");
-    lcd111_set_text(0, "Press UP for normal boot");
+    lcd111_set_text(0, "");
     handle_global_signals();
     cleanup_global_signals();
     while (1) {
         f_time_loop = 1;
         handle_global_signals();
-        if (s_up) {
-            s_up = 0;
-            break;
-        }
         cleanup_global_signals();
         delay_millis(31);
     }
-
-    // Cleanup from flash programming mode.
-    ht16d_all_one_color(0x00, 0x00, 0x00);
-    s25fs_init_io();
-    s25fs_init();
 }
 
 void bootstrap(uint8_t fastboot) {
@@ -282,7 +273,6 @@ void bootstrap(uint8_t fastboot) {
                         lcd111_set_text(0, "POST: Click DOWN.");
                         bootstrap_status++;
                     } else if (bootstrap_status == POST_OK) {
-                        bootstrap_completed = 1;
                         break;
                     }
                 } else {

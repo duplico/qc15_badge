@@ -25,6 +25,20 @@ Preparation
 Testing
 -------
 
+NOTE: In the production badge code, an altered procedure similar to this may be
+accessed by pressing a button while inserting badges:
+      
+* Holding *no buttons* during power-up will result in a fastboot, which performs
+  a power-on self-test but reports only errors and does not test buttons
+  or the switch,
+* Holding *down* during power-up will activate the verbose automatic power-on
+  self test, which performs the complete test procedures B.2 and B.3 below.
+* Holding *right* during power-up activates flash programming mode, which
+  disengages the MCU's pins from the external SPI flash chip, allowing it to
+  be programmed by an external programmer.
+* The radio performance test is specialized code running on both MCUs and is
+  unfortunately not accessible in the production code.
+
 For each badge, follow the following procedure:
 
 A. Physical
@@ -61,14 +75,15 @@ B. Electronic
 * Visually inspect all LEDs for unlit channels, and affix arrow stickers to
   indicate any LEDs that require rework. Continue procedure.
 * Both LCD displays show text.
-* Visually inspect both LCD displays for bad rows or bad screens. Remember 
-  any problems: testing will continue, but the badge will need to be placed
-  in the rework area in part B.4.
+* Visually inspect both LCD displays for bad rows or bad screens. Place an
+  arrow sticker on the bezel of any LCD display with problems. *Continue
+  testing*, but the badge will need to be placed in the rework area at the end 
+  of procedure B.4.
 
 2. Automatic Power-on Self Test (POST)
 **************************************
 
-* In the event of a power-on self-test failure, lights will turn RED, and
+* In the event of a power-on self-test failure, lights will change color, and
   the bottom screen will provide an error detail. In the event of an
   ``IPC General Failure`` error, return to B.0 and repeat procedure once,
   paying particular attention to the output of the first half of the
@@ -79,25 +94,46 @@ B. Electronic
 
 * Badge prompts for buttons to be pressed in the following sequence: up, 
   down, left, right. Follow the prompts.
-* In the event of button failures or missing buttons, discontinue testing 
-  and move badge to rework rack or area.
+* In the event of button failures or missing buttons, place arrow stickers on
+  the affected button(s), and discontinue testing. Place affected badge in 
+  rework rack or area.
 * Badge prompts for switch to be moved back and forth.
 * In the event that switch movement is not detected, return to B.0
   and repeat test procedure once. If that does not cause switch movement
-  to be detected, discontinue testing, note the failure, and move badge
-  to diagnosis rack or area.
+  to be detected, place an arrow sticker near the switch, discontinue testing, 
+  and move badge to diagnosis rack or area.
+* Press the UP button to exit automated self-test.
+  
+4. Radio performance test
+*************************
 
-4. Self-test completion
+The badge now enters radio performance test mode. It will transmit a message
+every 5 seconds, lighting WHITE when it does so. It will light GREEN when it
+receives a radio message.
+
+A couple of badges should be staged, possible along with a TI Launchpad with 
+LEDs that report sending and receiving.
+
+* Monitor the badge while it sends and receives. If it appears to reliably
+  (>50%) interact with other badges and the test boards, it has passed the
+  radio performance test.
+  
+* If the badge does not reliably interact with others, it has failed the radio
+  performance test and will need a new radio. Place an arrow sticker on the
+  badge pointing to the radio module, and press the LEFT button. The badge will
+  reboot and may now be set aside for rework.
+  
+**If the badge has failed ANY self-test or inspection, press the LEFT button at 
+this time. Discontinue testing and set it aside for diagnosis or rework.** 
+***Do not follow the steps in part 5 until the badge has been repaired
+and fully verified.***
+  
+5. Self-test completion
 ***********************
 
-**If the badge has failed ANY self-test or inspection, discontinue
-testing and set it aside for diagnosis or rework at this time.** 
-**Even if prompted, do NOT select the "UP" button to complete POST.**
-***Do not follow the steps in part 4 until the badge has been repaired
-and fully verified.***
-
-* Press the UP button ONLY if the badge has passed all self-tests
-  and visual and hardware inspection.
+* At the successful conclusion of a radio performance test, press the DOWN
+  button. Do this ONLY if the badge has passed all self-tests and visual and 
+  hardware inspection.
 * All lights turn green and upper screen reports ``FLASH PROGRAM
   MODE``.
 * Badge has passed verification. Continue testing next badge.
