@@ -31,8 +31,8 @@
 
 #include <msp430fr5972.h>
 #include <driverlib.h>
-#include <s25fl.h>
-#include <s25fl.h>
+#include <s25fs.h>
+#include <s25fs.h>
 #include <textentry.h>
 #include "qc15.h"
 
@@ -68,6 +68,8 @@ uint16_t badges_nearby = 0;
 // If I change this to NOINIT, it'll persist between flashings of the badge.
 #pragma PERSISTENT(badge_conf)
 qc15conf badge_conf = {0};
+#pragma PERSISTENT(backup_conf)
+qc15conf backup_conf = {0};
 
 const rgbcolor_t bw_colors[] = {
         {0x20, 0x20, 0x20},
@@ -155,7 +157,7 @@ void init_io() {
 
     lcd111_init_io();
     ht16d_init_io();
-    s25fl_init_io();
+    s25fs_init_io();
     init_ipc_io();
 
     // Screw post inputs with pull-ups
@@ -202,7 +204,7 @@ void init() {
 
     ht16d_init();
     lcd111_init();
-    s25fl_init();
+    s25fs_init();
     ipc_init();
     timer_init();
 }
@@ -288,7 +290,6 @@ void handle_ipc_rx(uint8_t *rx) {
         );
         if (badges_nearby < 450)
             badges_nearby++;
-        // TODO: Any signals?
         break;
     case IPC_MSG_GD_DEP:
         // Someone has departed.
@@ -412,23 +413,15 @@ uint16_t buffer_rank(uint8_t *buf, uint8_t len) {
     return count;
 }
 
-// TODO: Flash as noted (and more):
 void save_config() {
-    crc16_append_buffer(&badge_conf, sizeof(qc15conf)-2);
+    // We only save our config in FRAM; for now the flash is READ ONLY.
+    crc16_append_buffer((uint8_t *) (&badge_conf), sizeof(qc15conf)-2);
 
-    // Write the MAIN config to flash
-    s25fl_erase_block_64kb(FLASH_ADDR_CONF_MAIN);
-    // wr_en, wr_dis
-    s25fl_write_data(FLASH_ADDR_CONF_MAIN, &badge_conf, sizeof(qc15conf));
+    memcpy(&backup_conf, &badge_conf, sizeof(qc15conf));
 
-    // After that's complete, write the BACKUP config to flash:
-    s25fl_erase_block_64kb(FLASH_ADDR_CONF_BACKUP);
-    // wr_en, wr_dis
-    s25fl_write_data(FLASH_ADDR_CONF_BACKUP, &badge_conf, sizeof(qc15conf));
-
-    // And, update our friend:
+    // And, update our friend the radio MCU:
     // (spin until the send is successful)
-    while (!ipc_tx_op_buf(IPC_MSG_STATS_UPDATE, (uint8_t *) &badge_conf, sizeof(qc15status)));
+    while (!ipc_tx_op_buf(IPC_MSG_STATS_UPDATE, (uint8_t *) (uint8_t *) (&badge_conf), sizeof(qc15status)));
 
 }
 
@@ -559,22 +552,27 @@ void generate_config() {
 
     // Load ID from flash:
     // TODO: Confirm Endianness
-    s25fl_read_data(&(badge_conf.badge_id), FLASH_ADDR_ID_MAIN, 2);
+    s25fs_read_data((uint8_t *)(&(badge_conf.badge_id)), FLASH_ADDR_ID_MAIN, 2);
 
-    if (badge_conf.badge_id >= QC15_BADGES_IN_SYSTEM) {
-        badge_conf.badge_id = 25;
+    uint8_t sentinel;
+    s25fs_read_data(&sentinel, FLASH_ADDR_sentinel, 1);
+
+    // TODO: we need a global flag for "flash no workie".
+    // Check the handful of things we know to check in the flash to see if
+    //  it's looking sensible:
+    if (sentinel != FLASH_sentinel_BYTE ||
+            badge_conf.badge_id >= QC15_BADGES_IN_SYSTEM ||
+            badge_conf.badge_name[0] == 0xFF)
+    {
+        badge_conf.badge_id = 111;
+        char backup_name[] ="Skippy";
+        strcpy(badge_conf.badge_name, backup_name);
     }
-
-    // Person name stays blank.
-    // Load badge name from flash:
-    s25fl_read_data(badge_conf.badge_name, FLASH_ADDR_NAME_MAIN,
-                    QC15_BADGE_NAME_LEN-1); // retain the 0-term
-    // TODO: Validate the name
 
     // Determine which segment we have (and therefore which parts)
     badge_conf.code_starting_part = (badge_conf.badge_id % 16) * 6;
     uint8_t name[11] = "Human";
-    set_badge_seen(badge_conf.badge_id, &name);
+    set_badge_seen(badge_conf.badge_id, name);
     set_badge_uploaded(badge_conf.badge_id);
     set_badge_downloaded(badge_conf.badge_id);
     save_config();
@@ -583,15 +581,19 @@ void generate_config() {
     mode_countdown = 0;
     mode_status = 0;
     mode_sleep = 0;
-
 }
 
 uint8_t config_is_valid() {
-    if (!crc16_check_buffer(&badge_conf, sizeof(qc15conf)-2))
+    if (!crc16_check_buffer((uint8_t *) (&badge_conf), sizeof(qc15conf)-2))
+        return 0;
+
+    if (badge_conf.badge_id > QC15_BADGES_IN_SYSTEM)
+        return 0;
+
+    if (badge_conf.badge_name[0] == 0xFF)
         return 0;
 
     return 1;
-    // TODO: Check ID and such
 }
 
 /// Validate, load, and/or generate this badge's configuration as appropriate.
@@ -599,12 +601,8 @@ void init_config() {
     // Check the stored FRAM config:
     if (config_is_valid()) return;
 
-    // Try loading the MAIN config from flash.
-    s25fl_read_data(&badge_conf, FLASH_ADDR_CONF_MAIN, sizeof(qc15conf));
-    if (config_is_valid()) return;
-
-    // Try loading the BACKUP config from flash.
-    s25fl_read_data(&badge_conf, FLASH_ADDR_CONF_BACKUP, sizeof(qc15conf));
+    // If that's bad, try the backup:
+    memcpy(&badge_conf, &backup_conf, sizeof(qc15conf));
     if (config_is_valid()) return;
 
     // If we're still here, none of the three config sources were valid, and
@@ -631,6 +629,10 @@ void main (void)
     bootstrap(initial_buttons & BIT4);
 
     init_config();
+
+
+    save_config();
+
     mode_game = 1;
 
     if (mode_game) // TODO: Requires changing for persistence:
