@@ -12,13 +12,14 @@
 #define BASE_MAIN_H_
 
 // Delay Functions
-void delay_millis(unsigned long mils);
+//void delay_millis(unsigned long mils);
 void delay_nanos(unsigned long nanos);
 
 // LED Functions
 void led_on();
 void led_off();
 void led_flash();
+void flash_p2_6();
 
 // Radio Functions
 void radio_tx_done(uint8_t ack);

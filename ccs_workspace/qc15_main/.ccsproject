@@ -14,5 +14,5 @@
 	<origin value="C:/Users/george/workspace_v8/qc15_screen_test"/>
 	<filesToOpen value=""/>
 	<connection value="common/targetdb/connections/TIMSP430-USB.xml"/>
-	<isTargetManual value="false"/>
+	<isTargetManual value="true"/>
 </projectOptions>
