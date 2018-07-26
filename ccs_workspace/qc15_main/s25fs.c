@@ -30,7 +30,7 @@ const uint8_t FLASH_SR_WIP = BIT0;
 #define FLASH_CMD_WRAR 0x71 // write any register
 #define FLASH_CMD_RDAR 0x65 // read any register
 
-#define FLASH_CMD_CHIP_ERASE 0xC7 // TODO: delay after these three:
+#define FLASH_CMD_CHIP_ERASE 0xC7
 #define FLASH_CMD_POWER_DOWN 0xB9
 #define FLASH_CMD_POWER_UP 0xAB
 #define FLASH_CMD_CLSR 0x82
@@ -129,9 +129,8 @@ uint8_t s25fs_read_any_register(uint32_t addr) {
 
 void s25fs_block_while_wip() {
     // Make sure nothing is in progress:
-    // TODO: check & 0b01100000
     while (s25fs_get_status() & FLASH_SR_WIP)
-        __delay_cycles(100); // TODO: this number came from nowhere.
+        __delay_cycles(100); //This number came from nowhere.
 }
 
 void s25fs_wr_register(uint32_t addr, uint8_t val) {
@@ -179,7 +178,6 @@ void s25fs_erase_chip() {
     s25fs_simple_cmd(FLASH_CMD_CHIP_ERASE);
 }
 
-// TODO: Nonblocking versions of these.
 void s25fs_erase_block_64kb(uint32_t address) {
     s25fs_block_while_wip();
     s25fs_begin();
@@ -224,8 +222,8 @@ uint8_t s25fs_post1() {
     return s25fs_rdid() == FLASH_RDID_VAL_S25FS064S;
 }
 
+/// An operational power-on self-test, returning 1 on success and 0 on failure.
 uint8_t s25fs_post2() {
-
     uint8_t t;
 
     s25fs_wr_en();
@@ -295,7 +293,6 @@ void s25fs_init_io() {
     GPIO_setAsOutputPin(GPIO_PORT_PJ, GPIO_PIN3);
     P3OUT |= BIT7+BIT3; // Unheld, unselected
     PJOUT |= BIT3;  // unprotected.
-    // TODO use preprocessor defines for the above.
 
     GPIO_setAsPeripheralModuleFunctionOutputPin(GPIO_PORT_P3, GPIO_PIN4 + GPIO_PIN5 + GPIO_PIN6, GPIO_PRIMARY_MODULE_FUNCTION);
 
@@ -306,14 +303,12 @@ void s25fs_init_io() {
     ucaparam.spiMode = EUSCI_A_SPI_3PIN;
     ucaparam.selectClockSource = EUSCI_A_SPI_CLOCKSOURCE_SMCLK;
     ucaparam.clockSourceFrequency = SMCLK_FREQ_HZ;
-    ucaparam.desiredSpiClock = 100000; // TODO: decide
+    ucaparam.desiredSpiClock = 500000;
 
     EUSCI_A_SPI_initMaster(EUSCI_A1_BASE, &ucaparam);
 }
 
 void s25fs_init() {
-    // TODO: implement WP
-
     EUSCI_A_SPI_enable(EUSCI_A1_BASE);
 
     // Clear status register.
