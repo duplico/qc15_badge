@@ -71,6 +71,8 @@ qc15conf badge_conf = {0};
 #pragma PERSISTENT(backup_conf)
 qc15conf backup_conf = {0};
 
+uint8_t out_of_bootstrap = 0;
+
 const rgbcolor_t bw_colors[] = {
         {0x20, 0x20, 0x20},
         {0xff, 0xff, 0xff},
@@ -78,12 +80,27 @@ const rgbcolor_t bw_colors[] = {
         {0x00, 0x00, 0x00},
 };
 
-const led_ring_animation_t anim_bw = {
-        &bw_colors[0],
-        4,
-        10,
-        HT16D_BRIGHTNESS_DEFAULT,
-        LED_ANIM_TYPE_SAME,
+const led_ring_animation_t anim_bw = (led_ring_animation_t){
+        .colors=&bw_colors[0],
+        .len = 4,
+        .speed = 4,
+        .brightness = HT16D_BRIGHTNESS_DEFAULT,
+        .type = LED_ANIM_TYPE_SAME
+};
+
+const rgbcolor_t g_colors[] = {
+        {0x00, 0x20, 0x00},
+        {0x00, 0xff, 0x00},
+        {0x00, 0x00, 0x00},
+        {0x00, 0x00, 0x00},
+};
+
+const led_ring_animation_t anim_g = (led_ring_animation_t){
+        .colors=&g_colors[0],
+        .len = 4,
+        .speed = 4,
+        .brightness = HT16D_BRIGHTNESS_DEFAULT,
+        .type = LED_ANIM_TYPE_SAME
 };
 
 void set_badge_seen(uint16_t id, uint8_t *name);
@@ -283,24 +300,14 @@ void handle_ipc_rx(uint8_t *rx) {
         }
         break;
     case IPC_MSG_GD_ARR:
-        // Someone has arrived
-        set_badge_seen(
-                ((ipc_msg_gd_arr_t*)rx)->badge_id,
-                &(((ipc_msg_gd_arr_t*)rx)->name[0])
-        );
-        if (badges_nearby < 450)
-            badges_nearby++;
+        // rx = green
+        if (out_of_bootstrap)
+            led_set_anim(&anim_g, LED_ANIM_TYPE_SAME, 0, 0);
         break;
     case IPC_MSG_GD_DEP:
-        // Someone has departed.
-        if (badges_nearby)
-            badges_nearby--;
-        break;
-    case IPC_MSG_GD_DL:
-        // We successfully downloaded from a badge
-        break;
-    case IPC_MSG_GD_UL:
-        // Someone downloaded from us.
+        // tx = white
+        if (out_of_bootstrap)
+            led_set_anim(&anim_bw, LED_ANIM_TYPE_SAME, 0, 0);
         break;
     }
 }
@@ -612,6 +619,8 @@ void init_config() {
     srand(badge_conf.badge_id);
 }
 
+extern uint8_t bootstrap_completed;
+
 /// The main initialization and loop function.
 void main (void)
 {
@@ -621,18 +630,47 @@ void main (void)
 
     __bis_SR_register(GIE);
 
-    // Do verbose boot for the diagnostic code:
-    bootstrap(initial_buttons & BIT4);
-    // Allow flash loading:
-    flash_bootstrap();
-
-    // TODO: Radio test.
-    while (1) {
-        handle_global_signals();
-
-        cleanup_global_signals();
+    if (!(initial_buttons & BIT4)) {
+        bootstrap_completed = 0;
     }
 
+    // Do verbose boot for the diagnostic code:
+    bootstrap(initial_buttons & BIT4);
+    // Allow radio messages:
+
+    ht16d_all_one_color(0, 0, 0);
+
+    if (!bootstrap_completed) {
+        out_of_bootstrap = 1;
+
+        lcd111_set_text(LCD_TOP, "RF test:  Wht:TX, Grn:RX");
+        lcd111_set_text(LCD_BTM, "DOWN: OK, LEFT: FAIL");
+
+        while (1) {
+            handle_global_signals();
+
+            if (s_down) {
+                ht16d_all_one_color(0, 0, 0);
+                break;
+            }
+
+            if (s_left) {
+                ht16d_all_one_color(0, 0, 0);
+                bootstrap_completed = 0;
+                PMMCTL0 |= PMMSWPOR; // Software reboot.
+                break;
+            }
+
+            cleanup_global_signals();
+        }
+
+        bootstrap_completed = 1;
+        out_of_bootstrap = 0;
+    }
+
+    // Allow flash loading:
+    // (loops forever)
+    flash_bootstrap();
 }
 
 /// The time loop ISR, at vector `0xFFDE` (`Timer1_A3 CC0`).

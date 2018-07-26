@@ -114,63 +114,15 @@ void radio_handle_download(uint16_t id, radio_connect_payload *payload) {
 
 void radio_rx_done(uint8_t* data, uint8_t len, uint8_t pipe) {
     radio_proto *msg = (radio_proto *)data;
-    if (!validate(msg, len)) {
-        // fail
-        return;
-    }
 
-    switch(msg->msg_type) {
-    case RADIO_MSG_TYPE_BEACON:
-        // Handle a beacon.
-        radio_handle_beacon(msg->badge_id,
-                            (radio_beacon_payload *) (msg->msg_payload));
-        break;
-    case RADIO_MSG_TYPE_DLOAD:
-        // Handle a direct connection to DOWNLOAD OUR INFORMATION BRAINS
-        radio_handle_download(msg->badge_id,
-                              (radio_connect_payload *) (msg->msg_payload));
-    }
+    uint16_t i = 400;
+    ipc_tx_op_buf(IPC_MSG_GD_ARR, &i, 2);
 }
 
 /// Called when the transmission of `curr_packet` has either finished or failed.
 void radio_tx_done(uint8_t ack) {
-    switch(curr_packet_tx.msg_type) {
-        case RADIO_MSG_TYPE_BEACON:
-            // We just sent a beacon.
-            // TODO: Clear any state that needs cleared.
-            break;
-        case RADIO_MSG_TYPE_DLOAD:
-            // We just attempted a download. Did it succeed?
-            if (ack) {
-                // yes.
-            } else {
-                // no.
-            }
-            break;
-        case RADIO_MSG_TYPE_PROGRESS:
-            // We just sent a progress message. Determine whether we need
-            //  to send another, or whether that was the last one.
-            if (progress_tx_id == 5) {
-                // This concludes our progress messages.
-                break;
-            }
-            // These are unicast messages subject to auto-acknowledgment, but
-            //  currently we're not bothering to check the result and resend;
-            //  we're just using the auto-ack mechanism to try to add a bit
-            //  more reliability.
-            // If we DO need to send another one, we can just do it from here,
-            //  rather than setting a flag; this is because we ARE allowed to
-            //  call rfm75_tx() from inside the callback.
-            progress_tx_id++;
-            radio_send_progress_frame(progress_tx_id);
-            break;
-        case RADIO_MSG_TYPE_STATS:
-            // We just sent our STATS somewhere.
-            // I don't actually know whether we need to do anything after
-            //  we've done this. In fact, I'm not sure whether we're even
-            //  actually ever going to do it.
-            break;
-    }
+    uint16_t i = 400;
+    ipc_tx_op_buf(IPC_MSG_GD_DEP, &i, 2);
 }
 
 /// Do our regular radio and gaydar interval actions.
