@@ -245,11 +245,24 @@ void draw_text_selection() {
     lcd111_put_char(LCD_BTM, 0xBB); // This is &raquo;
     if (text_selection) {
         lcd111_cursor_type(LCD_BTM, LCD111_CURSOR_NONE);
-        lcd111_put_text_pad(
-                LCD_BTM,
-                all_text[current_state->input_series[text_selection-1].text_addr],
-                23
-        );
+        if (strlen(all_text[current_state->input_series[text_selection-1].text_addr]) > 21) {
+            lcd111_put_text_pad(
+                    LCD_BTM,
+                    all_text[current_state->input_series[text_selection-1].text_addr],
+                    23
+            );
+        } else {
+            lcd111_put_text_pad(
+                    LCD_BTM,
+                    all_text[current_state->input_series[text_selection-1].text_addr],
+                    21
+            );
+            if (next_input_id() != text_selection) {
+                lcd111_put_text_pad(LCD_BTM, "\x1E\x1F", 2);
+            } else {
+                lcd111_put_text_pad(LCD_BTM, " \x17", 2);
+            }
+        }
     } else {
         // Haven't used an arrow key yet.
         if (current_state->input_series_len) {
@@ -440,12 +453,19 @@ void game_action_sequence_tick() {
     }
 }
 
-void next_input() {
+uint8_t next_input_id() {
+    uint8_t ret = text_selection;
     do {
-        text_selection += 1;
-        if (text_selection == current_state->input_series_len+1)
-            text_selection = 1;
-    } while (leads_to_closed_state(current_state->input_series[text_selection-1].result_action_id));
+        ret += 1;
+        if (ret == current_state->input_series_len+1)
+            ret = 1;
+    } while (leads_to_closed_state(current_state->input_series[ret-1].result_action_id));
+
+    return ret;
+}
+
+void next_input() {
+    text_selection = next_input_id();
     draw_text_selection();
 }
 
