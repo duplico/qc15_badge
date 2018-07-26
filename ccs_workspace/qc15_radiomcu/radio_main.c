@@ -236,7 +236,21 @@ void poll_switch() {
     sw_read_prev = sw_read;
 }
 
+uint16_t next_nearby_badge_id(uint16_t id_curr) {
+    uint16_t id_next = id_curr;
+    do {
+        id_next = id_next+1;
+        if (id_next == QC15_BADGES_IN_SYSTEM)
+            id_next = 0;
+    } while (id_next != id_curr && !ids_in_range[id_curr]);
+    if (ids_in_range[id_next])
+        return 1;
+    else
+        return 0xFFFF;
+}
+
 void handle_ipc_rx(uint8_t *rx_from_radio) {
+    uint16_t id;
     switch(rx_from_radio[0]) {
     case IPC_MSG_REBOOT:
         PMMCTL0 |= PMMSWPOR; // Software reboot.
@@ -244,6 +258,18 @@ void handle_ipc_rx(uint8_t *rx_from_radio) {
     case IPC_MSG_STATS_UPDATE:
         // A stats update, which may be solicited or unsolicited:
         memcpy(&badge_status, &rx_from_radio[1], sizeof(qc15status));
+        break;
+    case IPC_MSG_GD_EN:
+        // TODO: Enable CONNECTABLE
+        break;
+    case IPC_MSG_GD_DL:
+        // TODO: Attempt to DOWNLOAD!!! from someone
+        break;
+    case IPC_MSG_ID_NEXT:
+        // Send back the ID of the next nearby badge, or 0xFFFF for none.
+        memcpy(&id, &rx_from_radio[1], 2);
+        id = next_nearby_badge_id(id);
+        while (!ipc_tx_op_buf(IPC_MSG_ID_NEXT, &id, 2));
         break;
     default:
         break;
