@@ -424,7 +424,7 @@ void save_config() {
     s25fs_erase_block_64kb(FLASH_ADDR_CONF_MAIN);
     s25fs_wr_en();
     s25fs_write_data(FLASH_ADDR_CONF_MAIN, (uint8_t *) (&badge_conf),
-                     sizeof(qc15conf))
+                     sizeof(qc15conf));
 
     memcpy(&backup_conf, &badge_conf, sizeof(qc15conf));
 
@@ -432,7 +432,7 @@ void save_config() {
     s25fs_erase_block_64kb(FLASH_ADDR_CONF_BACKUP);
     s25fs_wr_en();
     s25fs_write_data(FLASH_ADDR_CONF_BACKUP, (uint8_t *) (&badge_conf),
-                     sizeof(qc15conf))
+                     sizeof(qc15conf));
 
     // And, update our friend the radio MCU:
     // (spin until the send is successful)
@@ -488,9 +488,9 @@ uint8_t badge_downloaded(uint16_t id) {
 void set_badge_seen(uint16_t id, uint8_t *name) {
     if (id >= QC15_BADGES_IN_SYSTEM)
         return;
-//    if (badge_seen(id)) {
-//        return;
-//    }
+    if (badge_seen(id)) {
+        return;
+    }
     set_id_buf(id, badge_conf.badges_seen);
     badge_conf.badges_seen_count++;
 
