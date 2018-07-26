@@ -30,7 +30,8 @@ For each badge, follow the following procedure:
 A. Physical
 ~~~~~~~~~~~
 
-* Remove from bag. 
+* Remove from bag.
+* Remove film from LCD displays.
 * Visually inspect to confirm all components, particularly switch and buttons.
 * In the event of physical switch or button damage, do not discontinue testing.
   If the damage is hard to see, notate it with an arrow sticker.
@@ -92,6 +93,8 @@ B. Electronic
 **If the badge has failed ANY self-test or inspection, discontinue
 testing and set it aside for diagnosis or rework at this time.** 
 **Even if prompted, do NOT select the "UP" button to complete POST.**
+***Do not follow the steps in part 4 until the badge has been repaired
+and fully verified.***
 
 * Press the UP button ONLY if the badge has passed all self-tests
   and visual and hardware inspection.
