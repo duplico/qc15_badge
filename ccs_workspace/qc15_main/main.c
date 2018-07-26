@@ -261,7 +261,6 @@ void poll_buttons() {
 /// High-level message handler for IPC messages from the radio MCU.
 void handle_ipc_rx(uint8_t *rx) {
     // Grab the payload, since rx[0] is an opcode.
-    uint8_t *rx_pl;
     switch(rx[0] & 0xF0) {
     case IPC_MSG_POST:
         // The radio MCU has rebooted.
@@ -285,7 +284,6 @@ void handle_ipc_rx(uint8_t *rx) {
         }
         break;
     case IPC_MSG_GD_ARR:
-        rx_pl = &(rx[1]);
         // Someone has arrived
         set_badge_seen(
                 rx[1] + ((uint16_t)rx[2] << 8),
@@ -295,7 +293,6 @@ void handle_ipc_rx(uint8_t *rx) {
             badges_nearby++;
         break;
     case IPC_MSG_GD_DEP:
-        rx_pl = &(rx[1]);
         // Someone has departed.
         if (badges_nearby)
             badges_nearby--;
@@ -477,13 +474,21 @@ uint8_t badge_downloaded(uint16_t id) {
     return check_id_buf(id, badge_conf.badges_downloaded);
 }
 
-/*
- *
- ** READ NAMES:
- ** 0x100000 -   0 -  19 (220 bytes)
- ** 0x110000 -  20 -  39 (220 bytes)
- ** ...
- */
+void load_badge_name(uint8_t *buf, uint16_t id) {
+    s25fs_read_data(
+            buf,
+            FLASH_ADDR_BADGE_NAMES + QC15_BADGE_NAME_LEN * id,
+            QC15_BADGE_NAME_LEN
+    );
+
+}
+
+void load_person_name(uint8_t *buf, uint16_t id) {
+    uint32_t name_page_address = FLASH_ADDR_PERSON_NAMES + (0x010000 * (id / 20));
+    uint8_t name_offset = (id % 20) * QC15_PERSON_NAME_LEN;
+    s25fs_read_data(buf, name_page_address + name_offset,
+                    QC15_PERSON_NAME_LEN);
+}
 
 void set_badge_seen(uint16_t id, uint8_t *name) {
     if (id >= QC15_BADGES_IN_SYSTEM)
@@ -505,13 +510,12 @@ void set_badge_seen(uint16_t id, uint8_t *name) {
         badge_conf.handlers_seen_count++;
     }
 
-    uint32_t name_page_address = 0x100000 + (0x010000 * (id / 20));
+    uint32_t name_page_address = FLASH_ADDR_PERSON_NAMES + (0x010000 * (id / 20));
     uint8_t name_offset = (id % 20) * QC15_PERSON_NAME_LEN;
 
     uint8_t name_block[QC15_PERSON_NAME_LEN*20];
 
-    s25fs_read_data(name_block, name_page_address + name_offset,
-                    QC15_PERSON_NAME_LEN);
+    load_person_name(name_block, id);
 
     if (strcmp((const char *) name_block, (const char *)name)) {
         // Different name than what's saved. From here there are two options:
@@ -609,6 +613,8 @@ void generate_config() {
         badge_conf.badge_id = 111;
         char backup_name[] ="Skippy";
         strcpy((char *) &(badge_conf.badge_name[0]), backup_name);
+    } else {
+        load_badge_name(badge_conf.badge_name, badge_conf.badge_id);
     }
 
     // Determine which segment we have (and therefore which parts)
