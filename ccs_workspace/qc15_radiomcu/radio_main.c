@@ -35,6 +35,7 @@
 volatile uint8_t f_time_loop = 0;
 uint8_t s_switch = 0;
 uint8_t s_radio_interval = 0;
+uint8_t s_connect_needed = 0;
 
 volatile uint32_t qc_clock = 0;
 /// The current state of the switch's bit in its IN register (only BIT2 used).
@@ -260,7 +261,8 @@ void handle_ipc_rx(uint8_t *rx_from_radio) {
         memcpy(&badge_status, &rx_from_radio[1], sizeof(qc15status));
         break;
     case IPC_MSG_GD_EN:
-        // TODO: Enable CONNECTABLE
+        // Send 3 connect advertisements:
+        s_connect_needed = RADIO_CONNECT_ADVERTISEMENT_COUNT;
         break;
     case IPC_MSG_GD_DL:
         // TODO: Attempt to DOWNLOAD!!! from someone
@@ -310,6 +312,20 @@ void main (void)
             }
         }
 
+        if (f_ipc_rx) {
+            f_ipc_rx = 0;
+            if (ipc_get_rx(rx_from_main)) {
+                handle_ipc_rx(rx_from_main);
+            }
+        }
+
+        if (s_connect_needed) {
+            if (rfm75_tx_avail()) {
+                s_connect_needed--;
+                radio_set_connectable();
+            }
+        }
+
         if (s_radio_interval) {
             // Calling radio_interval() has _lots_ of side effects, and also
             //  does a radio TX. We need the TX to happen for this interval
@@ -319,13 +335,6 @@ void main (void)
             if (rfm75_tx_avail()) {
                 s_radio_interval = 0;
                 radio_interval();
-            }
-        }
-
-        if (f_ipc_rx) {
-            f_ipc_rx = 0;
-            if (ipc_get_rx(rx_from_main)) {
-                handle_ipc_rx(rx_from_main);
             }
         }
 

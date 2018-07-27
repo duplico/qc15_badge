@@ -18,6 +18,7 @@
 #define RADIO_MSG_TYPE_STATS 4
 
 #define RADIO_PROTO_VER 1
+#define RADIO_CONNECT_ADVERTISEMENT_COUNT 3
 
 #define RADIO_CONNECT_FLAG_LISTENING 1
 #define RADIO_CONNECT_FLAG_DOWNLOAD 2
@@ -65,5 +66,6 @@ rfm75_rx_callback_fn radio_rx_done;
 rfm75_tx_callback_fn radio_tx_done;
 void radio_init(uint16_t addr);
 void radio_interval();
+void radio_set_connectable();
 
 #endif /* RADIO_H_ */

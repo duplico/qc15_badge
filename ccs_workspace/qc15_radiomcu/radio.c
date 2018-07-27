@@ -84,6 +84,7 @@ void radio_handle_beacon(uint16_t id, radio_beacon_payload *payload) {
         // Let's transmit our progress!
         // TODO: we shouldn't do this on every single one.
         // TODO: We should do the above badge interval logic with bases.
+        // TODO: need to ask for tx_available
         progress_tx_id = 0;
         radio_send_progress_frame(0);
     } else if (id == QC15_CONTROL_ID) {
@@ -171,6 +172,22 @@ void radio_tx_done(uint8_t ack) {
             //  actually ever going to do it.
             break;
     }
+}
+
+void radio_set_connectable() {
+    curr_packet_tx.badge_id = badge_status.badge_id;
+    curr_packet_tx.msg_type = RADIO_MSG_TYPE_DLOAD;
+    curr_packet_tx.proto_version = RADIO_PROTO_VER;
+
+    radio_connect_payload *payload = (radio_connect_payload *)
+                                            (curr_packet_tx.msg_payload);
+    payload->connect_flags = RADIO_CONNECT_FLAG_LISTENING;
+    // TODO: wtf why is this here:
+    memcpy(payload->name, badge_status.person_name, QC15_PERSON_NAME_LEN);
+
+    crc16_append_buffer(&curr_packet_tx, sizeof(radio_proto)-2);
+    rfm75_tx(RFM75_BROADCAST_ADDR, 1, &curr_packet_tx, RFM75_PAYLOAD_SIZE);
+
 }
 
 /// Do our regular radio and gaydar interval actions.
