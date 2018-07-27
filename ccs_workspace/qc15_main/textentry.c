@@ -21,6 +21,7 @@ char *textentry_dest;
 char curr_text[25];
 uint8_t text_entry_cursor_pos;
 uint8_t textentry_len;
+uint8_t textentry_exit_mode;
 
 uint8_t text_entry_in_progress = 0;
 
@@ -38,6 +39,7 @@ void textentry_begin(char *destination, uint8_t len, uint8_t start_populated,
     textentry_len = len;
     text_entry_cursor_pos = 0;
     text_entry_in_progress = 1;
+    textentry_exit_mode = qc15_mode;
     qc15_mode = QC15_MODE_TEXTENTRY;
 
     memset(curr_text, 0, len+1);
@@ -189,7 +191,7 @@ void textentry_complete() {
     text_entry_in_progress = 0;
     // TODO: Does text always go to game, or do we have to save our previous
     //  state?
-    qc15_mode = QC15_MODE_GAME;
+    qc15_mode = textentry_exit_mode;
     // Do a SAVE, out of an abundance of caution.
     save_config();
 }

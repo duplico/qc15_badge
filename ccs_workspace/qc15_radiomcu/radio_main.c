@@ -239,6 +239,17 @@ void poll_switch() {
 
 uint16_t next_nearby_badge_id(uint16_t id_curr) {
     uint16_t id_next = id_curr;
+
+    if (id_next == 0xFFFF) {
+        // Asked us for "ANY"
+        if (ids_in_range[0])
+            return 0;
+        else {
+            id_next = 0;
+            id_curr = 0;
+        }
+    }
+
     do {
         id_next++;
         if (id_next == QC15_BADGES_IN_SYSTEM)
@@ -252,6 +263,17 @@ uint16_t next_nearby_badge_id(uint16_t id_curr) {
 
 uint16_t prev_nearby_badge_id(uint16_t id_curr) {
     uint16_t id_prev = id_curr;
+
+    if (id_prev == 0xFFFF) {
+        // Asked us for "ANY"
+        if (ids_in_range[QC15_BADGES_IN_SYSTEM-1])
+            return QC15_BADGES_IN_SYSTEM-1;
+        else {
+            id_prev = QC15_BADGES_IN_SYSTEM-1;
+            id_curr = QC15_BADGES_IN_SYSTEM-1;
+        }
+    }
+
     do {
         if (id_prev == 0)
             id_prev = QC15_BADGES_IN_SYSTEM;
@@ -280,7 +302,7 @@ void handle_ipc_rx(uint8_t *rx_from_radio) {
     case IPC_MSG_GD_DL:
         // TODO: Attempt to DOWNLOAD!!! from someone
         break;
-    case IPC_MSG_ID_NEXT:
+    case IPC_MSG_ID_INC:
         // Send back the ID of the next nearby badge, or 0xFFFF for none.
         memcpy(&id, &rx_from_radio[1], 2);
         if (rx_from_radio[0] & 0x0F) // "next"

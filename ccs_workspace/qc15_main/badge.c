@@ -210,7 +210,7 @@ void generate_config() {
             badge_conf.badge_id >= QC15_BADGES_IN_SYSTEM ||
             badge_conf.badge_name[0] == 0xFF || badge_conf.badge_name[0] == 0)
     {
-        badge_conf.badge_id = 111;
+        badge_conf.badge_id = 115;
         char backup_name[] ="Skippy";
         strcpy((char *) &(badge_conf.badge_name[0]), backup_name);
     } else {
