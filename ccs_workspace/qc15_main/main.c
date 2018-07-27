@@ -294,7 +294,7 @@ void handle_ipc_rx(uint8_t *rx) {
     case IPC_MSG_GD_UL:
         // Someone downloaded from us.
         break;
-    case IPC_MSG_ID_NEXT:
+    case IPC_MSG_ID_INC:
         // We got the ID we asked for.
         s_got_next_id = 1;
         gd_next_id = rx[1] + ((uint16_t)rx[2] << 8);
@@ -385,17 +385,17 @@ void badge_startup() {
     game_begin();
 }
 
-// TODO: Move a bit higher.
+/// Handle the inner loop of the mode where we're searching for a named badge.
 void checkname_handle_loop() {
-    // TODO: Limit this to 450 calls total, just in case we encounter a
-    //       race condition.
+    // This function is limited to 450 calls total, just in case we encounter a
+    //  race condition.
     static uint16_t calls = 0;
 
     char curr_name[QC15_PERSON_NAME_LEN];
 
     if (s_got_next_id) {
         // We received the next ID from the radio MCU
-
+        s_got_next_id = 0;
         if (gd_next_id == GAME_NULL) {
             // No joy. Tell the game we failed.
             qc15_mode = QC15_MODE_GAME;
@@ -431,7 +431,6 @@ void checkname_handle_loop() {
             return;
         }
     }
-    // TODO: timeout.
 }
 
 /// The main initialization and loop function.
