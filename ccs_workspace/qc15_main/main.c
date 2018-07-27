@@ -603,12 +603,12 @@ void generate_config() {
     uint8_t sentinel;
     s25fs_read_data(&sentinel, FLASH_ADDR_sentinel, 1);
 
-    // TODO: we need a global flag for "flash no workie".
     // Check the handful of things we know to check in the flash to see if
-    //  it's looking sensible:
+    //  it's looking sensible to have a badge name. Otherwise, let's go with
+    //  the classics.
     if (sentinel != FLASH_sentinel_BYTE ||
             badge_conf.badge_id >= QC15_BADGES_IN_SYSTEM ||
-            badge_conf.badge_name[0] == 0xFF)
+            badge_conf.badge_name[0] == 0xFF || badge_conf.badge_name[0] == 0)
     {
         badge_conf.badge_id = 111;
         char backup_name[] ="Skippy";
@@ -617,10 +617,14 @@ void generate_config() {
         load_badge_name(badge_conf.badge_name, badge_conf.badge_id);
     }
 
+    // TODO: REMOVE!!!
+    char initial_person_name[] = "AB";
+    strcpy((char *) &(badge_conf.person_name[0]), initial_person_name);
+    ///////////////////
+
     // Determine which segment we have (and therefore which parts)
     badge_conf.code_starting_part = (badge_conf.badge_id % 16) * 6;
-    uint8_t name[11] = "Human";
-    set_badge_seen(badge_conf.badge_id, name);
+    set_badge_seen(badge_conf.badge_id, initial_person_name);
     set_badge_uploaded(badge_conf.badge_id);
     set_badge_downloaded(badge_conf.badge_id);
     save_config();
