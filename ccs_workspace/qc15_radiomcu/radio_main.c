@@ -243,7 +243,7 @@ uint16_t next_nearby_badge_id(uint16_t id_curr) {
         id_next++;
         if (id_next == QC15_BADGES_IN_SYSTEM)
             id_next = 0;
-    } while (id_next != id_curr && !ids_in_range[id_prev]);
+    } while (id_next != id_curr && !ids_in_range[id_next]);
     if (ids_in_range[id_next])
         return id_next;
     else
