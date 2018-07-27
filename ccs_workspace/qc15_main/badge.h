@@ -13,6 +13,7 @@ uint8_t is_handler(uint16_t id);
 uint8_t is_uber(uint16_t id);
 
 void set_badge_seen(uint16_t id, uint8_t *name);
+void load_person_name(uint8_t *buf, uint16_t id);
 
 void init_config();
 

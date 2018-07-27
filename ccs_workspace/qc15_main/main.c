@@ -56,6 +56,11 @@ uint8_t s_left = 0;
 uint8_t s_right = 0;
 uint8_t s_power_on = 0;
 uint8_t s_power_off = 0;
+uint8_t s_got_next_id = 0;
+uint8_t s_game_checkname_success = 0;
+
+uint16_t gd_next_id = 0;
+uint16_t gd_starting_id = 0;
 
 // Not persist
 uint8_t power_switch_status = 0;
@@ -289,6 +294,11 @@ void handle_ipc_rx(uint8_t *rx) {
     case IPC_MSG_GD_UL:
         // Someone downloaded from us.
         break;
+    case IPC_MSG_ID_NEXT:
+        // We got the ID we asked for.
+        s_got_next_id = 1;
+        gd_next_id = rx[1] + ((uint16_t)rx[2] << 8);
+        break;
     }
 }
 
@@ -375,6 +385,55 @@ void badge_startup() {
     game_begin();
 }
 
+// TODO: Move a bit higher.
+void checkname_handle_loop() {
+    // TODO: Limit this to 450 calls total, just in case we encounter a
+    //       race condition.
+    static uint16_t calls = 0;
+
+    char curr_name[QC15_PERSON_NAME_LEN];
+
+    if (s_got_next_id) {
+        // We received the next ID from the radio MCU
+
+        if (gd_next_id == GAME_NULL) {
+            // No joy. Tell the game we failed.
+            qc15_mode = QC15_MODE_GAME;
+            s_game_checkname_success = 0;
+            return;
+        }
+
+        // First, handle our first call to set up our base case.
+        if (gd_starting_id == GAME_NULL) {
+            calls = 0;
+            // We got our first result from the radio module. Store it.
+            // We'll be looking for this, or a value below it, or null,
+            //  in order to know that we've looped around.
+            gd_starting_id = gd_next_id;
+        }
+
+        // We know the ID isn't null, and we know we've seen it. What's its
+        //  name?
+        load_person_name(curr_name, gd_next_id);
+
+        // Is this the name we're looking for?
+        if (!strcmp(curr_name, game_name_buffer)) {
+            // We found the name we're looking for. Hooray!
+            s_game_checkname_success = 1;
+            qc15_mode = QC15_MODE_GAME;
+            return;
+        }
+
+        if (gd_next_id <= gd_starting_id || calls >= QC15_BADGES_IN_SYSTEM) {
+            // We're done, and we haven't found the name we're looking for.
+            qc15_mode = QC15_MODE_GAME;
+            s_game_checkname_success = 0;
+            return;
+        }
+    }
+    // TODO: timeout.
+}
+
 /// The main initialization and loop function.
 void main (void)
 {
@@ -416,6 +475,9 @@ void main (void)
             textentry_handle_loop();
             break;
         case QC15_MODE_GAME_CHECKNAME:
+            // What we want here is MOSTLY going to be handled in the
+            //  ipc loop. We're starting at id 0, and
+            checkname_handle_loop();
             break;
         }
 

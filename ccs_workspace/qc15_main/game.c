@@ -22,6 +22,7 @@
 #include "game.h"
 #include "lcd111.h"
 #include "textentry.h"
+#include "ipc.h"
 
 #include "loop_signals.h"
 
@@ -46,7 +47,7 @@ uint8_t start_action_series(uint16_t action_id);
 // The following data will be loaded from the script:
 led_ring_animation_t all_animations[4];
 
-uint8_t name_buffer[QC15_BADGE_NAME_LEN];
+uint8_t game_name_buffer[QC15_BADGE_NAME_LEN];
 
 uint16_t all_actions_len = 798;
 uint16_t all_text_len = 506;
@@ -100,7 +101,7 @@ game_state_t all_states[] = {(game_state_t){.entry_series_id=0, .timer_series_le
 #define STATE_ID_WHATISTHEFILE 33
 #define STATE_ID_IKNOWQUEERCON 34
 #define STATE_ID_DONTKNOWQUEERCON 35
-#define STATE_ID_JUST_JOINED. 36
+#define STATE_ID_JUST_JOINED 36
 #define STATE_ID_FROMTHEBEGINNING 37
 #define STATE_ID_FAIRLYWELL 38
 #define STATE_ID_FILELIGHTSON 39
@@ -282,12 +283,25 @@ uint8_t game_process_special() {
     for (uint8_t i=0; i<current_state->other_series_len; i++) {
         if (current_state->other_series[i].type_id == SPECIAL_BADGESNEARBY0 &&
                 badges_nearby==0) {
-            if (start_action_series(current_state->other_series[i].result_action_id));
+            if (start_action_series(current_state->other_series[i].result_action_id))
                 return 1;
         }
         if (current_state->other_series[i].type_id == SPECIAL_BADGESNEARBYSOME &&
                 badges_nearby>0) {
-            if (start_action_series(current_state->other_series[i].result_action_id));
+            if (start_action_series(current_state->other_series[i].result_action_id))
+                return 1;
+        }
+        if (current_state->other_series[i].type_id == SPECIAL_NAME_FOUND &&
+                s_game_checkname_success) {
+            // Joy!
+            s_game_checkname_success = 0;
+            if (start_action_series(current_state->other_series[i].result_action_id))
+                return 1;
+        }
+        if (current_state->other_series[i].type_id == SPECIAL_NAME_NOT_FOUND &&
+                !s_game_checkname_success) {
+            // No joy.
+            if (start_action_series(current_state->other_series[i].result_action_id))
                 return 1;
         }
     }
@@ -313,6 +327,8 @@ void game_set_state(uint16_t state_id) {
 
     start_action_series(current_state->entry_series_id);
 }
+
+extern uint16_t gd_starting_id;
 
 void game_begin() {
     all_animations[0] = anim_lsw;
@@ -403,6 +419,10 @@ void begin_text_action() {
     }
 }
 
+// TODO: move
+extern uint16_t gd_next_id;
+extern uint16_t gd_starting_id;
+
 void do_action(game_action_t *action) {
     switch(action->type) {
     case GAME_ACTION_TYPE_ANIM_TEMP:
@@ -458,7 +478,12 @@ void do_action(game_action_t *action) {
         if (action->detail == OTHER_ACTION_CUSTOMSTATEUSERNAME) {
             textentry_begin(badge_conf.person_name, 10, 1, 1);
         } else if (action->detail == OTHER_ACTION_NAMESEARCH) {
-            textentry_begin(name_buffer, 10, 0, 0);
+            gd_starting_id = GAME_NULL;
+            gd_next_id = GAME_NULL;
+            qc15_mode = QC15_MODE_GAME_CHECKNAME;
+            // IPC GET NEXT ID from ffff (any)
+            while (!ipc_tx_op_buf(IPC_MSG_ID_NEXT, &gd_starting_id, 2));
+            textentry_begin(game_name_buffer, 10, 0, 0);
         }
         break;
     }
