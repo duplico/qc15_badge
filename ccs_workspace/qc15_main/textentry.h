@@ -8,8 +8,6 @@
 #ifndef TEXTENTRY_H_
 #define TEXTENTRY_H_
 
-extern uint8_t text_entry_in_progress;
-
 void textentry_begin(char *destination, uint8_t len, uint8_t start_populated,
                      uint8_t show_instructions);
 void textentry_handle_loop();

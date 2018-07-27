@@ -320,6 +320,7 @@ void game_begin() {
     all_animations[2] = anim_spinblue;
     all_animations[3] = anim_whitediscovery;
 
+    // TODO: stored state
     game_set_state(STATE_ID_WEHAVEAMISSION);
 }
 

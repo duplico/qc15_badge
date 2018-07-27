@@ -38,6 +38,7 @@ void textentry_begin(char *destination, uint8_t len, uint8_t start_populated,
     textentry_len = len;
     text_entry_cursor_pos = 0;
     text_entry_in_progress = 1;
+    qc15_mode = QC15_MODE_TEXTENTRY;
 
     memset(curr_text, 0, len+1);
 
@@ -186,6 +187,9 @@ void textentry_complete() {
     lcd111_clear_nodelay(LCD_BTM);
     lcd111_clear_nodelay(LCD_TOP);
     text_entry_in_progress = 0;
+    // TODO: Does text always go to game, or do we have to save our previous
+    //  state?
+    qc15_mode = QC15_MODE_GAME;
     // Do a SAVE, out of an abundance of caution.
     save_config();
 }
