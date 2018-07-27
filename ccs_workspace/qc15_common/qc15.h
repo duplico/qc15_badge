@@ -45,6 +45,17 @@
 #define LPM LPM0
 #define LPM_EXIT LPM0_EXIT
 
+#define QC15_MODE_BOOT      0
+#define QC15_MODE_COUNTDOWN 1
+#define QC15_MODE_STATUS    2
+#define QC15_MODE_SLEEP     3
+#define QC15_MODE_TEXTENTRY 4
+
+#define QC15_MODE_GAME      64
+#define QC15_MODE_GAME_CHECKNAME 65
+
+extern uint8_t qc15_mode;
+
 /// The main config struct, which will go in both the SPI flash and in FRAM.
 typedef struct {
     uint16_t badge_id;
@@ -109,6 +120,7 @@ extern qc15status badge_status;
 #define MCLK_FREQ_KHZ 8000
 #define MCLK_FREQ_HZ 8000000
 extern qc15conf badge_conf;
+extern qc15conf backup_conf;
 extern uint16_t badges_nearby;
 void save_config();
 #endif

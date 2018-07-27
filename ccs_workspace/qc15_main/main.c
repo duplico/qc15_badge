@@ -43,9 +43,10 @@
 #include "game.h"
 #include "util.h"
 #include "main_bootstrap.h"
-
 #include "flash_layout.h"
+#include "badge.h"
 
+// None of the following persist:
 volatile uint8_t f_time_loop = 0;
 uint8_t s_clock_tick = 0;
 uint8_t s_buttons = 0;
@@ -56,13 +57,14 @@ uint8_t s_right = 0;
 uint8_t s_power_on = 0;
 uint8_t s_power_off = 0;
 
+// Not persist
 uint8_t power_switch_status = 0;
 
-uint8_t mode_countdown, mode_status, mode_game, mode_sleep;
-// text_entry_in_progress
+// Not persist
+uint8_t qc15_mode;
 
+// Not persist:
 volatile uint32_t qc_clock;
-
 uint16_t badges_nearby = 0;
 
 // If I change this to NOINIT, it'll persist between flashings of the badge.
@@ -71,22 +73,6 @@ qc15conf badge_conf = {0};
 #pragma PERSISTENT(backup_conf)
 qc15conf backup_conf = {0};
 
-const rgbcolor_t bw_colors[] = {
-        {0x20, 0x20, 0x20},
-        {0xff, 0xff, 0xff},
-        {0x00, 0x00, 0x00},
-        {0x00, 0x00, 0x00},
-};
-
-const led_ring_animation_t anim_bw = {
-        &bw_colors[0],
-        4,
-        10,
-        HT16D_BRIGHTNESS_DEFAULT,
-        LED_ANIM_TYPE_SAME,
-};
-
-void set_badge_seen(uint16_t id, uint8_t *name);
 
 /// Initialize the system clocks and clock sources.
 /**
@@ -342,37 +328,20 @@ void handle_global_signals() {
 
     if (s_buttons) {
         if (s_buttons & BIT0) { // DOWN
-            if (s_buttons & BIT4) {
-                s_down = 1;
-                // release
-            } else {
-                // press
-            }
+            if (s_buttons & BIT4)
+                s_down = 1; // release
         }
-
         if (s_buttons & BIT1) { // RIGHT
-            if (s_buttons & BIT5) {
-                // release
-                s_right = 1;
-            } else {
-                // press
-            }
+            if (s_buttons & BIT5)
+                s_right = 1; // release
         }
         if (s_buttons & BIT2) { // LEFT
-            if (s_buttons & BIT6) {
-                // release
-                s_left = 1;
-            } else {
-                // press
-            }
+            if (s_buttons & BIT6)
+                s_left = 1; // release
         }
         if (s_buttons & BIT3) { // UP
-            if (s_buttons & BIT7) {
-                // release
-                s_up = 1;
-            } else {
-                // press
-            }
+            if (s_buttons & BIT7)
+                s_up = 1; // release
         }
         s_buttons = 0;
     }
@@ -394,274 +363,16 @@ void cleanup_global_signals() {
     s_clock_tick = 0;
 }
 
-
-/// Counts the bits set in all the bytes of a buffer and returns it.
-/**
- ** This is the Brian Kernighan, Peter Wegner, and Derrick Lehmer way of
- ** counting bits in a bitstring. See _The C Programming Language_, 2nd Ed.,
- ** Exercise 2-9; or _CACM 3_ (1960), 322.
- */
-uint16_t buffer_rank(uint8_t *buf, uint8_t len) {
-    uint16_t count = 0;
-    uint8_t c, v;
-    for (uint8_t i=0; i<len; i++) {
-        v = buf[i];
-        for (c = 0; v; c++) {
-            v &= v - 1; // clear the least significant bit set
-        }
-        count += c;
-    }
-    return count;
-}
-
-void save_config() {
-    crc16_append_buffer((uint8_t *) (&badge_conf), sizeof(qc15conf)-2);
-
-    s25fs_wr_en();
-    s25fs_erase_block_64kb(FLASH_ADDR_CONF_MAIN);
-    s25fs_wr_en();
-    s25fs_write_data(FLASH_ADDR_CONF_MAIN, (uint8_t *) (&badge_conf),
-                     sizeof(qc15conf));
-
-    memcpy(&backup_conf, &badge_conf, sizeof(qc15conf));
-
-    s25fs_wr_en();
-    s25fs_erase_block_64kb(FLASH_ADDR_CONF_BACKUP);
-    s25fs_wr_en();
-    s25fs_write_data(FLASH_ADDR_CONF_BACKUP, (uint8_t *) (&badge_conf),
-                     sizeof(qc15conf));
-
-    // And, update our friend the radio MCU:
-    // (spin until the send is successful)
-    while (!ipc_tx_op_buf(IPC_MSG_STATS_UPDATE, (uint8_t *) (uint8_t *) (&badge_conf), sizeof(qc15status)));
-
-}
-
-uint8_t is_handler(uint16_t id) {
-    return ((id <= QC15_HANDLER_LAST) &&
-            (id >= QC15_HANDLER_START));
-}
-
-uint8_t is_uber(uint16_t id) {
-    return (id < QC15_UBER_COUNT);
-}
-
-uint8_t check_id_buf(uint16_t id, uint8_t *buf) {
-    uint8_t byte;
-    uint8_t bit;
-    byte = id / 8;
-    bit = id % 8;
-    return (buf[byte] & (BIT0 << bit)) ? 1 : 0;
-}
-
-void set_id_buf(uint16_t id, uint8_t *buf) {
-    uint8_t byte;
-    uint8_t bit;
-    byte = id / 8;
-    bit = id % 8;
-    buf[byte] |= (BIT0 << bit);
-}
-
-uint8_t badge_seen(uint16_t id) {
-    return check_id_buf(id, badge_conf.badges_seen);
-}
-
-uint8_t badge_uploaded(uint16_t id) {
-    return check_id_buf(id, badge_conf.badges_uploaded);
-}
-
-uint8_t badge_downloaded(uint16_t id) {
-    return check_id_buf(id, badge_conf.badges_downloaded);
-}
-
-void load_badge_name(uint8_t *buf, uint16_t id) {
-    s25fs_read_data(
-            buf,
-            FLASH_ADDR_BADGE_NAMES + QC15_BADGE_NAME_LEN * id,
-            QC15_BADGE_NAME_LEN
-    );
-
-}
-
-void load_person_name(uint8_t *buf, uint16_t id) {
-    uint32_t name_page_address = FLASH_ADDR_PERSON_NAMES + (0x010000 * (id / 20));
-    uint8_t name_offset = (id % 20) * QC15_PERSON_NAME_LEN;
-    s25fs_read_data(buf, name_page_address + name_offset,
-                    QC15_PERSON_NAME_LEN);
-}
-
-void set_badge_seen(uint16_t id, uint8_t *name) {
-    if (id >= QC15_BADGES_IN_SYSTEM)
-        return;
-    if (badge_seen(id)) {
-        return;
-    }
-    set_id_buf(id, badge_conf.badges_seen);
-    badge_conf.badges_seen_count++;
-
-    // ubers
-    if (is_uber(id)) {
-        badge_conf.ubers_seen |= (BIT0 << id);
-        badge_conf.ubers_seen_count++;
-    }
-    // handlers
-    if (is_handler(id)) {
-        badge_conf.handlers_seen |= (BIT0 << (id - QC15_HANDLER_START));
-        badge_conf.handlers_seen_count++;
-    }
-
-    uint32_t name_page_address = FLASH_ADDR_PERSON_NAMES + (0x010000 * (id / 20));
-    uint8_t name_offset = (id % 20) * QC15_PERSON_NAME_LEN;
-
-    uint8_t name_block[QC15_PERSON_NAME_LEN*20];
-
-    load_person_name(name_block, id);
-
-    if (strcmp((const char *) name_block, (const char *)name)) {
-        // Different name than what's saved. From here there are two options:
-        //  we may have to do a big write, or a little write.
-        if (name_block[0] == 0xFF) {
-            // Little write! :-)
-            s25fs_wr_en();
-            s25fs_write_data(name_page_address + name_offset, name,
-                             QC15_PERSON_NAME_LEN);
-        } else {
-            // Big write. :-(
-            // We have to read the entire useful part of the block...
-            s25fs_read_data(name_block, name_page_address,
-                            QC15_PERSON_NAME_LEN*20);
-            // Put our name into it in the right spot...
-            memcpy(&name_block[name_offset], name, QC15_PERSON_NAME_LEN);
-            // Clear the whole block...
-            s25fs_wr_en();
-            s25fs_erase_block_64kb(name_page_address);
-            s25fs_block_while_wip(); // TODO: We should really use signals.
-            s25fs_wr_en();
-            // Then stick the new data in.
-            s25fs_write_data(name_page_address, name_block, 222);
-        }
-    }
-
-    save_config();
-}
-
-void set_badge_uploaded(uint16_t id) {
-    if (id >= QC15_BADGES_IN_SYSTEM)
-        return;
-    if (badge_uploaded(id)) {
-        return;
-    }
-    set_id_buf(id, badge_conf.badges_uploaded);
-    badge_conf.badges_uploaded_count++;
-    // ubers
-    if (is_uber(id)) {
-        badge_conf.ubers_uploaded |= (BIT0 << id);
-        badge_conf.ubers_uploaded_count++;
-    }
-    // handlers
-    if (is_handler(id)) {
-        badge_conf.handlers_uploaded |= (BIT0 << (id - QC15_HANDLER_START));
-        badge_conf.handlers_uploaded_count++;
-    }
-
-    save_config();
-}
-
-// TODO: Break out the save_config part
-void set_badge_downloaded(uint16_t id) {
-    if (id >= QC15_BADGES_IN_SYSTEM)
-        return;
-    if (badge_downloaded(id)) {
-        return;
-    }
-    set_id_buf(id, badge_conf.badges_downloaded);
-    badge_conf.badges_downloaded_count++;
-    // ubers
-    if (is_uber(id)) {
-        badge_conf.ubers_downloaded |= (BIT0 << id);
-        badge_conf.ubers_downloaded_count++;
-    }
-    // handlers
-    if (is_handler(id)) {
-        badge_conf.handlers_downloaded |= (BIT0 << (id - QC15_HANDLER_START));
-        badge_conf.handlers_downloaded_count++;
-    }
-
-    save_config();
-}
-
-void generate_config() {
-    // All we start from, here, is our ID.
-
-    // The struct is no good. Zero it out.
-    memset(&badge_conf, 0x00, sizeof(qc15conf));
-
-    // Load ID from flash:
-    // TODO: Confirm Endianness
-    s25fs_read_data((uint8_t *)(&(badge_conf.badge_id)), FLASH_ADDR_ID_MAIN, 2);
-
-    uint8_t sentinel;
-    s25fs_read_data(&sentinel, FLASH_ADDR_sentinel, 1);
-
-    // Check the handful of things we know to check in the flash to see if
-    //  it's looking sensible to have a badge name. Otherwise, let's go with
-    //  the classics.
-    if (sentinel != FLASH_sentinel_BYTE ||
-            badge_conf.badge_id >= QC15_BADGES_IN_SYSTEM ||
-            badge_conf.badge_name[0] == 0xFF || badge_conf.badge_name[0] == 0)
-    {
-        badge_conf.badge_id = 111;
-        char backup_name[] ="Skippy";
-        strcpy((char *) &(badge_conf.badge_name[0]), backup_name);
-    } else {
-        load_badge_name(badge_conf.badge_name, badge_conf.badge_id);
-    }
-
-    // TODO: REMOVE!!!
-    char initial_person_name[] = "AB";
-    strcpy((char *) &(badge_conf.person_name[0]), initial_person_name);
-    ///////////////////
-
-    // Determine which segment we have (and therefore which parts)
-    badge_conf.code_starting_part = (badge_conf.badge_id % 16) * 6;
-    set_badge_seen(badge_conf.badge_id, initial_person_name);
-    set_badge_uploaded(badge_conf.badge_id);
-    set_badge_downloaded(badge_conf.badge_id);
-    save_config();
-
-    mode_game = 1;
-    mode_countdown = 0;
-    mode_status = 0;
-    mode_sleep = 0;
-}
-
-uint8_t config_is_valid() {
-    if (!crc16_check_buffer((uint8_t *) (&badge_conf), sizeof(qc15conf)-2))
-        return 0;
-
-    if (badge_conf.badge_id > QC15_BADGES_IN_SYSTEM)
-        return 0;
-
-    if (badge_conf.badge_name[0] == 0xFF)
-        return 0;
-
-    return 1;
-}
-
-/// Validate, load, and/or generate this badge's configuration as appropriate.
-void init_config() {
-    // Check the stored FRAM config:
-    if (config_is_valid()) return;
-
-    // If that's bad, try the backup:
-    memcpy(&badge_conf, &backup_conf, sizeof(qc15conf));
-    if (config_is_valid()) return;
-
-    // If we're still here, none of the three config sources were valid, and
-    //  we must generate a new one.
-    generate_config();
-
-    srand(badge_conf.badge_id);
+/// Initialize the badge's running state to a known good one.
+void badge_startup() {
+    // Handle our main config
+    init_config();
+    save_config(); // TODO: just send it to the radio
+    // Handle our animation
+    // Handle our code LEDs
+    // Handle entering the proper state
+    qc15_mode = QC15_MODE_GAME;
+    game_begin();
 }
 
 /// The main initialization and loop function.
@@ -671,24 +382,17 @@ void main (void)
 
     uint8_t initial_buttons = P9IN;
 
-    if (!(initial_buttons & BIT5)) { // hold RIGHT button at startup for flash mode.
+    // hold RIGHT button at startup for flash mode.
+    if (!(initial_buttons & BIT5))
         flash_bootstrap();
-    }
 
     __bis_SR_register(GIE);
 
     // hold DOWN on turn-on for verbose boot:
-    bootstrap(initial_buttons & BIT4);
+    bootstrap(initial_buttons & BIT4); // interrupts required.
 
-    init_config();
-
-
-    save_config();
-
-    mode_game = 1;
-
-    if (mode_game) // TODO: Requires changing for persistence:
-        game_begin();
+    // Housekeeping is now concluded. It's time to see the wizard.
+    badge_startup();
 
     while (1) {
         handle_global_signals();
@@ -698,16 +402,21 @@ void main (void)
             s_led_anim_done = 0;
         }
 
-        if (mode_sleep) {
-
-        } else if (mode_countdown) {
-
-        } else if (text_entry_in_progress) {
-            textentry_handle_loop();
-        } else if (mode_status) {
-
-        } else {
+        switch(qc15_mode) {
+        case QC15_MODE_COUNTDOWN:
+            break;
+        case QC15_MODE_SLEEP:
+            break;
+        case QC15_MODE_STATUS:
+            break;
+        case QC15_MODE_GAME:
             game_handle_loop();
+            break;
+        case QC15_MODE_TEXTENTRY:
+            textentry_handle_loop();
+            break;
+        case QC15_MODE_GAME_CHECKNAME:
+            break;
         }
 
         cleanup_global_signals();

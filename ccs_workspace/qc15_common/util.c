@@ -48,3 +48,40 @@ uint8_t crc16_check_buffer(uint8_t *buf, uint16_t len) {
     uint16_t crc = crc16_compute(buf, len);
     return (buf[len] == (crc & 0xFF)) && (buf[len+1] == ((crc >> 8) & 0xFF));
 }
+
+/// Given a standard buffer of bitfields, check whether ``id``'s bit is set.
+uint8_t check_id_buf(uint16_t id, uint8_t *buf) {
+    uint8_t byte;
+    uint8_t bit;
+    byte = id / 8;
+    bit = id % 8;
+    return (buf[byte] & (BIT0 << bit)) ? 1 : 0;
+}
+
+/// In a standard buffer of bitfields, set ``id``'s bit.
+void set_id_buf(uint16_t id, uint8_t *buf) {
+    uint8_t byte;
+    uint8_t bit;
+    byte = id / 8;
+    bit = id % 8;
+    buf[byte] |= (BIT0 << bit);
+}
+
+/// Counts the bits set in all the bytes of a buffer and returns it.
+/**
+ ** This is the Brian Kernighan, Peter Wegner, and Derrick Lehmer way of
+ ** counting bits in a bitstring. See _The C Programming Language_, 2nd Ed.,
+ ** Exercise 2-9; or _CACM 3_ (1960), 322.
+ */
+uint16_t buffer_rank(uint8_t *buf, uint8_t len) {
+    uint16_t count = 0;
+    uint8_t c, v;
+    for (uint8_t i=0; i<len; i++) {
+        v = buf[i];
+        for (c = 0; v; c++) {
+            v &= v - 1; // clear the least significant bit set
+        }
+        count += c;
+    }
+    return count;
+}
