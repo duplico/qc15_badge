@@ -240,19 +240,32 @@ void poll_switch() {
 uint16_t next_nearby_badge_id(uint16_t id_curr) {
     uint16_t id_next = id_curr;
     do {
-        id_next = id_next+1;
+        id_next++;
         if (id_next == QC15_BADGES_IN_SYSTEM)
             id_next = 0;
-    } while (id_next != id_curr && !ids_in_range[id_curr]);
+    } while (id_next != id_curr && !ids_in_range[id_prev]);
     if (ids_in_range[id_next])
-        return 1;
+        return id_next;
+    else
+        return 0xFFFF;
+}
+
+uint16_t prev_nearby_badge_id(uint16_t id_curr) {
+    uint16_t id_prev = id_curr;
+    do {
+        if (id_prev == 0)
+            id_prev = QC15_BADGES_IN_SYSTEM;
+        id_prev--;
+    } while (id_prev != id_curr && !ids_in_range[id_prev]);
+    if (ids_in_range[id_prev])
+        return id_prev;
     else
         return 0xFFFF;
 }
 
 void handle_ipc_rx(uint8_t *rx_from_radio) {
     uint16_t id;
-    switch(rx_from_radio[0]) {
+    switch(rx_from_radio[0] & 0xF0) {
     case IPC_MSG_REBOOT:
         PMMCTL0 |= PMMSWPOR; // Software reboot.
         break; // this hardly seems necessary.
@@ -270,7 +283,10 @@ void handle_ipc_rx(uint8_t *rx_from_radio) {
     case IPC_MSG_ID_NEXT:
         // Send back the ID of the next nearby badge, or 0xFFFF for none.
         memcpy(&id, &rx_from_radio[1], 2);
-        id = next_nearby_badge_id(id);
+        if (rx_from_radio[0] & 0x0F) // "next"
+            id = next_nearby_badge_id(id);
+        else
+            id = prev_nearby_badge_id(id);
         while (!ipc_tx_op_buf(IPC_MSG_ID_NEXT, &id, 2));
         break;
     default:

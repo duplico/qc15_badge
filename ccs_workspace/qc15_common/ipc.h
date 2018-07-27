@@ -54,21 +54,32 @@
 /// Request the radio MCU to set ourselves as connectable.
 #define IPC_MSG_GD_EN 0xc0
 /// A request for the recipient to reboot.
-#define IPC_MSG_REBOOT 0x02
+#define IPC_MSG_REBOOT 0x60
 
 // Buffer messages:
 /// A badge has arrived in range.
 #define IPC_MSG_GD_ARR 0x10 // cmd, id, name
 /// A badge has departed.
 #define IPC_MSG_GD_DEP 0x20 // cmd, id
-/// Occurs when we've successfully downloaded another badge, or to request DL.
+/// Occurs when we've downloaded another badge, or to request a download.
+/**
+ ** A true-evaluating lower nibble indicates success, whereas a false one
+ ** indicates failure. When requesting a download, the lower nibble is
+ ** dontcare.
+ */
 #define IPC_MSG_GD_DL 0x30
 /// Occurs when another badge has downloaded from us
 #define IPC_MSG_GD_UL 0x40
-/// Request or return the next neighbor ID after the current one.
+/// Request or return the next neighbor ID before or after the current one.
+/**
+ ** A true-evaluating lower nibble indicates that the "next" ID is being
+ ** requested, whereas a false-evaluating one indicates "previous". For the
+ ** return (radio to main) value, the lower nibble is dontcare.
+ **
+ **/
 #define IPC_MSG_ID_NEXT 0x50
 /// An updates badge_status payload.
-#define IPC_MSG_STATS_UPDATE 0x01
+#define IPC_MSG_STATS_UPDATE 0x70
 
 
 typedef struct {
