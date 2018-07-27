@@ -29,7 +29,8 @@ uint8_t text_entry_in_progress = 0;
 #define CH_ENTER 0x17
 
 /// The len here does NOT include a null terminator.
-void textentry_begin(char *destination, uint8_t len, uint8_t start_populated) {
+void textentry_begin(char *destination, uint8_t len, uint8_t start_populated,
+                     uint8_t show_instructions) {
     if (text_entry_in_progress || !len) {
         return; // TODO
     }
@@ -48,8 +49,10 @@ void textentry_begin(char *destination, uint8_t len, uint8_t start_populated) {
         curr_text[0] = 'A';
     }
 
-    lcd111_cursor_type(LCD_TOP, LCD111_CURSOR_NONE);
-    lcd111_set_text(LCD_TOP, "\xABSelect:\x11\x1e\x1f\x10 | Submit:\x17\xBB");
+    if (show_instructions) {
+        lcd111_cursor_type(LCD_TOP, LCD111_CURSOR_NONE);
+        lcd111_set_text(LCD_TOP, "\xABSelect:\x11\x1e\x1f\x10 | Submit:\x17\xBB");
+    }
 
     lcd111_set_text(LCD_BTM, curr_text);
     lcd111_cursor_type(LCD_BTM, LCD111_CURSOR_INVERTING);
