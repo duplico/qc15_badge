@@ -28,6 +28,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include <msp430fr5972.h>
 #include <driverlib.h>
@@ -57,9 +58,11 @@ uint8_t s_right = 0;
 uint8_t s_power_on = 0;
 uint8_t s_power_off = 0;
 uint8_t s_got_next_id = 0;
+uint8_t s_gd_success = 0;
+uint8_t s_gd_failure = 0;
 uint8_t s_game_checkname_success = 0;
 
-uint16_t gd_next_id = 0;
+uint16_t gd_curr_id = 0;
 uint16_t gd_starting_id = 0;
 
 // Not persist
@@ -291,6 +294,11 @@ void handle_ipc_rx(uint8_t *rx) {
         break;
     case IPC_MSG_GD_DL:
         // We successfully downloaded from a badge
+        if (rx[0] & 0x0F) {
+            s_gd_success = 1;
+        } else {
+            s_gd_failure = 1;
+        }
         break;
     case IPC_MSG_GD_UL:
         // Someone downloaded from us.
@@ -298,7 +306,7 @@ void handle_ipc_rx(uint8_t *rx) {
     case IPC_MSG_ID_INC:
         // We got the ID we asked for.
         s_got_next_id = 1;
-        gd_next_id = rx[1] + ((uint16_t)rx[2] << 8);
+        gd_curr_id = rx[1] + ((uint16_t)rx[2] << 8);
         break;
     }
 }
@@ -397,12 +405,6 @@ void checkname_handle_loop() {
     if (s_got_next_id) {
         // We received the next ID from the radio MCU
         s_got_next_id = 0;
-        if (gd_next_id == GAME_NULL) {
-            // No joy. Tell the game we failed.
-            qc15_mode = QC15_MODE_GAME;
-            s_game_checkname_success = 0;
-            return;
-        }
 
         // First, handle our first call to set up our base case.
         if (gd_starting_id == GAME_NULL) {
@@ -410,12 +412,23 @@ void checkname_handle_loop() {
             // We got our first result from the radio module. Store it.
             // We'll be looking for this, or a value below it, or null,
             //  in order to know that we've looped around.
-            gd_starting_id = gd_next_id;
+            gd_starting_id = gd_curr_id;
+        }
+
+        // Increment our guard.
+        calls++;
+
+        if (gd_curr_id == GAME_NULL) {
+            // This indicates nobody's around.
+            // No joy. Tell the game we failed.
+            qc15_mode = QC15_MODE_GAME;
+            s_game_checkname_success = 0;
+            return;
         }
 
         // We know the ID isn't null, and we know we've seen it. What's its
         //  name?
-        load_person_name(curr_name, gd_next_id);
+        load_person_name(curr_name, gd_curr_id);
 
         // Is this the name we're looking for?
         if (!strcmp(curr_name, game_name_buffer)) {
@@ -425,13 +438,68 @@ void checkname_handle_loop() {
             return;
         }
 
-        if (gd_next_id <= gd_starting_id || calls >= QC15_BADGES_IN_SYSTEM) {
+        if (gd_curr_id <= gd_starting_id || calls >= QC15_BADGES_IN_SYSTEM) {
             // We're done, and we haven't found the name we're looking for.
             qc15_mode = QC15_MODE_GAME;
             s_game_checkname_success = 0;
             return;
         }
+
+        // If we're down here, we're still looking, but we also haven't found
+        //  the name yet. So ask the radio MCU for the next ID.
+        while (!ipc_tx_op_buf(IPC_MSG_ID_NEXT, &gd_curr_id, 2));
     }
+}
+
+void connect_handle_loop() {
+    char curr_name[QC15_PERSON_NAME_LEN];
+    char text[25];
+
+    static uint8_t waiting_for_radio = 1;
+
+    if (s_got_next_id) {
+        // We received the next ID from the radio MCU
+        s_got_next_id = 0;
+        waiting_for_radio = 0;
+        if (gd_curr_id == GAME_NULL) {
+            // Nothing. Nobody's nearby, we have to show the EXIT option.
+            lcd111_set_text(LCD_TOP, "Nobody is detected.");
+            draw_text(LCD_BTM, "Cancel", 0);
+        } else {
+            // It's a REAL ONE!
+            // TODO: Do we need a gaydar.c/h module?
+            load_badge_name(curr_name, gd_curr_id);
+            sprintf(text, "Badge 0x%x:%s", gd_curr_id, curr_name);
+            draw_text(LCD_BTM, text, 1);
+            load_person_name(curr_name, gd_curr_id);
+            sprintf(text, "Holder: %s", curr_name);
+        }
+    }
+
+    if (waiting_for_radio) {
+        // User input is BLOCKED OUT while we're talking to the other MCU.
+        // TODO: Consider a timeout.
+        return;
+    }
+
+    if (s_up || s_down) {
+        lcd111_set_text(LCD_BTM, "");
+        waiting_for_radio = 1;
+        while (!ipc_tx_op_buf(
+                s_down? IPC_MSG_ID_NEXT : IPC_MSG_ID_PREV,
+                &gd_starting_id,
+                2)
+        );
+    } else if (s_right) {
+        // Try to connect!
+        waiting_for_radio = 1;
+        while (!ipc_tx_op_buf(
+                IPC_MSG_GD_DL,
+                &gd_starting_id,
+                2)
+        );
+    }
+
 }
 
 /// The main initialization and loop function.
@@ -478,6 +546,9 @@ void main (void)
             // What we want here is MOSTLY going to be handled in the
             //  ipc loop. We're starting at id 0, and
             checkname_handle_loop();
+            break;
+        case QC15_MODE_GAME_CONNECT:
+            connect_handle_loop();
             break;
         }
 
