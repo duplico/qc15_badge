@@ -42,19 +42,27 @@ uint8_t badge_downloaded(uint16_t id) {
 }
 
 void load_badge_name(uint8_t *buf, uint16_t id) {
-    s25fs_read_data(
-            buf,
-            FLASH_ADDR_BADGE_NAMES + QC15_BADGE_NAME_LEN * id,
-            QC15_BADGE_NAME_LEN
-    );
+    if (!(global_flash_lockout&FLASH_LOCKOUT_READ)) {
+        s25fs_read_data(
+                buf,
+                FLASH_ADDR_BADGE_NAMES + QC15_BADGE_NAME_LEN * id,
+                QC15_BADGE_NAME_LEN
+        );
+    } else {
+        // TODO
+    }
 
 }
 
 void load_person_name(uint8_t *buf, uint16_t id) {
     uint32_t name_page_address = FLASH_ADDR_PERSON_NAMES + (0x010000 * (id / 20));
     uint8_t name_offset = (id % 20) * QC15_PERSON_NAME_LEN;
-    s25fs_read_data(buf, name_page_address + name_offset,
-                    QC15_PERSON_NAME_LEN);
+    if (!(global_flash_lockout&FLASH_LOCKOUT_READ)) {
+        s25fs_read_data(buf, name_page_address + name_offset,
+                        QC15_PERSON_NAME_LEN);
+    } else {
+        // TODO
+    }
 }
 
 void set_badge_seen(uint16_t id, uint8_t *name) {
@@ -84,7 +92,9 @@ void set_badge_seen(uint16_t id, uint8_t *name) {
 
     load_person_name(name_block, id);
 
-    if (strcmp((const char *) name_block, (const char *)name)) {
+
+    if (!(global_flash_lockout & FLASH_LOCKOUT_WRITE) &&
+            strcmp((const char *) name_block, (const char *)name)) {
         // Different name than what's saved. From here there are two options:
         //  we may have to do a big write, or a little write.
         if (name_block[0] == 0xFF) {
@@ -161,19 +171,23 @@ void set_badge_downloaded(uint16_t id) {
 void save_config() {
     crc16_append_buffer((uint8_t *) (&badge_conf), sizeof(qc15conf)-2);
 
-    s25fs_wr_en();
-    s25fs_erase_block_64kb(FLASH_ADDR_CONF_MAIN);
-    s25fs_wr_en();
-    s25fs_write_data(FLASH_ADDR_CONF_MAIN, (uint8_t *) (&badge_conf),
-                     sizeof(qc15conf));
+    if (!(global_flash_lockout & FLASH_LOCKOUT_WRITE)) {
+        s25fs_wr_en();
+        s25fs_erase_block_64kb(FLASH_ADDR_CONF_MAIN);
+        s25fs_wr_en();
+        s25fs_write_data(FLASH_ADDR_CONF_MAIN, (uint8_t *) (&badge_conf),
+                         sizeof(qc15conf));
+    }
 
     memcpy(&backup_conf, &badge_conf, sizeof(qc15conf));
 
-    s25fs_wr_en();
-    s25fs_erase_block_64kb(FLASH_ADDR_CONF_BACKUP);
-    s25fs_wr_en();
-    s25fs_write_data(FLASH_ADDR_CONF_BACKUP, (uint8_t *) (&badge_conf),
-                     sizeof(qc15conf));
+    if (!(global_flash_lockout & FLASH_LOCKOUT_WRITE)) {
+        s25fs_wr_en();
+        s25fs_erase_block_64kb(FLASH_ADDR_CONF_BACKUP);
+        s25fs_wr_en();
+        s25fs_write_data(FLASH_ADDR_CONF_BACKUP, (uint8_t *) (&badge_conf),
+                         sizeof(qc15conf));
+    }
 
     // And, update our friend the radio MCU:
     // (spin until the send is successful)
@@ -196,8 +210,11 @@ void generate_config() {
     // The struct is no good. Zero it out.
     memset(&badge_conf, 0x00, sizeof(qc15conf));
 
+    // TODO: Handle global_flash_lockout.
+    //       Hopefully this won't come up, since this SHOULD(tm) only be
+    //        called the once.
+
     // Load ID from flash:
-    // TODO: Confirm Endianness
     s25fs_read_data((uint8_t *)(&(badge_conf.badge_id)), FLASH_ADDR_ID_MAIN, 2);
 
     uint8_t sentinel;
