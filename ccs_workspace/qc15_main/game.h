@@ -66,9 +66,9 @@ typedef struct {
     uint8_t input_series_len;
     uint8_t other_series_len;
 
-    game_timer_t timer_series[5];
+    game_timer_t timer_series[2];
     game_user_in_t input_series[6];
-    game_other_in_t other_series[3];
+    game_other_in_t other_series[2];
 } game_state_t;
 
 extern uint8_t game_name_buffer[QC15_BADGE_NAME_LEN];
