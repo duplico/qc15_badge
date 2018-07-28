@@ -16,7 +16,7 @@
 #include "ipc.h"
 
 /// An **insanely wasteful** array of all badges and bases we can currently see.
-uint_least8_t ids_in_range[QC15_HOSTS_IN_SYSTEM] = {0};
+badge_info_t ids_in_range[QC15_HOSTS_IN_SYSTEM] = {0};
 /// The current radio packet we're sending (or just sent).
 radio_proto curr_packet_tx;
 
@@ -53,32 +53,21 @@ uint8_t validate(radio_proto *msg, uint8_t len) {
     return (crc16_check_buffer((uint8_t *) msg, len-2));
 }
 
-void radio_handle_beacon(uint16_t id, radio_beacon_payload *payload) {
-    // construct an alert to the main badge:
-
-    if (id < QC15_BADGES_IN_SYSTEM) {
-        // It's a badge.
+void set_badge_in_range(uint16_t id, char *name) {
+    if (!ids_in_range[id].intervals_left) {
+        // This badge is not currently in range.
         ipc_msg_gd_arr_t ipc_out;
         ipc_out.badge_id = id;
-        memcpy(ipc_out.name, payload->name, QC15_PERSON_NAME_LEN);
+        memcpy(ipc_out.name, name, QC15_BADGE_NAME_LEN);
+        // Guarantee send:
+        while (!ipc_tx_op_buf(IPC_MSG_GD_ARR, &ipc_out, sizeof(ipc_msg_gd_arr_t)));
+    }
+    ids_in_range[id].intervals_left = RADIO_GD_INTERVAL;
+}
 
-        if (ids_in_range[id]) {
-            // Badge was already in range, so now just re-up its flush counter.
-            ids_in_range[id] = RADIO_GD_INTERVAL;
-        } else if (ipc_tx_op_buf(IPC_MSG_GD_ARR, &ipc_out,
-                                 sizeof(ipc_msg_gd_arr_t))) {
-            // If it WASN'T already in range, we need to signal that it is now
-            //  in range. But it's very important that this message actually get
-            //  to the main MCU. So we're going to IGNORE the badge if our link
-            //  to the main MCU isn't available, and only treat it as in range
-            //  if we're OK to use the link. It's not very likely that it's
-            //  unavailable, but we still want to avoid having an inconsistency
-            //  between the two processors.
-            // Then again, a foolish consistency is the hobgoblin of little
-            //  minds, adored by little statemen and philosophers and divines.
-            //  So what the heck do I know?
-            ids_in_range[id] = RADIO_GD_INTERVAL;
-        }
+void radio_handle_beacon(uint16_t id, radio_beacon_payload *payload) {
+    if (id < QC15_BADGES_IN_SYSTEM) {
+        set_badge_in_range(id, payload->name);
     } else if (id == QC15_BASE_ID) {
         // It's the suite base
         // Let's transmit our progress!
@@ -102,15 +91,25 @@ void radio_handle_beacon(uint16_t id, radio_beacon_payload *payload) {
 
 /// Another badge has connected to us and DOWNLOADED OUR INFORMATION BRAIN.
 void radio_handle_download(uint16_t id, radio_connect_payload *payload) {
-    // This while loop is to KEEP TRYING TO TRANSMIT until we are successful.
-    //  It's hideously inefficient and should be done asynchronously, instead.
-    //  But for the nonce, this is the way it is. Hopefully we'll have time to
-    //  change it, but if not, for consistency, it's very important that this
-    //  message make it across, because we've already ACKed it, for goodness
-    //  sake.
-    // TODO: this is dumb:
-    // TODO: Do we need to update the name? I submit that we likely do not.
-    while (!ipc_tx_op_buf(IPC_MSG_GD_UL, &id, 2));
+    // There are two possibilities here. The first is that we've received a
+    //  CONNECTABLE ADVERTISEMENT (RADIO_CONNECT_FLAG_LISTENING).
+    // The second is that we've received a DOWNLOAD_CONNECTION
+    //  (RADIO_CONNECT_FLAG_DOWNLOAD).
+
+    if (payload->connect_flags == RADIO_CONNECT_FLAG_LISTENING) {
+        // We need to mark this badge as connectable.
+        ids_in_range[id].connect_intervals = 2;
+        // We also treat this like a beacon, and update the name.
+        set_badge_in_range(id, payload->name);
+    } else if (payload->connect_flags == RADIO_CONNECT_FLAG_DOWNLOAD) {
+        // Inform our main MCU that this badge has downloaded our information
+        //  brain. (We don't actually track whether we're connectable - the
+        //  client badge has to do that.)
+        // This while loop is to KEEP TRYING TO TRANSMIT until we're successful.
+        //  It's hideously inefficient and should be done asynchronously,
+        //  but it's not. Deal with it <file://../../misc/dealwithit.gif>.
+        while (!ipc_tx_op_buf(IPC_MSG_GD_UL, &id, 2));
+    }
 }
 
 void radio_rx_done(uint8_t* data, uint8_t len, uint8_t pipe) {
@@ -143,9 +142,10 @@ void radio_tx_done(uint8_t ack) {
         case RADIO_MSG_TYPE_DLOAD:
             // We just attempted a download. Did it succeed?
             if (ack) {
-                // yes.
+                while (!ipc_tx_byte(IPC_MSG_GD_DL_SUCCESS));
             } else {
                 // no.
+                while (!ipc_tx_byte(IPC_MSG_GD_DL_FAILURE));
             }
             break;
         case RADIO_MSG_TYPE_PROGRESS:
@@ -182,12 +182,26 @@ void radio_set_connectable() {
     radio_connect_payload *payload = (radio_connect_payload *)
                                             (curr_packet_tx.msg_payload);
     payload->connect_flags = RADIO_CONNECT_FLAG_LISTENING;
-    // TODO: wtf why is this here:
     memcpy(payload->name, badge_status.person_name, QC15_PERSON_NAME_LEN);
 
     crc16_append_buffer(&curr_packet_tx, sizeof(radio_proto)-2);
     rfm75_tx(RFM75_BROADCAST_ADDR, 1, &curr_packet_tx, RFM75_PAYLOAD_SIZE);
 
+}
+
+void radio_send_download(uint16_t id) {
+    curr_packet_tx.badge_id = badge_status.badge_id;
+    curr_packet_tx.msg_type = RADIO_MSG_TYPE_DLOAD;
+    curr_packet_tx.proto_version = RADIO_PROTO_VER;
+
+    radio_connect_payload *payload = (radio_connect_payload *)
+                                            (curr_packet_tx.msg_payload);
+    payload->connect_flags = RADIO_CONNECT_FLAG_DOWNLOAD;
+    memcpy(payload->name, badge_status.person_name, QC15_PERSON_NAME_LEN);
+
+    crc16_append_buffer(&curr_packet_tx, sizeof(radio_proto)-2);
+    // Send a UNICAST! With ACKING.
+    rfm75_tx(id, 0, &curr_packet_tx, RFM75_PAYLOAD_SIZE);
 }
 
 /// Do our regular radio and gaydar interval actions.
@@ -199,17 +213,27 @@ void radio_set_connectable() {
  */
 void radio_interval() {
     for (uint16_t i=0; i<QC15_HOSTS_IN_SYSTEM; i++) {
-        if (ids_in_range[i] == 1) {
+        if (ids_in_range[i].intervals_left == 1) {
             // Try sending a message to the main MCU that this badge has
             //  aged out. If it's successful, we can actually age it out.
             //  If not, we need to wait for the next interval and try again
             //  until we're not sending anymore.
             if (ipc_tx_op_buf(IPC_MSG_GD_DEP, &i, 2))
-                ids_in_range[i] = 0;
-        } else if (ids_in_range[i]) {
+                ids_in_range[i].intervals_left = 0;
+        } else if (ids_in_range[i].intervals_left) {
             // Otherwise, just decrement it.
-            ids_in_range[i]--;
+            // This subtraction is OK, because it can't affect the flags in
+            //  the upper nibble until the lower bits get to 0, which we've
+            //  already checked for.
+            // TODO: this doesn't consider the case where we've not re-upped
+            //  its intervals_left
+            ids_in_range[i].intervals_left--;
         }
+
+        // No signals needed for this one:
+        if (ids_in_range[i].connect_intervals)
+            ids_in_range[i].connect_intervals--;
+
     }
 
     // Also, at each radio interval, we do need to do a beacon.

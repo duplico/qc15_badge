@@ -36,6 +36,8 @@ volatile uint8_t f_time_loop = 0;
 uint8_t s_switch = 0;
 uint8_t s_radio_interval = 0;
 uint8_t s_connect_needed = 0;
+uint8_t s_download_needed = 0;
+uint16_t radio_download_id = 0;
 
 volatile uint32_t qc_clock = 0;
 /// The current state of the switch's bit in its IN register (only BIT2 used).
@@ -242,7 +244,7 @@ uint16_t next_nearby_badge_id(uint16_t id_curr) {
 
     if (id_next == 0xFFFF) {
         // Asked us for "ANY"
-        if (ids_in_range[0])
+        if (ids_in_range[0].intervals_left)
             return 0;
         else {
             id_next = 0;
@@ -254,8 +256,8 @@ uint16_t next_nearby_badge_id(uint16_t id_curr) {
         id_next++;
         if (id_next == QC15_BADGES_IN_SYSTEM)
             id_next = 0;
-    } while (id_next != id_curr && !ids_in_range[id_next]);
-    if (ids_in_range[id_next])
+    } while (id_next != id_curr && !ids_in_range[id_next].intervals_left);
+    if (ids_in_range[id_next].intervals_left)
         return id_next;
     else
         return 0xFFFF;
@@ -266,7 +268,7 @@ uint16_t prev_nearby_badge_id(uint16_t id_curr) {
 
     if (id_prev == 0xFFFF) {
         // Asked us for "ANY"
-        if (ids_in_range[QC15_BADGES_IN_SYSTEM-1])
+        if (ids_in_range[QC15_BADGES_IN_SYSTEM-1].intervals_left)
             return QC15_BADGES_IN_SYSTEM-1;
         else {
             id_prev = QC15_BADGES_IN_SYSTEM-1;
@@ -278,8 +280,8 @@ uint16_t prev_nearby_badge_id(uint16_t id_curr) {
         if (id_prev == 0)
             id_prev = QC15_BADGES_IN_SYSTEM;
         id_prev--;
-    } while (id_prev != id_curr && !ids_in_range[id_prev]);
-    if (ids_in_range[id_prev])
+    } while (id_prev != id_curr && !ids_in_range[id_prev].intervals_left);
+    if (ids_in_range[id_prev].intervals_left)
         return id_prev;
     else
         return 0xFFFF;
@@ -300,7 +302,14 @@ void handle_ipc_rx(uint8_t *rx_from_radio) {
         s_connect_needed = RADIO_CONNECT_ADVERTISEMENT_COUNT;
         break;
     case IPC_MSG_GD_DL:
-        // TODO: Attempt to DOWNLOAD!!! from someone
+        memcpy(&id, &rx_from_radio[1], 2);
+        if (ids_in_range[id].connect_intervals) {
+            // It's downloadable.
+            s_download_needed = 1;
+            radio_download_id = id;
+        } else {
+            while (!ipc_tx_byte(IPC_MSG_GD_DL_FAILURE));
+        }
         break;
     case IPC_MSG_ID_INC:
         // Send back the ID of the next nearby badge, or 0xFFFF for none.
@@ -362,6 +371,11 @@ void main (void)
                 s_connect_needed--;
                 radio_set_connectable();
             }
+        }
+
+        if (s_download_needed && rfm75_tx_avail()) {
+            s_download_needed = 0;
+            radio_send_download(radio_download_id);
         }
 
         if (s_radio_interval) {

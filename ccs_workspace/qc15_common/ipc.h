@@ -68,6 +68,8 @@
  ** dontcare.
  */
 #define IPC_MSG_GD_DL 0x30
+#define IPC_MSG_GD_DL_SUCCESS 0x31
+#define IPC_MSG_GD_DL_FAILURE 0x30
 /// Occurs when another badge has downloaded from us
 #define IPC_MSG_GD_UL 0x40
 /// Request or return the next neighbor ID before or after the current one.
