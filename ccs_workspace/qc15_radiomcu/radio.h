@@ -24,6 +24,11 @@
 #define RADIO_CONNECT_FLAG_DOWNLOAD 2
 
 typedef struct {
+    uint8_t connect_intervals : 2;
+    uint8_t intervals_left : 4;
+} badge_info_t;
+
+typedef struct {
     uint16_t badge_id;
     uint8_t proto_version;
     uint8_t msg_type;
@@ -60,12 +65,13 @@ typedef struct { // Stats report payload (unicast to base???)
 } radio_stats_payload;
 
 extern radio_proto curr_packet_tx;
-extern uint_least8_t ids_in_range[QC15_HOSTS_IN_SYSTEM];
+extern badge_info_t ids_in_range[QC15_HOSTS_IN_SYSTEM];
 
 rfm75_rx_callback_fn radio_rx_done;
 rfm75_tx_callback_fn radio_tx_done;
 void radio_init(uint16_t addr);
 void radio_interval();
 void radio_set_connectable();
+void radio_send_download(uint16_t id);
 
 #endif /* RADIO_H_ */
