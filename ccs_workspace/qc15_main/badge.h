@@ -14,7 +14,8 @@ uint8_t is_uber(uint16_t id);
 
 void set_badge_seen(uint16_t id, uint8_t *name);
 void load_person_name(uint8_t *buf, uint16_t id);
-
+void load_badge_name(uint8_t *buf, uint16_t id);
 void init_config();
+void draw_text(uint8_t lcd_id, char *txt, uint8_t more);
 
 #endif /* BADGE_H_ */

@@ -377,30 +377,40 @@ uint8_t next_input_id() {
     return ret;
 }
 
+void draw_text(uint8_t lcd_id, char *txt, uint8_t more) {
+    lcd111_cursor_pos(lcd_id, 0);
+    lcd111_put_char(lcd_id, 0xBB); // This is &raquo;
+    lcd111_cursor_type(lcd_id, LCD111_CURSOR_NONE);
+    if (strlen(txt) > 21) {
+        lcd111_put_text_pad(
+                lcd_id,
+                txt,
+                23
+        );
+    } else {
+        lcd111_put_text_pad(
+                lcd_id,
+                txt,
+                21
+        );
+        if (more) {
+            lcd111_put_text_pad(lcd_id, "\x1E\x1F", 2);
+        } else {
+            lcd111_put_text_pad(lcd_id, " \x17", 2);
+        }
+    }
+}
+
 /// Render bottom screen for the current state and value of `text_selection`.
 void draw_text_selection() {
     lcd111_cursor_pos(LCD_BTM, 0);
     lcd111_put_char(LCD_BTM, 0xBB); // This is &raquo;
     if (text_selection) {
-        lcd111_cursor_type(LCD_BTM, LCD111_CURSOR_NONE);
-        if (strlen(all_text[current_state->input_series[text_selection-1].text_addr]) > 21) {
-            lcd111_put_text_pad(
-                    LCD_BTM,
-                    all_text[current_state->input_series[text_selection-1].text_addr],
-                    23
-            );
-        } else {
-            lcd111_put_text_pad(
-                    LCD_BTM,
-                    all_text[current_state->input_series[text_selection-1].text_addr],
-                    21
-            );
-            if (next_input_id() != text_selection) {
-                lcd111_put_text_pad(LCD_BTM, "\x1E\x1F", 2);
-            } else {
-                lcd111_put_text_pad(LCD_BTM, " \x17", 2);
-            }
-        }
+        draw_text(
+            LCD_BTM,
+            all_text[current_state->input_series[text_selection-1].text_addr],
+            next_input_id() != text_selection
+        );
     } else {
         // Haven't used an arrow key yet.
         if (current_state->input_series_len) {
@@ -442,7 +452,7 @@ void begin_text_action() {
 }
 
 // TODO: move
-extern uint16_t gd_next_id;
+extern uint16_t gd_curr_id;
 extern uint16_t gd_starting_id;
 
 void do_action(game_action_t *action) {
@@ -501,7 +511,7 @@ void do_action(game_action_t *action) {
             textentry_begin(badge_conf.person_name, 10, 1, 1);
         } else if (action->detail == OTHER_ACTION_NAMESEARCH) {
             gd_starting_id = GAME_NULL;
-            gd_next_id = GAME_NULL;
+            gd_curr_id = GAME_NULL;
             qc15_mode = QC15_MODE_GAME_CHECKNAME;
             // IPC GET NEXT ID from ffff (any)
             while (!ipc_tx_op_buf(IPC_MSG_ID_NEXT, &gd_starting_id, 2));
@@ -511,12 +521,13 @@ void do_action(game_action_t *action) {
             while (!ipc_tx_byte(IPC_MSG_GD_EN));
         } else if (action->detail == OTHER_ACTION_CONNECT) {
             // Time to go into the CONNECT MODE!!!
-            // TODO: This needs to account for the possibility that nobody
-            //  may be around.
+            // The entry to this action SHOULD be guarded by a NET action
+            //  that requires there to be other badges around.
             qc15_mode = QC15_MODE_GAME_CONNECT;
             gd_starting_id = GAME_NULL;
-            gd_next_id = GAME_NULL;
+            gd_curr_id = GAME_NULL;
             while (!ipc_tx_op_buf(IPC_MSG_ID_NEXT, &gd_starting_id, 2));
+            lcd111_clear(LCD_BTM);
         }
         break;
     }
