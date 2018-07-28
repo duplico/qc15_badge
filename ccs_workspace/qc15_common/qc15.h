@@ -53,6 +53,7 @@
 
 #define QC15_MODE_GAME      64
 #define QC15_MODE_GAME_CHECKNAME 65
+#define QC15_MODE_GAME_CONNECT 66
 
 extern uint8_t qc15_mode;
 
@@ -115,6 +116,9 @@ extern qc15status badge_status;
 #define MCLK_FREQ_HZ 1000000
 #endif
 
+#define FLASH_LOCKOUT_READ  0b01
+#define FLASH_LOCKOUT_WRITE 0b10
+
 // The following are specific to the MAIN MCU:
 #ifdef __MSP430FR5972__
 #define MCLK_FREQ_KHZ 8000
@@ -122,6 +126,7 @@ extern qc15status badge_status;
 extern qc15conf badge_conf;
 extern qc15conf backup_conf;
 extern uint16_t badges_nearby;
+extern uint8_t global_flash_lockout;
 void save_config();
 #endif
 

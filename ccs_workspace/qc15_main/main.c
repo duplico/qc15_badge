@@ -78,6 +78,7 @@ qc15conf badge_conf = {0};
 #pragma PERSISTENT(backup_conf)
 qc15conf backup_conf = {0};
 
+uint8_t global_flash_lockout = 0;
 
 /// Initialize the system clocks and clock sources.
 /**
