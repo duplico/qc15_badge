@@ -672,6 +672,10 @@ void main (void)
                 break;
             }
 
+            if (s_right) {
+                while (!ipc_tx_byte(IPC_MSG_REBOOT));
+            }
+
             if (s_left) {
                 ht16d_all_one_color(0, 0, 0);
                 bootstrap_completed = 0;
