@@ -302,6 +302,7 @@ void handle_ipc_rx(uint8_t *rx_from_radio) {
         s_connect_needed = RADIO_CONNECT_ADVERTISEMENT_COUNT;
         break;
     case IPC_MSG_GD_DL:
+        // TODO: Validate ID, return fail if bad.
         memcpy(&id, &rx_from_radio[1], 2);
         if (ids_in_range[id].connect_intervals) {
             // It's downloadable.

@@ -473,7 +473,16 @@ void connect_handle_loop() {
             draw_text(LCD_BTM, text, 1);
             load_person_name(curr_name, gd_curr_id);
             sprintf(text, "Holder: %s", curr_name);
+            draw_text(LCD_TOP, text, 1);
         }
+    }
+
+    if (s_gd_success || s_gd_failure) {
+        waiting_for_radio = 0;
+        // TODO: Handle setting results and such here?
+
+        // We specifically do NOT clear these signals here.
+        qc15_mode = QC15_MODE_GAME;
     }
 
     if (waiting_for_radio) {
@@ -482,12 +491,18 @@ void connect_handle_loop() {
         return;
     }
 
+    if (qc_clock % 512 == 0) {
+        // Every 16 seconds,
+        // We need to send an advertisement.
+        while (!ipc_tx_byte(IPC_MSG_GD_EN));
+    }
+
     if (s_up || s_down) {
         lcd111_set_text(LCD_BTM, "");
         waiting_for_radio = 1;
         while (!ipc_tx_op_buf(
                 s_down? IPC_MSG_ID_NEXT : IPC_MSG_ID_PREV,
-                &gd_starting_id,
+                &gd_curr_id,
                 2)
         );
     } else if (s_right) {
@@ -495,9 +510,12 @@ void connect_handle_loop() {
         waiting_for_radio = 1;
         while (!ipc_tx_op_buf(
                 IPC_MSG_GD_DL,
-                &gd_starting_id,
+                &gd_curr_id,
                 2)
         );
+        // Now, the IPC functions will trigger either an IPC
+        //  s_gd_failure or s_gd_success. Once we detect one of those,
+        //  we release control back to the game logic.
     }
 
 }
@@ -517,6 +535,10 @@ void main (void)
 
     // hold DOWN on turn-on for verbose boot:
     bootstrap(initial_buttons & BIT4); // interrupts required.
+
+    // TODO:
+    // Hey, we need to NOT send the radio module its complete config in the
+    //  bootstrap method.
 
     // Housekeeping is now concluded. It's time to see the wizard.
     badge_startup();
@@ -567,5 +589,6 @@ __interrupt
 void TIMER_ISR() {
     // All we have here is CCIFG0
     f_time_loop = 1;
+    qc_clock++;
     LPM_EXIT;
 }
