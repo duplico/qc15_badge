@@ -14,6 +14,8 @@
 
 #include "rfm75.h"
 
+void delay_millis(unsigned long mils);
+
 // Handy generic pin twiddling:
 #define CSN_LOW_START RFM75_CSN_OUT &= ~RFM75_CSN_PIN
 #define CSN_HIGH_END  RFM75_CSN_OUT |= RFM75_CSN_PIN
@@ -39,18 +41,20 @@ rfm75_rx_callback_fn* rfm75_rx_done_cb;
 rfm75_tx_callback_fn* rfm75_tx_done_cb;
 
 /// The size of bank0_init_data in its first dimension.
-#define BANK0_INITS 17
+#define BANK0_INITS 19
 
 /// Initialization values in (addr,value) format for RFM75 register bank 0.
 const uint8_t bank0_init_data[BANK0_INITS][2] = {
-        { CONFIG, 0xff }, //
+        { CONFIG, 0b011111101 }, //
         { 0x01, BIT0+BIT1 }, // Auto-ack for pipe0 (unicast)
         { 0x02, BIT0+BIT1 }, //Enable RX pipe 0 and 1
         { 0x03, 0b00000001 }, //RX/TX address field width 3byte
         { 0x04, 0b00000100 }, //auto-RT
-        { 0x05, 0x53 }, //channel: 2400 + LS 7 of this field = channel (2.483)
+        { 0x05, 0x10 }, //channel: 2400 + LS 7 of this field
         { 0x06, 0b00000111 }, //air data rate-1M,out power max, LNA gain high.
         { 0x07, 0b01110000 }, // Clear interrupt flags
+        { 0x08, 0x00 }, // OBSERVE_TX - magic
+        { 0x09, 0x00 }, // CD register - MAGIC
         // 0x0a - RX_ADDR_P0 - 3 bytes
         // 0x0b - RX_ADDR_P1 - 3 bytes
         // 0x10 - TX_ADDR - 5 bytes
@@ -100,6 +104,7 @@ uint8_t send_rfm75_cmd(uint8_t cmd, uint8_t data) {
 /// Issue the RFM75 a command `cmd` with `data_len` bytes of `data`.
 void send_rfm75_cmd_buf(uint8_t cmd, uint8_t *data, uint8_t data_len) {
     CSN_LOW_START;
+    // We write everything in REVERSE ORDER!
     rfm75spi_send_sync(cmd);
     for (uint8_t i=1; i<=data_len; i++) {
         rfm75spi_send_sync(data[data_len-i]);
@@ -172,6 +177,9 @@ void rfm75_enter_prx() {
 
     // Enter RX mode.
     CE_ACTIVATE;
+
+    // This takes 130 us:
+    __delay_cycles(130); // TODO!!!!!
 
     rfm75_state = RFM75_RX_LISTEN;
 }
@@ -394,6 +402,9 @@ void rfm75_io_init() {
 void rfm75_init(uint16_t unicast_address, rfm75_rx_callback_fn* rx_callback,
                 rfm75_tx_callback_fn* tx_callback)
 {
+
+    //  one of the chinese documents (rfm73 -> rfm75 migration) says that it should be executed after every PWR_UP, not only during initialization
+
     // Disable the IRQ pin interrupt, while we set up our inputs.
     //  This may not be necessary, but is out of an abundance of caution
     //  because I suspect there may be certain circumstances under which
@@ -409,6 +420,50 @@ void rfm75_init(uint16_t unicast_address, rfm75_rx_callback_fn* rx_callback,
     // We're going totally synchronous on this; no interrupts at all.
     // We'll wait on the interrupt enables though, until after we've set up
     //  all of our register banks with the initial configuration
+
+    rfm75_select_bank(1);
+
+    // Some of these go MOST SIGNIFICANT BYTE FIRST: (so we start with 0xE2.)
+    //  (we show them here LEAST SIGNIFICANT BYTE FIRST because we
+    //   reverse everything we send.)
+    // Basically, these are just stupid magic numbers that took a lot of
+    //  work with the stupid data sheet to get right. If you change them,
+    //  things will probably break mysteriously.
+    uint8_t bank1_config_0x00[][4] = {
+        {0xe2, 0x01, 0x4b, 0x40}, // reserved (prescribed)
+        {0x00, 0x00, 0x4b, 0xc0}, // reserved (prescribed)
+        {0x02, 0x8c, 0xfc, 0xd0}, // reserved (prescribed)
+        {0x21, 0x39, 0x00, 0x99}, // reserved (prescribed)
+        // {0x21 was 0x41 TODO
+        {0x1b, 0x82, 0x96, 0xf9}, // 1 Mbps, 4 dBm (max power)
+        {0xa6, 0x0f, 0x06, 0x24}, // 1 Mbps
+    };
+
+    for (uint8_t i=0; i<6; i++) {
+        rfm75_write_reg_buf(i, bank1_config_0x00[i], 4);
+    }
+
+    //6,7,8,9,A,B - give them zeroes:
+
+    uint8_t zeroes[4] = {0,0,0,0};
+    for (uint8_t i=0; i<6; i++) {
+        rfm75_write_reg_buf(0x06 + i, zeroes, 4);
+    }
+
+    uint8_t bank1_config_0x0c[][4] = {
+                                      {0x05, 0x73, 0x12, 0x00}, // 130 us mode (PLL settle time?)
+                                      //TODO:      0x12 was 0x10
+                                      {0x00, 0x80, 0xb4, 0x36}, // reserved?
+    };
+
+    for (uint8_t i=0; i<2; i++) {
+        rfm75_write_reg_buf(0x0c+i, bank1_config_0x0c[i], 4);
+    }
+
+    // Set the prescribed ramp curve:
+    uint8_t bank1_config_0x0e[11] = {0xff, 0xff, 0xfe, 0xf7, 0xcf, 0x20, 0x81,
+                                     0x04, 0x08, 0x20, 0x41};
+    rfm75_write_reg_buf(0x0e, bank1_config_0x0e, 11);
 
     // Let's start with bank 0:
     rfm75_select_bank(0);
@@ -443,46 +498,39 @@ void rfm75_init(uint16_t unicast_address, rfm75_rx_callback_fn* rx_callback,
     uint8_t rx_addr_p1[3] = {BROADCAST_LSB, 0xff, 0xff};
     rfm75_write_reg_buf(RX_ADDR_P1, rx_addr_p1, 3);
 
-    // OK, that's bank 0 done. Next is bank 1.
-
+    // Now, do a stupid magic process.
     rfm75_select_bank(1);
 
-    // Some of these go MOST SIGNIFICANT BYTE FIRST: (so we start with 0xE2.)
-    //  (we show them here LEAST SIGNIFICANT BYTE FIRST because we
-    //   reverse everything we send.)
-    // Basically, these are just stupid magic numbers that took a lot of
-    //  work with the stupid data sheet to get right. If you change them,
-    //  things will probably break mysteriously.
-    uint8_t bank1_config_0x00[][4] = {
-            {0xe2, 0x01, 0x4b, 0x40}, // reserved (prescribed)
-            {0x00, 0x00, 0x4b, 0xc0}, // reserved (prescribed)
-            {0x02, 0x8c, 0xfc, 0xd0}, // reserved (prescribed)
-            {0x41, 0x39, 0x00, 0x99}, // reserved (prescribed)
-            {0x1b, 0x82, 0x96, 0xf9}, // 1 Mbps
-            {0xa6, 0x0f, 0x06, 0x24}, // 1 Mbps
-    };
+    // Ok, we've configured everything but haven't powered up yet...
 
-    for (uint8_t i=0; i<6; i++) {
-        rfm75_write_reg_buf(i, bank1_config_0x00[i], 4);
-    }
+    //  4. RFM75 PowerUP after the first packet of data sent unsuccessful solution
+    //  RFM75 from the POWER DOWN state to switch to POWER UP state, send the first packet is not successful, the reason
+    //  Is the PLL is not locked, the solution is as follows:
+    //  Before transmitting data normally, please follow the following procedure:
+    //  Power up = 1
+    rfm75_write_reg(CONFIG, CONFIG_MASK_TX_DS +
+                    CONFIG_MASK_MAX_RT + CONFIG_EN_CRC +
+                    CONFIG_CRCO_2BYTE + CONFIG_PWR_UP +
+                    CONFIG_PRIM_RX);
+    //  Wait for 2ms
+    __delay_cycles(1000);
+    __delay_cycles(1000);
+    //  Operate the bank1 register, writing a 1 to bit 25 of register 04
+    // uint8_t bank1_config_0x00[][4][4]
+    uint8_t bank1_config_toggle[4] = {0};
+    memcpy(bank1_config_toggle, bank1_config_0x00[4], 4);
+    bank1_config_toggle[3] |= 0x06;
+    rfm75_write_reg_buf(0x04, bank1_config_toggle, 4);
 
-    uint8_t bank1_config_0x0c[][4] = {
-            {0x05, 0x73, 0x10, 0x00}, // 130 us mode (PLL settle time?)
-            {0x00, 0x80, 0xb4, 0x36}, // reserved?
-    };
+    //  Wait 20us
+    __delay_cycles(20);
+    //  Operate the bank1 register, writing a 0 to bit 25 of register 04
+    rfm75_write_reg_buf(0x04, bank1_config_0x00[4], 4);
+    //  Wait for 0.5ms.
+    __delay_cycles(500);
+    //  Then normal launch.
 
-    for (uint8_t i=0; i<2; i++) {
-        rfm75_write_reg_buf(0x0c+i, bank1_config_0x0c[i], 4);
-    }
-
-    // Set the prescribed ramp curve:
-    uint8_t bank1_config_0x0e[11] = {0xff, 0xff, 0xfe, 0xf7, 0xcf, 0x20, 0x81,
-                                     0x04, 0x08, 0x20, 0x41};
-    rfm75_write_reg_buf(0x0e, bank1_config_0x0e, 11);
-
-    // Now we go back to bank 0, because that's the one we normally
-    //  care about.
-
+    // Go back to the normal bank (0):
     rfm75_select_bank(0);
 
     // Flush our FIFOs just in case:

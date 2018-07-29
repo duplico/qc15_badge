@@ -85,6 +85,7 @@ void main (void)
     timer_param.timerClear = TIMER_A_SKIP_CLEAR;
     timer_param.startTimer = false;
 
+    delay_millis(100);
     rfm75_init(2, &radio_rx_done, &radio_tx_done);
     rfm75_post();
 
@@ -93,6 +94,7 @@ void main (void)
 
     uint16_t csecs=0;
     unsigned char * hello_payload = "XIAMBADGE02";
+    memcpy(out_payload, hello_payload, 11);
     __bis_SR_register(GIE);
 
     while (1) {
@@ -104,11 +106,8 @@ void main (void)
             // it's been 1 centisecond.
             csecs++;
 
-            if (csecs == 200) {
-                rfm75_tx(0xffff, 0, out_payload, RFM75_PAYLOAD_SIZE); // broadcast (no acks)
-//                rfm75_tx(35, 0, out_payload, RFM75_PAYLOAD_SIZE); // unicast (acked)
-//                rfm75_tx(35, 0, hello_payload, RFM75_PAYLOAD_SIZE);
-                csecs = 0;
+            if (rfm75_tx_avail()) {
+                rfm75_tx(0xffff, 1, out_payload, RFM75_PAYLOAD_SIZE); // broadcast (no acks)
             }
 
             if (light_on) {
