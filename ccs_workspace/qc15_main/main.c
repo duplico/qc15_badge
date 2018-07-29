@@ -28,6 +28,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include <msp430fr5972.h>
 #include <driverlib.h>
@@ -60,6 +61,9 @@ uint8_t power_switch_status = 0;
 
 uint8_t mode_countdown, mode_status, mode_game, mode_sleep;
 // text_entry_in_progress
+
+uint8_t tx_cnt = 0;
+uint8_t rx_cnt = 0;
 
 volatile uint32_t qc_clock;
 
@@ -301,13 +305,17 @@ void handle_ipc_rx(uint8_t *rx) {
         break;
     case IPC_MSG_GD_ARR:
         // rx = green
-        if (out_of_bootstrap)
+        if (out_of_bootstrap) {
             led_set_anim(&anim_g, LED_ANIM_TYPE_SAME, 0, 0);
+            rx_cnt++;
+        }
         break;
     case IPC_MSG_GD_DEP:
         // tx = white
-        if (out_of_bootstrap)
+        if (out_of_bootstrap) {
             led_set_anim(&anim_bw, LED_ANIM_TYPE_SAME, 0, 0);
+            tx_cnt++;
+        }
         break;
     }
 }
@@ -640,6 +648,9 @@ void main (void)
 
     ht16d_all_one_color(0, 0, 0);
 
+    uint8_t last_tx = 0;
+    uint8_t last_rx = 0;
+    char out[25] = "";
     if (!bootstrap_completed) {
         out_of_bootstrap = 1;
 
@@ -648,6 +659,13 @@ void main (void)
 
         while (1) {
             handle_global_signals();
+
+            if (last_tx != tx_cnt || last_rx != rx_cnt) {
+                last_tx = tx_cnt;
+                last_rx = rx_cnt;
+                sprintf(out, "TX CNT:%d  RX CNT:%d", tx_cnt, rx_cnt);
+                lcd111_set_text(LCD_TOP, out);
+            }
 
             if (s_down) {
                 ht16d_all_one_color(0, 0, 0);
