@@ -59,6 +59,10 @@ void radio_tx_done(uint8_t ack) {
 
 }
 
+uint8_t rfm75_read_reg(uint8_t cmd);
+
+volatile uint8_t clock = 0;
+
 void main (void)
  {
     //Stop watchdog timer
@@ -82,25 +86,75 @@ void main (void)
     timer_param.timerClear = TIMER_A_SKIP_CLEAR;
     timer_param.startTimer = false;
 
+    // Wait 100 ms for the radio to come up.
+    delay_millis(100);
     rfm75_init(35, &radio_rx_done, &radio_tx_done);
-    rfm75_post();
+
+    while (!rfm75_post());
+    rfm75_init(35, &radio_rx_done, &radio_tx_done);
+
+    uint8_t all_registers[0x1e];
+
+    for (uint8_t i=0; i<0x1e; i++) {
+        all_registers[i] = rfm75_read_reg(i);
+    }
 
     Timer_A_initUpMode(TIMER_A1_BASE, &timer_param);
     Timer_A_startCounter(TIMER_A1_BASE, TIMER_A_UP_MODE);
 
     __bis_SR_register(GIE);
 
+    volatile uint8_t cd;
+
+
+
+    uint8_t freqs[16] = {0};
+    uint8_t freq = 0;
+    uint8_t freq_done = 0;
+
+    rfm75_write_reg(0x05, freq+8);
+
     while (1) {
         if (f_rfm75_interrupt) {
             f_rfm75_interrupt = 0;
             rfm75_deferred_interrupt();
+            freqs[freq]++;
         }
 
         if (f_time_loop) {
+            clock++;
+
+            if (!freq_done) {
+                if (clock == 50) {
+                    clock = 0;
+                    csecs = 0;
+                    P2OUT &= ~BIT2;
+                    freq++;
+                    if (freq == 16) {
+                        uint8_t cnt = 0;
+                        for (uint8_t i=0; i<16; i++) {
+                            if (freqs[i] > cnt) {
+                                cnt = freqs[i];
+                                freq = i;
+                            }
+                        }
+                        freq_done = 1;
+                    }
+                    rfm75_write_reg(0x05, freq+8);
+                }
+            }
+
             // centisecond.
             if (!csecs) {
                 // turn some shit off
                 P2OUT &= ~BIT2;
+
+                cd = rfm75_read_reg(0x09);
+                if (cd) {
+                    P2OUT |= BIT2;
+                    csecs = 100;
+                }
+
             }
         }
         __bis_SR_register(LPM0_bits);
