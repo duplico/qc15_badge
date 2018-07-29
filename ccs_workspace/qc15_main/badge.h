@@ -18,4 +18,7 @@ void load_badge_name(uint8_t *buf, uint16_t id);
 void init_config();
 void draw_text(uint8_t lcd_id, char *txt, uint8_t more);
 
+extern uint8_t s_gd_success;
+extern uint8_t s_gd_failure;
+
 #endif /* BADGE_H_ */

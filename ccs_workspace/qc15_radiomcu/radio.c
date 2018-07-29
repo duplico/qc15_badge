@@ -134,6 +134,7 @@ void radio_rx_done(uint8_t* data, uint8_t len, uint8_t pipe) {
 
 /// Called when the transmission of `curr_packet` has either finished or failed.
 void radio_tx_done(uint8_t ack) {
+    radio_connect_payload *rcp;
     switch(curr_packet_tx.msg_type) {
         case RADIO_MSG_TYPE_BEACON:
             // We just sent a beacon.
@@ -141,12 +142,16 @@ void radio_tx_done(uint8_t ack) {
             break;
         case RADIO_MSG_TYPE_DLOAD:
             // We just attempted a download. Did it succeed?
-            if (ack) {
-                while (!ipc_tx_byte(IPC_MSG_GD_DL_SUCCESS));
-            } else {
-                // no.
-                while (!ipc_tx_byte(IPC_MSG_GD_DL_FAILURE));
+            rcp = (radio_connect_payload*) (curr_packet_tx.msg_payload);
+            if (rcp->connect_flags == RADIO_CONNECT_FLAG_DOWNLOAD) {
+                if (ack) {
+                    while (!ipc_tx_byte(IPC_MSG_GD_DL_SUCCESS));
+                } else {
+                    // no.
+                    while (!ipc_tx_byte(IPC_MSG_GD_DL_FAILURE));
+                }
             }
+            // If we just sent an advertisement, we don't care.
             break;
         case RADIO_MSG_TYPE_PROGRESS:
             // We just sent a progress message. Determine whether we need

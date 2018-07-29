@@ -42,6 +42,10 @@ uint8_t badge_downloaded(uint16_t id) {
 }
 
 void load_badge_name(uint8_t *buf, uint16_t id) {
+    char *t="Skippy";
+    strcpy(buf, t);
+    return;
+    // TODO TODO TODO TODO TODO TODO!!!!!
     if (!(global_flash_lockout&FLASH_LOCKOUT_READ)) {
         s25fs_read_data(
                 buf,
