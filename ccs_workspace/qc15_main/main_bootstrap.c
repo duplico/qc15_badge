@@ -124,7 +124,7 @@ void bootstrap(uint8_t fastboot) {
             ht16d_all_one_color(200, 0, 0);
             delay_millis(2000);
             fail = 1;
-//            global_flash_lockout = FLASH_LOCKOUT_READ + FLASH_LOCKOUT_WRITE;
+            global_flash_lockout = FLASH_LOCKOUT_READ + FLASH_LOCKOUT_WRITE;
         }
         uint8_t sentinel = 0;
         s25fs_read_data(&sentinel, FLASH_ADDR_sentinel, 1);
@@ -133,7 +133,7 @@ void bootstrap(uint8_t fastboot) {
             ht16d_all_one_color(200, 0, 50);
             delay_millis(2000);
             fail = 1;
-//            global_flash_lockout = FLASH_LOCKOUT_READ + FLASH_LOCKOUT_WRITE;
+            global_flash_lockout = FLASH_LOCKOUT_READ + FLASH_LOCKOUT_WRITE;
         }
 
         if (!s25fs_post2()) { // Can we erase and write to the chip?
@@ -141,7 +141,7 @@ void bootstrap(uint8_t fastboot) {
             ht16d_all_one_color(200, 50, 0);
             delay_millis(2000);
             fail = 1;
-//            global_flash_lockout |= FLASH_LOCKOUT_WRITE;
+            global_flash_lockout |= FLASH_LOCKOUT_WRITE;
         }
 
         if (!fail) {
