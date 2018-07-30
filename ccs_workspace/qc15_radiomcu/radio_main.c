@@ -292,15 +292,15 @@ uint16_t prev_nearby_badge_id(uint16_t id_curr) {
         return 0xFFFF;
 }
 
-void handle_ipc_rx(uint8_t *rx_from_radio) {
+void handle_ipc_rx(uint8_t *rx_from_main) {
     uint16_t id;
-    switch(rx_from_radio[0] & 0xF0) {
+    switch(rx_from_main[0] & 0xF0) {
     case IPC_MSG_REBOOT:
         PMMCTL0 |= PMMSWPOR; // Software reboot.
         break; // this hardly seems necessary.
     case IPC_MSG_STATS_UPDATE:
         // A stats update, which may be solicited or unsolicited:
-        memcpy(&badge_status, &rx_from_radio[1], sizeof(qc15status));
+        memcpy(&badge_status, &rx_from_main[1], sizeof(qc15status));
         break;
     case IPC_MSG_GD_EN:
         // Send 3 connect advertisements:
@@ -308,7 +308,7 @@ void handle_ipc_rx(uint8_t *rx_from_radio) {
         break;
     case IPC_MSG_GD_DL:
         // TODO: Validate ID, return fail if bad.
-        memcpy(&id, &rx_from_radio[1], 2);
+        memcpy(&id, &rx_from_main[1], 2);
         if (ids_in_range[id].connect_intervals) {
             // It's downloadable.
             s_download_needed = 1;
@@ -319,8 +319,8 @@ void handle_ipc_rx(uint8_t *rx_from_radio) {
         break;
     case IPC_MSG_ID_INC:
         // Send back the ID of the next nearby badge, or 0xFFFF for none.
-        memcpy(&id, &rx_from_radio[1], 2);
-        if (rx_from_radio[0] & 0x0F) // "next"
+        memcpy(&id, &rx_from_main[1], 2);
+        if (rx_from_main[0] & 0x0F) // "next"
             id = next_nearby_badge_id(id);
         else
             id = prev_nearby_badge_id(id);
@@ -349,31 +349,6 @@ void main (void)
 
     // Reinitialize the radio with our correct ID:
     radio_init(badge_status.badge_id);
-
-    while (!badge_status.active) {
-        if (f_time_loop) {
-            f_time_loop = 0;
-            poll_switch();
-        }
-        if (f_ipc_rx) {
-            f_ipc_rx = 0;
-            if (ipc_get_rx(rx_from_main)) {
-                handle_ipc_rx(rx_from_main);
-            }
-        }
-        if (s_switch) {
-            // The switch has been toggled. So we need to send a message to
-            //  that effect. This is a fairly important message, so we'll
-            //  keep trying to send it every time we get here, until it
-            //  succeeds. But we're not going to wait for an ACK.
-            // Because the switch is "active low" (that is, LEFT
-            //  is "ON" and corresponds to LOW), we're going to take this
-            //  opportunity to evaluate sw_state and reverse it.
-            if (ipc_tx_byte(IPC_MSG_SWITCH | (sw_state ? 0 : 1))) {
-                s_switch = 0;
-            }
-        }
-    }
 
     while (1) {
         if (f_rfm75_interrupt) {
