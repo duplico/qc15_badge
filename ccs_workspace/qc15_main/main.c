@@ -302,6 +302,7 @@ void handle_ipc_rx(uint8_t *rx) {
         break;
     case IPC_MSG_GD_UL:
         // Someone downloaded from us.
+        set_badge_uploaded((uint16_t)rx[1] + ((uint16_t)rx[2] << 8));
         break;
     case IPC_MSG_ID_INC:
         // We got the ID we asked for.
@@ -479,7 +480,12 @@ void connect_handle_loop() {
 
     if (s_gd_success || s_gd_failure) {
         waiting_for_radio = 0;
-        // TODO: Handle setting results and such here?
+        if (set_badge_downloaded(gd_curr_id)) {
+            // New!
+            s_gd_success = 2;
+        } else {
+            // Old.
+        }
 
         // We specifically do NOT clear these signals here.
         qc15_mode = QC15_MODE_GAME;
