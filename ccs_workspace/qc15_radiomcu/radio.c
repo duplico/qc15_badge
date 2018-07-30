@@ -33,9 +33,10 @@ void radio_send_progress_frame(uint8_t frame_id) {
     payload->part_id = badge_status.code_starting_part + frame_id;
     memcpy(payload->part_data, badge_status.code_part_unlocks[frame_id],
            CODE_SEGMENT_REP_LEN);
-    crc16_append_buffer(&curr_packet_tx, sizeof(radio_proto)-2);
+    crc16_append_buffer((uint8_t *)&curr_packet_tx, sizeof(radio_proto)-2);
 
-    rfm75_tx(RFM75_BROADCAST_ADDR, 1, &curr_packet_tx, RFM75_PAYLOAD_SIZE);
+    rfm75_tx(RFM75_BROADCAST_ADDR, 1, (uint8_t *)&curr_packet_tx,
+             RFM75_PAYLOAD_SIZE);
 }
 
 uint8_t validate(radio_proto *msg, uint8_t len) {
@@ -53,14 +54,16 @@ uint8_t validate(radio_proto *msg, uint8_t len) {
     return (crc16_check_buffer((uint8_t *) msg, len-2));
 }
 
-void set_badge_in_range(uint16_t id, char *name) {
+void set_badge_in_range(uint16_t id, uint8_t *name) {
     if (!ids_in_range[id].intervals_left) {
         // This badge is not currently in range.
         ipc_msg_gd_arr_t ipc_out;
         ipc_out.badge_id = id;
         memcpy(ipc_out.name, name, QC15_BADGE_NAME_LEN);
         // Guarantee send:
-        while (!ipc_tx_op_buf(IPC_MSG_GD_ARR, &ipc_out, sizeof(ipc_msg_gd_arr_t)));
+        while (!ipc_tx_op_buf(IPC_MSG_GD_ARR, (uint8_t *)&ipc_out,
+                              sizeof(ipc_msg_gd_arr_t)));
+
     }
     ids_in_range[id].intervals_left = RADIO_GD_INTERVAL;
 }
@@ -100,7 +103,7 @@ void radio_handle_download(uint16_t id, radio_connect_payload *payload) {
         // We need to mark this badge as connectable.
         ids_in_range[id].connect_intervals = 2;
         // We also treat this like a beacon, and update the name.
-        set_badge_in_range(id, payload->name);
+        set_badge_in_range(id, &payload->name[0]);
     } else if (payload->connect_flags == RADIO_CONNECT_FLAG_DOWNLOAD) {
         // Inform our main MCU that this badge has downloaded our information
         //  brain. (We don't actually track whether we're connectable - the
@@ -108,7 +111,7 @@ void radio_handle_download(uint16_t id, radio_connect_payload *payload) {
         // This while loop is to KEEP TRYING TO TRANSMIT until we're successful.
         //  It's hideously inefficient and should be done asynchronously,
         //  but it's not. Deal with it <file://../../misc/dealwithit.gif>.
-        while (!ipc_tx_op_buf(IPC_MSG_GD_UL, &id, 2));
+        while (!ipc_tx_op_buf(IPC_MSG_GD_UL, (uint8_t *)&id, 2));
     }
 }
 
@@ -189,8 +192,9 @@ void radio_set_connectable() {
     payload->connect_flags = RADIO_CONNECT_FLAG_LISTENING;
     memcpy(payload->name, badge_status.person_name, QC15_PERSON_NAME_LEN);
 
-    crc16_append_buffer(&curr_packet_tx, sizeof(radio_proto)-2);
-    rfm75_tx(RFM75_BROADCAST_ADDR, 1, &curr_packet_tx, RFM75_PAYLOAD_SIZE);
+    crc16_append_buffer((uint8_t *)&curr_packet_tx, sizeof(radio_proto)-2);
+    rfm75_tx(RFM75_BROADCAST_ADDR, 1, (uint8_t *)&curr_packet_tx,
+             RFM75_PAYLOAD_SIZE);
 
 }
 
@@ -204,9 +208,9 @@ void radio_send_download(uint16_t id) {
     payload->connect_flags = RADIO_CONNECT_FLAG_DOWNLOAD;
     memcpy(payload->name, badge_status.person_name, QC15_PERSON_NAME_LEN);
 
-    crc16_append_buffer(&curr_packet_tx, sizeof(radio_proto)-2);
+    crc16_append_buffer((uint8_t *)&curr_packet_tx, sizeof(radio_proto)-2);
     // Send a UNICAST! With ACKING.
-    rfm75_tx(id, 0, &curr_packet_tx, RFM75_PAYLOAD_SIZE);
+    rfm75_tx(id, 0, (uint8_t *)&curr_packet_tx, RFM75_PAYLOAD_SIZE);
 }
 
 /// Do our regular radio and gaydar interval actions.
@@ -223,7 +227,7 @@ void radio_interval() {
             //  aged out. If it's successful, we can actually age it out.
             //  If not, we need to wait for the next interval and try again
             //  until we're not sending anymore.
-            if (ipc_tx_op_buf(IPC_MSG_GD_DEP, &i, 2))
+            if (ipc_tx_op_buf(IPC_MSG_GD_DEP, (uint8_t *)&i, 2))
                 ids_in_range[i].intervals_left = 0;
         } else if (ids_in_range[i].intervals_left) {
             // Otherwise, just decrement it.
@@ -250,10 +254,11 @@ void radio_interval() {
     payload->time = (qc_clock & 0x00FFFFFF); // Mask out the MSByte
 
     memcpy(payload->name, badge_status.person_name, QC15_PERSON_NAME_LEN);
-    crc16_append_buffer(&curr_packet_tx, sizeof(radio_proto)-2);
+    crc16_append_buffer((uint8_t *)&curr_packet_tx, sizeof(radio_proto)-2);
 
     // Send our beacon.
-    rfm75_tx(RFM75_BROADCAST_ADDR, 1, &curr_packet_tx, RFM75_PAYLOAD_SIZE);
+    rfm75_tx(RFM75_BROADCAST_ADDR, 1, (uint8_t *)&curr_packet_tx,
+             RFM75_PAYLOAD_SIZE);
 }
 
 void radio_init(uint16_t addr) {
