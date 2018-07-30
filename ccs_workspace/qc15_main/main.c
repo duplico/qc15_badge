@@ -539,9 +539,10 @@ void main (void)
 
     __bis_SR_register(GIE);
 
+    badge_conf.active = 0;
     // hold DOWN on turn-on for verbose boot:
     bootstrap(initial_buttons & BIT4); // interrupts required.
-
+    badge_conf.active = 1;
     // TODO:
     // Hey, we need to NOT send the radio module its complete config in the
     //  bootstrap method.

@@ -74,6 +74,7 @@ typedef struct {
     uint8_t badges_uploaded[57];
     uint32_t ubers_seen, ubers_downloaded, ubers_uploaded;
     uint32_t handlers_seen, handlers_downloaded, handlers_uploaded;
+    uint8_t active;
     uint16_t crc16;
 } qc15conf;
 
@@ -92,6 +93,7 @@ typedef struct {
     uint8_t ubers_seen_count, ubers_downloaded_count, ubers_uploaded_count;
     uint8_t handlers_seen_count, handlers_downloaded_count,
             handlers_uploaded_count;
+    uint8_t active;
 } qc15status;
 
 typedef struct {

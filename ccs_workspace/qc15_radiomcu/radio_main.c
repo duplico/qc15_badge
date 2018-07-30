@@ -391,7 +391,8 @@ void main (void)
             //  allowed.
             if (rfm75_tx_avail()) {
                 s_radio_interval = 0;
-                radio_interval();
+                if (badge_status.active)
+                    radio_interval();
             }
         }
 
