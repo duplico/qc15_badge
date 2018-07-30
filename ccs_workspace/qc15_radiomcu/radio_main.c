@@ -418,6 +418,9 @@ void RTC_ISR() {
     if (RTCIV == RTCIV__RTCIFG) {
         f_time_loop = 1;
         qc_clock.time++;
+        if (qc_clock.time == 536870912) {
+            qc_clock.time = 268435456;
+        }
         LPM_EXIT;
     }
 }
