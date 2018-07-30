@@ -42,9 +42,6 @@ uint8_t badge_downloaded(uint16_t id) {
 }
 
 void load_badge_name(uint8_t *buf, uint16_t id) {
-    char *t="Skippy";
-    strcpy(buf, t);
-    return;
     // TODO TODO TODO TODO TODO TODO!!!!!
     if (!(global_flash_lockout&FLASH_LOCKOUT_READ)) {
         s25fs_read_data(
@@ -53,9 +50,10 @@ void load_badge_name(uint8_t *buf, uint16_t id) {
                 QC15_BADGE_NAME_LEN
         );
     } else {
-        // TODO
+        char *t="BADGE";
+        strcpy((char *)buf, t);
+        return;
     }
-
 }
 
 void load_person_name(uint8_t *buf, uint16_t id) {
@@ -69,11 +67,11 @@ void load_person_name(uint8_t *buf, uint16_t id) {
     }
 }
 
-void set_badge_seen(uint16_t id, uint8_t *name) {
+uint8_t set_badge_seen(uint16_t id, uint8_t *name) {
     if (id >= QC15_BADGES_IN_SYSTEM)
-        return;
+        return 0;
     if (badge_seen(id)) {
-        return;
+        return 0;
     }
     set_id_buf(id, badge_conf.badges_seen);
     badge_conf.badges_seen_count++;
@@ -124,13 +122,14 @@ void set_badge_seen(uint16_t id, uint8_t *name) {
     }
 
     save_config();
+    return 1;
 }
 
-void set_badge_uploaded(uint16_t id) {
+uint8_t set_badge_uploaded(uint16_t id) {
     if (id >= QC15_BADGES_IN_SYSTEM)
-        return;
+        return 0;
     if (badge_uploaded(id)) {
-        return;
+        return 0;
     }
     set_id_buf(id, badge_conf.badges_uploaded);
     badge_conf.badges_uploaded_count++;
@@ -146,14 +145,16 @@ void set_badge_uploaded(uint16_t id) {
     }
 
     save_config();
+
+    return 1;
 }
 
 // TODO: Break out the save_config part
-void set_badge_downloaded(uint16_t id) {
+uint8_t set_badge_downloaded(uint16_t id) {
     if (id >= QC15_BADGES_IN_SYSTEM)
-        return;
+        return 0;
     if (badge_downloaded(id)) {
-        return;
+        return 0;
     }
     set_id_buf(id, badge_conf.badges_downloaded);
     badge_conf.badges_downloaded_count++;
@@ -169,6 +170,7 @@ void set_badge_downloaded(uint16_t id) {
     }
 
     save_config();
+    return 1;
 }
 
 
@@ -239,8 +241,8 @@ void generate_config() {
     }
 
     // TODO: REMOVE!!!
-    char initial_person_name[] = "AB";
-    strcpy((char *) &(badge_conf.person_name[0]), initial_person_name);
+    uint8_t initial_person_name[] = "AB";
+    strcpy((char *) &(badge_conf.person_name[0]), (char *)initial_person_name);
     ///////////////////
 
     // Determine which segment we have (and therefore which parts)

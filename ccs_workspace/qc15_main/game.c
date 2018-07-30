@@ -323,12 +323,12 @@ uint8_t game_process_special() {
             fire_special = 1;
         }
         if (current_state->other_series[i].type_id == SPECIAL_CONNECT_SUCCESS_NEW &&
-                s_gd_success) { // TODO
+                s_gd_success == 2) { // TODO
             s_gd_success = 0;
             fire_special = 1;
         }
         if (current_state->other_series[i].type_id == SPECIAL_CONNECT_SUCCESS_OLD &&
-                s_gd_success) { // TODO
+                s_gd_success == 1) { // TODO
             s_gd_success = 0;
             fire_special = 1;
         }
