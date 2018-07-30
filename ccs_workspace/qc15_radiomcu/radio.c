@@ -86,9 +86,21 @@ void radio_handle_beacon(uint16_t id, radio_beacon_payload *payload) {
     // That was easy. The main MCU will handle the rest of the logic. All we
     //  care about is keeping track of who's in range.
 
-    // TODO: Handle clock setting
-    // TODO: if our crystal is broken, tend to accept updates from other
-    //  badges.
+    // We ignore faulty incoming clocks.
+    if (payload->time.fault)
+        return;
+
+    if (!qc_clock.authoritative || qc_clock.fault) {
+        if (payload->time.authoritative || payload->time.time > qc_clock.time) {
+            // We adjust our time if the remote clock authoritative,
+            //  or if it's not authoritative but has been on longer.
+            qc_clock.authoritative = payload->time.authoritative;
+            qc_clock.time = payload->time.time;
+        }
+    }
+
+    // Handle clock setting
+
 
 }
 
@@ -251,7 +263,7 @@ void radio_interval() {
     curr_packet_tx.badge_id = badge_status.badge_id;
     curr_packet_tx.msg_type = RADIO_MSG_TYPE_BEACON;
     curr_packet_tx.proto_version = RADIO_PROTO_VER;
-    payload->time = (qc_clock & 0x00FFFFFF); // Mask out the MSByte
+    memcpy(&payload->time, (uint8_t *)&qc_clock, sizeof(qc_clock_t));
 
     memcpy(payload->name, badge_status.person_name, QC15_PERSON_NAME_LEN);
     crc16_append_buffer((uint8_t *)&curr_packet_tx, sizeof(radio_proto)-2);

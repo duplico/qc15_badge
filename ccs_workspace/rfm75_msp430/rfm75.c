@@ -208,6 +208,10 @@ uint8_t rfm75_tx_avail() {
  **
  */
 void rfm75_tx(uint16_t addr, uint8_t noack, uint8_t* data, uint8_t len) {
+    if (!rfm75_tx_avail()) {
+        return;
+    }
+
     rfm75_state = RFM75_TX_INIT;
     uint8_t wr_cmd = WR_TX_PLOAD_NOACK;
 

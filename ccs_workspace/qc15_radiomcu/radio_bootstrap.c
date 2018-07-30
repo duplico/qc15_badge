@@ -35,7 +35,7 @@ void bootstrap() {
     uint8_t rx_from_main[IPC_MSG_LEN_MAX] = {0};
     uint8_t bootstrap_status = POST_MCU;
     uint8_t failure_flags = 0x00;
-    qc_clock = 0;
+    qc_clock.time = 0;
 
     if (bootstrap_status == POST_MCU) {
         if (!1) {
@@ -86,11 +86,11 @@ void bootstrap() {
 
         // Re-send our POST message (which doubles as a request for our startup
         //  status/config struct) every quarter-second.
-        if (bootstrap_status == POST_IPC && qc_clock==8) {
-            qc_clock = 0;
+        if (bootstrap_status == POST_IPC && qc_clock.time==8) {
+            qc_clock.time = 0;
             ipc_tx_byte(IPC_MSG_POST | failure_flags);
         }
     }
     // Bootstrapping is complete. Cleanup:
-    qc_clock = 0;
+    qc_clock.time = 0;
 }
