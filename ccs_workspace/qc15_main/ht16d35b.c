@@ -308,8 +308,7 @@ void ht16d_send_gray() {
 /// Set some of the colors, and immediately send them to the LED controller.
 void ht16d_set_colors(uint8_t id_start, uint8_t id_len, rgbcolor16_t* colors) {
     if (id_start >= HT16D_LED_COUNT || id_start+id_len > HT16D_LED_COUNT) {
-        // ASSERT
-        while (1);
+        return;
     }
     for (uint8_t i=0; i<id_len; i++) {
         ht16d_gs_values[(id_start+i)][0] = (uint8_t)(colors[i].r >> 7);
