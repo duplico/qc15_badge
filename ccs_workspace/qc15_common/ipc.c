@@ -38,7 +38,6 @@ uint8_t ipc_tx_op_buf(uint8_t op, uint8_t *tx_buf, uint8_t len) {
 
     if (len > IPC_MSG_LEN_MAX) {
         len = IPC_MSG_LEN_MAX;
-        while (1); // TODO: ASSERT/SPIN
     }
 
     ipc_tx_buf[0] = op;
