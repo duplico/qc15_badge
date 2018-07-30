@@ -26,6 +26,7 @@
 #include "flash_layout.h"
 #include "ipc.h"
 #include "s25fs.h"
+#include "codes.h"
 
 #include "badge.h"
 
