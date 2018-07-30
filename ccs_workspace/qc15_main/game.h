@@ -73,6 +73,7 @@ typedef struct {
 
 extern uint8_t game_name_buffer[QC15_BADGE_NAME_LEN];
 extern uint8_t s_game_checkname_success;
+extern uint8_t s_turn_on_file_lights;
 
 void game_begin();
 void game_handle_loop();

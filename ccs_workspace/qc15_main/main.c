@@ -61,6 +61,7 @@ uint8_t s_got_next_id = 0;
 uint8_t s_gd_success = 0;
 uint8_t s_gd_failure = 0;
 uint8_t s_game_checkname_success = 0;
+uint8_t s_turn_on_file_lights = 0;
 
 uint16_t gd_curr_id = 0;
 uint16_t gd_starting_id = 0;
@@ -358,6 +359,10 @@ void poll_temp() {
  */
 void handle_global_signals() {
     uint8_t rx_from_radio[IPC_MSG_LEN_MAX];
+
+    if (s_turn_on_file_lights) {
+        s_turn_on_file_lights = 0;
+    }
 
     if (f_time_loop) {
         f_time_loop = 0;

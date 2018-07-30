@@ -41,5 +41,6 @@ void led_off();
 void led_on();
 void led_set_anim(const led_ring_animation_t *anim, uint8_t anim_type, uint8_t loops, uint8_t use_pad_in_loops);
 void led_set_anim_none();
+void led_activate_file_lights();
 
 #endif /* LEDS_H_ */

@@ -132,8 +132,6 @@ game_state_t all_states[] = {(game_state_t){.entry_series_id=0, .timer_series_le
 #define CLOSABLE_STATES 8
 
 
-
-
 ////
 
 
@@ -156,7 +154,7 @@ uint16_t last_state_id = 0;
 uint16_t current_state_id;
 
 uint8_t in_action_series = 0;
-uint16_t game_curr_elapsed = 0;
+uint32_t game_curr_elapsed = 0;
 
 uint8_t text_selection = 0;
 
@@ -564,6 +562,10 @@ void do_action(game_action_t *action) {
             gd_curr_id = GAME_NULL;
             while (!ipc_tx_op_buf(IPC_MSG_ID_NEXT, &gd_starting_id, 2));
             lcd111_clear(LCD_BTM);
+        } else if (action->detail == OTHER_ACTION_TURN_ON_THE_LIGHTS_TO_REPRESENT_FILE_STATE) {
+            badge_conf.file_lights_on = 1;
+            s_turn_on_file_lights = 1;
+            save_config();
         }
         break;
     }

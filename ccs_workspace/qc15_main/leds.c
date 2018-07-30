@@ -49,7 +49,11 @@ rgbcolor16_t led_ring_dest[18];
 /// The amount to change the ring's value every step.
 rgbdelta_t led_ring_step[18];
 
-uint8_t led_line_state = 0;
+#define LED_LINE_STEPS_PER_FRAME 32
+
+uint8_t led_line_frame = 0;
+uint8_t led_line_step = 0;
+uint8_t led_line_offset[6] = {0,};
 rgbcolor16_t led_line_curr[6] = {0,};
 rgbcolor16_t led_line_dest[6];
 rgbdelta_t led_line_step[6];
@@ -296,8 +300,7 @@ void led_on() {
         led_anim_type = sleep_anim_type;
 }
 
-/// LED timestep function, which should be called 32x per second.
-void led_timestep() {
+void led_ring_timestep() {
     if (!led_anim_type) {
         // LED_ANIM_TYPE_NONE
         return;
@@ -373,6 +376,52 @@ void led_timestep() {
         }
         led_display_colors();
     }
+}
 
+uint8_t led_line_next_offset(uint8_t file_id) {
+    return (led_line_offset[file_id]+1)%12;
+}
 
+void led_activate_file_lights() {
+    led_line_step = 0;
+    led_line_frame = 0;
+    for (uint8_t i=0; i<6; i++) {
+        led_line_offset[i] = 6; // = 0 % 6, but 6 so we can go "negative"
+    }
+
+    for (uint8_t i=0; i<6; i++) {
+        memcpy(&led_line_curr[i], &led_line_centers[led_line_offset[i]%6], sizeof(rgbcolor16_t));
+        memcpy(&led_line_dest[i], &led_line_centers[led_line_next_offset(i)%6], sizeof(rgbcolor16_t));
+    }
+}
+
+void led_line_timestep() {
+    led_line_step++;
+    if (led_line_step == LED_LINE_STEPS_PER_FRAME) {
+        for (uint8_t i=0; i<6; i++) {
+            led_line_curr[i] = led_line_dest[i];
+        }
+
+        led_line_step = 0;
+        led_line_frame++;
+
+        for (uint8_t i=0; i<6; i++) {
+            led_line_offset[i] = led_line_next_offset(i);
+            memcpy(&led_line_dest[i], &led_line_centers[led_line_offset[i]%6], sizeof(rgbcolor16_t));
+
+        }
+
+    } else {
+        for (uint8_t i=0; i<6; i++) {
+            led_line_curr[i].r+= led_line_curr[i].r;
+            led_line_curr[i].g+= led_line_curr[i].g;
+            led_line_curr[i].b+= led_line_curr[i].b;
+        }
+    }
+}
+
+/// LED timestep function, which should be called 32x per second.
+void led_timestep() {
+    led_ring_timestep();
+    led_line_timestep();
 }
