@@ -39,7 +39,9 @@ uint8_t s_connect_needed = 0;
 uint8_t s_download_needed = 0;
 uint16_t radio_download_id = 0;
 
-volatile uint32_t qc_clock = 0;
+
+volatile qc_clock_t qc_clock = {0};
+
 /// The current state of the switch's bit in its IN register (only BIT2 used).
 /**
  ** Because the main MCU assumes that the badge starts switched ON, and the
@@ -173,6 +175,10 @@ void init_clocks() {
     );
 //    CSCTL4 = SELMS__DCOCLKDIV | SELA__XT1CLK;  // Set ACLK = XT1CLK = 32768Hz
 
+    if (CSCTL7 & XT1OFFG) {
+        // Crystal is no good.
+        qc_clock.fault = 1;
+    }
 }
 
 /// Set up the real time clock to give us a tick every 1/32 sec.
@@ -214,12 +220,11 @@ void rtc_init() {
     // In order to use SMCLK or ACLK as an input, we need to do two things.
     //  We select that clock source for the RTC by setting RTCCTL.RTCSS=0b01,
     //  but first we need to configure register SYSCFG2.RTCCLK=RTC_ACLK (0b1).
-//    SYSCFG2 |= RTCCKSEL__RTC_ACLK;
+    SYSCFG2 |= RTCCKSEL__RTC_ACLK;
 
     // RTCSR_1 means "clear the counter and reload from RTCMOD."
-//    RTCCTL = RTCSS_1  | RTCSR_1;
-    RTCCTL = RTCSS__XT1CLK | RTCSR_1;
-//    RTCIV; // Read the vector to clear the interrupt.
+    RTCCTL = RTCSS__SMCLK | RTCSR_1; // SMCLK here -> ACLK, really.
+    RTCIV; // Read the vector to clear the interrupt.
 
     RTCCTL |= RTCIE; // Enable the interrupt.
 }
@@ -350,11 +355,10 @@ void main (void)
             rfm75_deferred_interrupt();
         }
 
-        // TODO: Check last vs current and see if any steps need to happen.
         if (f_time_loop) {
             f_time_loop = 0;
             poll_switch();
-            if (qc_clock % 512 == 0) {
+            if (qc_clock.time % 512 == 0) {
                 // Every 16 seconds,
                 s_radio_interval = 1;
             }
@@ -413,7 +417,7 @@ __interrupt
 void RTC_ISR() {
     if (RTCIV == RTCIV__RTCIFG) {
         f_time_loop = 1;
-        qc_clock++;
+        qc_clock.time++;
         LPM_EXIT;
     }
 }

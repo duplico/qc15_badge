@@ -37,8 +37,7 @@ typedef struct {
 } radio_proto;
 
 typedef struct { // Beacon payload (broadcast)
-    /// 24 LSBits are the clock, and MSBit is `1` if the clock has authority.
-    uint32_t time;
+    qc_clock_t time;
     uint8_t name[QC15_PERSON_NAME_LEN];
 } radio_beacon_payload;
 

@@ -94,12 +94,18 @@ typedef struct {
             handlers_uploaded_count;
 } qc15status;
 
+typedef struct {
+    uint32_t authoritative : 1;
+    uint32_t fault : 1;
+    uint32_t time : 30;
+} qc_clock_t;
+
 /// Our 1/32 second clock, which is ephemeral and sourced from the radio MCU.
 /**
  ** Both MCUs have this clock variable, but the radio MCU's is authoritative
  ** (because it has the watch crystal on it).
  */
-extern volatile uint32_t qc_clock;
+extern volatile qc_clock_t qc_clock;
 
 #define SMCLK_FREQ_KHZ 1000
 #define SMCLK_FREQ_HZ 1000000

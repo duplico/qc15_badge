@@ -72,7 +72,7 @@ uint8_t power_switch_status = 0;
 uint8_t qc15_mode;
 
 // Not persist:
-volatile uint32_t qc_clock;
+volatile qc_clock_t qc_clock;
 uint16_t badges_nearby = 0;
 
 // If I change this to NOINIT, it'll persist between flashings of the badge.
@@ -497,7 +497,7 @@ void connect_handle_loop() {
         return;
     }
 
-    if (qc_clock % 512 == 0) {
+    if (qc_clock.time % 512 == 0) {
         // Every 16 seconds,
         // We need to send an advertisement.
         while (!ipc_tx_byte(IPC_MSG_GD_EN));
@@ -595,6 +595,6 @@ __interrupt
 void TIMER_ISR() {
     // All we have here is CCIFG0
     f_time_loop = 1;
-    qc_clock++;
+    qc_clock.time++;
     LPM_EXIT;
 }
