@@ -519,20 +519,25 @@ void connect_handle_loop() {
 
     if (s_gd_success || s_gd_failure) {
         waiting_for_radio = 0;
-        if (set_badge_downloaded(gd_curr_id)) {
-            // New!
-            s_gd_success = 2;
-        } else {
-            // Old.
-        }
-
-        // We specifically do NOT clear these signals here.
-        qc15_mode = QC15_MODE_GAME;
     }
 
     if (waiting_for_radio) {
         // User input is BLOCKED OUT while we're talking to the other MCU.
         // TODO: Consider a timeout.
+        return;
+    }
+
+    if (s_gd_success) {
+        if (set_badge_downloaded(gd_curr_id)) {
+            // New!
+            s_gd_success = 2;
+        } else {
+            // Old.
+            s_gd_success = 2;
+        }
+
+        // We specifically do NOT clear these signals here.
+        qc15_mode = QC15_MODE_GAME;
         return;
     }
 
