@@ -319,7 +319,7 @@ void handle_ipc_rx(uint8_t *rx_from_radio) {
             id = next_nearby_badge_id(id);
         else
             id = prev_nearby_badge_id(id);
-        while (!ipc_tx_op_buf(IPC_MSG_ID_NEXT, &id, 2));
+        while (!ipc_tx_op_buf(IPC_MSG_ID_NEXT, (uint8_t *)&id, 2));
         break;
     default:
         break;
