@@ -350,6 +350,31 @@ void main (void)
     // Reinitialize the radio with our correct ID:
     radio_init(badge_status.badge_id);
 
+    while (!badge_status.active) {
+        if (f_time_loop) {
+            f_time_loop = 0;
+            poll_switch();
+        }
+        if (f_ipc_rx) {
+            f_ipc_rx = 0;
+            if (ipc_get_rx(rx_from_main)) {
+                handle_ipc_rx(rx_from_main);
+            }
+        }
+        if (s_switch) {
+            // The switch has been toggled. So we need to send a message to
+            //  that effect. This is a fairly important message, so we'll
+            //  keep trying to send it every time we get here, until it
+            //  succeeds. But we're not going to wait for an ACK.
+            // Because the switch is "active low" (that is, LEFT
+            //  is "ON" and corresponds to LOW), we're going to take this
+            //  opportunity to evaluate sw_state and reverse it.
+            if (ipc_tx_byte(IPC_MSG_SWITCH | (sw_state ? 0 : 1))) {
+                s_switch = 0;
+            }
+        }
+    }
+
     while (1) {
         if (f_rfm75_interrupt) {
             rfm75_deferred_interrupt();
@@ -391,8 +416,7 @@ void main (void)
             //  allowed.
             if (rfm75_tx_avail()) {
                 s_radio_interval = 0;
-                if (badge_status.active)
-                    radio_interval();
+                radio_interval();
             }
         }
 
