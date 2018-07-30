@@ -6,13 +6,13 @@ U    0 Evan
      5 Shaun
      6 Marcus
      7 Jake
-UH   8 Aaron T
-     9 Jonathan N
-    10 Jason P
-    11 Collin 
+US   8 Aaron T
+     9 Jason
+    10 Alyssa
+    11 Ben
     12 Brian K
-    13 Alyssa
-    14 Ben
+UH  13 Jonathan N
+    14 Collin
  H  15 Jeff W
     16 Brad M
     17 Shawn M
