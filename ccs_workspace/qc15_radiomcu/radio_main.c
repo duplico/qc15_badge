@@ -371,25 +371,25 @@ void main (void)
             }
         }
 
-        if (s_connect_needed) {
-            if (rfm75_tx_avail()) {
+        // Don't even bother checking any of the radio-transmit-causing signals
+        //  unless we're in a state where TX is available.
+        if (rfm75_tx_avail()) {
+            if (s_connect_needed) {
                 s_connect_needed--;
                 radio_set_connectable();
             }
-        }
 
-        if (s_download_needed && rfm75_tx_avail()) {
-            s_download_needed = 0;
-            radio_send_download(radio_download_id);
-        }
+            if (s_download_needed) {
+                s_download_needed = 0;
+                radio_send_download(radio_download_id);
+            }
 
-        if (s_radio_interval) {
-            // Calling radio_interval() has _lots_ of side effects, and also
-            //  does a radio TX. We need the TX to happen for this interval
-            //  to really be valid, so if we can't do the TX we should just
-            //  defer the radio interval until the next time a transmit is
-            //  allowed.
-            if (rfm75_tx_avail()) {
+            if (s_need_progress_tx) {
+                s_need_progress_tx = 0;
+                radio_send_progress_frame(progress_tx_id);
+            }
+
+            if (s_radio_interval) {
                 s_radio_interval = 0;
                 radio_interval();
             }

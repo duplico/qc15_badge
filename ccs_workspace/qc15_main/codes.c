@@ -12,10 +12,13 @@
 
 #include "qc15.h"
 #include "util.h"
+#include "codes.h"
 
 #include "badge.h"
 
 #define PART_SIZE 80
+
+uint8_t s_part_solved = 0;
 
 uint8_t is_solved(uint8_t code_id) {
 //    uint8_t code_part_unlocks[6][CODE_SEGMENT_REP_LEN];
@@ -92,6 +95,11 @@ void decode_random_chars(uint8_t part_id, uint8_t chars_to_decode) {
         }
         chars_to_decode--;
     }
+
+    if (is_solved(part_id)) {
+        s_part_solved = 0x80 | part_id;
+    }
+
     save_config();
 }
 
@@ -102,6 +110,7 @@ void decode_download(uint16_t downloaded_id) {
     part_id = part_id_downloaded(downloaded_id);
     if (part_id == 0xff) {
         return;
+        // Already done.
     }
 
     // Ok, so if we're here, we know that we can decode SOME NUMBER OF CHARS
@@ -120,19 +129,15 @@ void decode_upload() {
     decode_random_chars(3, 3);
 }
 
-#define EVENT_FRI_MIXER
-#define EVENT_BADGETALK
-#define EVENT_SAT_MIXER
-#define EVENT_SAT_PARTY
-#define EVENT_SAT_KARAOKE
-#define EVENT_CLOSING
-#define EVENT_FREEZER
-
 void decode_event(uint8_t event_id) {
     // This is PART 2!
     //  It's more of a special case. There are 7 events, each of which
-    //  unlocks 12 characters.
-    switch(event_id) {
-
+    //  unlocks CODE_SEGMENT_REP_LEN (10) characters,
+    //  except for the freezer, which unlocks 20.
+    for (uint8_t i=0; i<CODE_SEGMENT_REP_LEN; i++) {
+        badge_conf.code_part_unlocks[2][i] |= (BIT0 << event_id);
+        if (event_id == EVENT_FREEZER) {
+            badge_conf.code_part_unlocks[2][i] |= BIT7; // extra bit for freezer
+        }
     }
 }

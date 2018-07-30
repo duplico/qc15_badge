@@ -10,6 +10,10 @@
 
 #include <stdint.h>
 
-extern uint8_t my_segment_ids[6]
+extern uint8_t my_segment_ids[6];
+extern uint8_t s_part_solved;
+
+void decode_download(uint16_t downloaded_id);
+void decode_upload();
 
 #endif /* CODES_H_ */

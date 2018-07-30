@@ -70,8 +70,15 @@ void load_person_name(uint8_t *buf, uint16_t id) {
 }
 
 uint8_t set_badge_seen(uint16_t id, uint8_t *name) {
-    if (id >= QC15_BADGES_IN_SYSTEM)
+    if (id >= QC15_EVENT_ID_START && id <= QC15_EVENT_ID_END) {
+        decode_event(id - QC15_EVENT_ID_START);
         return 0;
+    } else if (id >= QC15_BADGES_IN_SYSTEM) {
+        return 0;
+    }
+
+    // If we're here, it's a badge.
+
     if (badge_seen(id)) {
         return 0;
     }
@@ -146,6 +153,7 @@ uint8_t set_badge_uploaded(uint16_t id) {
         badge_conf.handlers_uploaded_count++;
     }
 
+    decode_upload(id);
     save_config();
 
     return 1;
@@ -171,6 +179,7 @@ uint8_t set_badge_downloaded(uint16_t id) {
         badge_conf.handlers_downloaded_count++;
     }
 
+    decode_download(id);
     save_config();
     return 1;
 }

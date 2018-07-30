@@ -32,12 +32,20 @@
 #define POWER_SW_ON 1
 #define POWER_SW_OFF 0
 
-// NB: If a base ID higher than QC_BADGES_IN_SYSTEM is needed, then we will
-//     also have to change our radio validator.
+#define EVENT_FRI_MIXER 0
+#define EVENT_BADGETALK 1
+#define EVENT_SAT_MIXER 2
+#define EVENT_SAT_PARTY 3
+#define EVENT_SAT_KARAOKE 4
+#define EVENT_CLOSING 5
+#define EVENT_FREEZER 6
+
 #define QC15_BADGES_IN_SYSTEM 450
 #define QC15_BASE_ID QC15_BADGES_IN_SYSTEM
-#define QC15_CONTROL_ID (QC15_BADGES_IN_SYSTEM+1)
-#define QC15_HOSTS_IN_SYSTEM 452
+#define QC15_EVENT_ID_START (QC15_BADGES_IN_SYSTEM + 1) // 451
+#define QC15_EVENT_ID_END (QC15_BADGES_IN_SYSTEM + 1 + EVENT_FREEZER) // 457
+#define QC15_CONTROL_ID (QC15_EVENT_ID_END + 1) // 458
+#define QC15_HOSTS_IN_SYSTEM (QC15_CONTROL_ID+1) // 459
 
 #define CODE_SEGMENT_REP_LEN 10
 

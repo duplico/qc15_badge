@@ -186,6 +186,7 @@ void rfm75_enter_prx() {
 
 /// Query whether a call to rfm75_tx() is allowed right now.
 uint8_t rfm75_tx_avail() {
+    // TODO: we need a method to HOLD the RFM so we can TX after we call this.
     return rfm75_state == RFM75_RX_LISTEN || rfm75_state == RFM75_TX_DONE ||
            rfm75_state == RFM75_RX_READY;
 }

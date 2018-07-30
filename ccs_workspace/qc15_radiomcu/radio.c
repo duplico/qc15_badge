@@ -21,6 +21,7 @@ badge_info_t ids_in_range[QC15_HOSTS_IN_SYSTEM] = {0};
 radio_proto curr_packet_tx;
 
 uint8_t progress_tx_id = 0;
+uint8_t s_need_progress_tx = 0;
 
 void radio_send_progress_frame(uint8_t frame_id) {
     radio_progress_payload *payload = (radio_progress_payload *)
@@ -45,7 +46,10 @@ uint8_t validate(radio_proto *msg, uint8_t len) {
         // TODO: check that this is working correctly, please.
         return 0;
     }
-    // TODO: Make sure it's not from me.
+    if (msg->badge_id == badge_status.badge_id) {
+        // TODO: Make sure it's not from me.
+        __no_operation();
+    }
 
     // Check for bad ID:
     if (msg->badge_id >= QC15_HOSTS_IN_SYSTEM)
@@ -70,18 +74,25 @@ void set_badge_in_range(uint16_t id, uint8_t *name) {
 }
 
 void radio_handle_beacon(uint16_t id, radio_beacon_payload *payload) {
-    if (id < QC15_BADGES_IN_SYSTEM) {
+    if (id < QC15_HOSTS_IN_SYSTEM) {
+        // Whatever it is (badge, base, event, controller),
+        //  inform the main MCU.
         set_badge_in_range(id, payload->name);
-    } else if (id == QC15_BASE_ID) {
+    }
+
+    if (id == QC15_BASE_ID) {
         // It's the suite base
         // Let's transmit our progress!
         // TODO: we shouldn't do this on every single one.
         // TODO: We should do the above badge interval logic with bases.
         // TODO: need to ask for tx_available
         progress_tx_id = 0;
-        radio_send_progress_frame(0);
+        s_need_progress_tx = 1;
     } else if (id == QC15_CONTROL_ID) {
-        // It's the event controller
+        // It's the remote control thingy, which may or may not do anything.
+    } else if (id >= QC15_EVENT_ID_START && id <= QC15_EVENT_ID_END) {
+        // It's an event beacon.
+        // Do we need to do anything special?
     }
 
     // That was easy. The main MCU will handle the rest of the logic. All we
@@ -99,10 +110,6 @@ void radio_handle_beacon(uint16_t id, radio_beacon_payload *payload) {
             qc_clock.time = payload->time.time;
         }
     }
-
-    // Handle clock setting
-
-
 }
 
 /// Another badge has connected to us and DOWNLOADED OUR INFORMATION BRAIN.
