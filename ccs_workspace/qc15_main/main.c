@@ -387,6 +387,7 @@ void cleanup_global_signals() {
 void badge_startup() {
     // Handle our main config
     init_config();
+    badge_conf.active = 1;
     save_config(); // TODO: just send it to the radio
     // Handle our animation
     // Handle our code LEDs
@@ -542,10 +543,6 @@ void main (void)
     badge_conf.active = 0;
     // hold DOWN on turn-on for verbose boot:
     bootstrap(initial_buttons & BIT4); // interrupts required.
-    badge_conf.active = 1;
-    // TODO:
-    // Hey, we need to NOT send the radio module its complete config in the
-    //  bootstrap method.
 
     // Housekeeping is now concluded. It's time to see the wizard.
     badge_startup();

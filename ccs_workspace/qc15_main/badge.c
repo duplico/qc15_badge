@@ -250,6 +250,7 @@ void generate_config() {
     set_badge_seen(badge_conf.badge_id, initial_person_name);
     set_badge_uploaded(badge_conf.badge_id);
     set_badge_downloaded(badge_conf.badge_id);
+
     save_config();
 
     qc15_mode = QC15_MODE_GAME;
