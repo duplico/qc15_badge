@@ -63,7 +63,9 @@ void load_person_name(uint8_t *buf, uint16_t id) {
         s25fs_read_data(buf, name_page_address + name_offset,
                         QC15_PERSON_NAME_LEN);
     } else {
-        // TODO
+        char *t="AB"; // TODO: HUMAN
+        strcpy((char *)buf, t);
+        return;
     }
 }
 

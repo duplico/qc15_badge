@@ -45,6 +45,7 @@ uint8_t validate(radio_proto *msg, uint8_t len) {
         // TODO: check that this is working correctly, please.
         return 0;
     }
+    // TODO: Make sure it's not from me.
 
     // Check for bad ID:
     if (msg->badge_id >= QC15_HOSTS_IN_SYSTEM)
