@@ -184,6 +184,25 @@ void timer_init() {
     Timer_A_startCounter(TIMER_A1_BASE, TIMER_A_UP_MODE);
 }
 
+void adc_init() {// Initialize the shared reference module
+    // By default, REFMSTR=1 => REFCTL is used to configure the internal reference
+    while(REFCTL0 & REFGENBUSY);              // If ref generator busy, WAIT
+    REFCTL0 |= REFVSEL_0 + REFON;             // Enable internal 1.2V reference
+
+    /* Initialize ADC12_A */
+    ADC12CTL0 &= ~ADC12ENC;                   // Disable ADC12
+    ADC12CTL0 = ADC12SHT0_8 + ADC12ON;        // Set sample time
+    ADC12CTL1 = ADC12SHP;                     // Enable sample timer
+    ADC12CTL3 = ADC12TCMAP;                   // Enable internal temperature sensor
+    ADC12MCTL0 = ADC12VRSEL_1 + ADC12INCH_30; // ADC input ch A30 => temp sense
+
+    while(!(REFCTL0 & REFGENRDY));            // Wait for reference generator
+                                              // to settle
+    ADC12CTL0 |= ADC12ENC;
+
+    ADC12CTL0 |= ADC12SC;                   // Sampling and conversion start
+}
+
 /// The master init function, which calls IO and peripherals' init functions.
 void init() {
     WDT_A_hold(WDT_A_BASE);
@@ -202,6 +221,7 @@ void init() {
     s25fs_init();
     ipc_init();
     timer_init();
+    adc_init();
 }
 
 /// Debounce the buttons by checking for consecutive similar values.
@@ -312,6 +332,23 @@ void handle_ipc_rx(uint8_t *rx) {
     }
 }
 
+void poll_temp() {
+    volatile uint16_t temperatureDegC;
+    uint16_t voltage_at_30c = *((unsigned int *)0x1A1A);
+    uint16_t voltage_at_85c = *((unsigned int *)0x1A1C);
+
+    if (!(ADC12IFGR0 & ADC12IFG0))
+        return;
+
+
+
+    temperatureDegC = (((long)ADC12MEM0 - voltage_at_30c) * (85 - 30))
+                       / (voltage_at_85c - voltage_at_30c)
+                       + 30;
+    // Sample again.
+    ADC12CTL0 |= ADC12SC;
+}
+
 /// Low-level handler for global interrupt and status signals.
 /**
  ** This function is ALWAYS called in the main loop, no matter what other
@@ -327,6 +364,7 @@ void handle_global_signals() {
         s_clock_tick = 1;
         led_timestep();
         poll_buttons();
+        poll_temp();
     }
 
     if (f_ipc_rx) {
