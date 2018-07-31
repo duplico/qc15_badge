@@ -140,13 +140,12 @@ void led_stage_color(rgbcolor16_t *dest_color_frame, uint8_t frame_index,
     }
 }
 
-#pragma CODE_SECTION(led_load_colors,".run_from_ram")
-
 /// Set up the current frame's color sets (i.e. dest and step).
 /**
  ** This function is located in RAM because it has lots of low-performance
  **  and power-hungry division operations.
  */
+__attribute__((ramfunc))
 void led_load_colors() {
     for (uint8_t i=0; i<led_ring_anim_num_leds; i++) {
         led_stage_color(&led_ring_dest[i],
