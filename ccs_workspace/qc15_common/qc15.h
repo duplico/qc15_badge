@@ -141,8 +141,6 @@ extern qc15status badge_status;
 #ifdef __MSP430FR5972__
 #define MCLK_FREQ_KHZ 8000
 #define MCLK_FREQ_HZ 8000000
-extern qc15conf badge_conf;
-extern qc15conf backup_conf;
 extern uint16_t badges_nearby;
 extern uint8_t global_flash_lockout;
 void save_config();

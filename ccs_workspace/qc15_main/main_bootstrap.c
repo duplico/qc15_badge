@@ -136,7 +136,7 @@ void bootstrap(uint8_t fastboot) {
             global_flash_lockout = FLASH_LOCKOUT_READ + FLASH_LOCKOUT_WRITE;
         }
 
-        if (!s25fs_post2()) { // Can we erase and write to the chip?
+        if (!fastboot && !s25fs_post2()) { // Can we erase and write to the chip?
             lcd111_set_text(0, "SPI NOR bad I/O ops");
             ht16d_all_one_color(200, 50, 0);
             delay_millis(2000);

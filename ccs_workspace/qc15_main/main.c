@@ -76,12 +76,6 @@ uint8_t qc15_mode;
 volatile qc_clock_t qc_clock;
 uint16_t badges_nearby = 0;
 
-// If I change this to NOINIT, it'll persist between flashings of the badge.
-#pragma PERSISTENT(badge_conf)
-qc15conf badge_conf = {0};
-#pragma PERSISTENT(backup_conf)
-qc15conf backup_conf = {0};
-
 uint8_t global_flash_lockout = 0;
 
 /// Initialize the system clocks and clock sources.
@@ -480,10 +474,8 @@ void checkname_handle_loop() {
 
         // We know the ID isn't null, and we know we've seen it. What's its
         //  name?
-        load_person_name(curr_name, gd_curr_id);
-
         // Is this the name we're looking for?
-        if (!strcmp(curr_name, game_name_buffer)) {
+        if (!strcmp(person_names[gd_curr_id], game_name_buffer)) {
             // We found the name we're looking for. Hooray!
             s_game_checkname_success = 1;
             qc15_mode = QC15_MODE_GAME;
@@ -504,7 +496,6 @@ void checkname_handle_loop() {
 }
 
 void connect_handle_loop() {
-    char curr_name[QC15_PERSON_NAME_LEN];
     char text[25];
 
     static uint8_t waiting_for_radio = 1;
@@ -520,11 +511,9 @@ void connect_handle_loop() {
         } else {
             // It's a REAL ONE!
             // TODO: Do we need a gaydar.c/h module?
-            load_badge_name(curr_name, gd_curr_id);
-            sprintf(text, "Badge 0x%x:%s", gd_curr_id, curr_name);
+            sprintf(text, "Badge 0x%x:%s", gd_curr_id, badge_names[gd_curr_id]);
             draw_text(LCD_BTM, text, 1);
-            load_person_name(curr_name, gd_curr_id);
-            sprintf(text, "Holder: %s", curr_name);
+            sprintf(text, "Holder: %s", person_names[gd_curr_id]);
             draw_text(LCD_TOP, text, 1);
         }
     }
@@ -603,6 +592,8 @@ void main (void)
     badge_startup();
 
     led_activate_file_lights();
+
+    qc15_mode = QC15_MODE_TEMP;
 
     while (1) {
         handle_global_signals();
