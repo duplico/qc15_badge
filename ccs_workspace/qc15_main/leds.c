@@ -11,6 +11,7 @@
 #include <stdlib.h>
 
 #include "qc15.h"
+#include "codes.h"
 #include "leds.h"
 
 /// Signal to the main loop that a temporary animation has finished.
@@ -52,8 +53,9 @@ rgbdelta_t led_ring_step[18];
 #define LED_LINE_STEPS_PER_FRAME 32
 
 uint8_t led_line_frame = 0;
-uint8_t led_line_step = 0;
+uint8_t led_line_frame_step = 0;
 uint8_t led_line_offset[6] = {0,};
+int8_t led_line_direction[6] = {1,1,1,1,1,1};
 rgbcolor16_t led_line_curr[6] = {0,};
 rgbcolor16_t led_line_dest[6];
 rgbdelta_t led_line_step[6];
@@ -379,49 +381,97 @@ void led_ring_timestep() {
 }
 
 uint8_t led_line_next_offset(uint8_t file_id) {
-    return (led_line_offset[file_id]+1)%12;
+    uint8_t file_id_min;
+    uint8_t file_id_max;
+    uint8_t file_id_center = file_id + 6;
+    uint8_t file_id_offset = led_line_offset[file_id];
+    uint16_t distance = 0;
+    if (is_solved(file_id)) {
+        // DIFFERENT BEHAVIOR
+        return file_id;
+    }
+
+    // Calculate how far away we are (distance /5 + 1)
+    distance = (5 - 5 * buffer_rank(badge_conf.code_part_unlocks[file_id], CODE_SEGMENT_REP_LEN) / 80) + 1; //TODO
+    file_id_min = file_id_center - distance;
+    file_id_max = file_id_center + distance;
+
+    if (file_id_offset > file_id_max)
+        return file_id_max;
+    else if (file_id_offset == file_id_max)
+        return file_id_max-1;
+    else if (file_id_offset < file_id_min)
+        return file_id_min;
+    else if (file_id_offset == file_id_min)
+        return file_id_min+1;
+    else
+        return file_id_offset + led_line_direction[file_id];
 }
 
 void led_activate_file_lights() {
-    led_line_step = 0;
+    led_line_frame_step = 0;
     led_line_frame = 0;
     for (uint8_t i=0; i<6; i++) {
         led_line_offset[i] = 6; // = 0 % 6, but 6 so we can go "negative"
     }
 
     for (uint8_t i=0; i<6; i++) {
-        memcpy(&led_line_curr[i], &led_line_centers[led_line_offset[i]%6], sizeof(rgbcolor16_t));
+        memcpy(&led_line_curr[i], &color_off, sizeof(rgbcolor16_t));
         memcpy(&led_line_dest[i], &led_line_centers[led_line_next_offset(i)%6], sizeof(rgbcolor16_t));
+
+        led_line_step[i].r = ((int_fast16_t) led_line_dest[i].r - (int_fast16_t)led_line_curr[i].r) / LED_LINE_STEPS_PER_FRAME;
+        led_line_step[i].g = ((int_fast16_t) led_line_dest[i].g - (int_fast16_t)led_line_curr[i].g) / LED_LINE_STEPS_PER_FRAME;
+        led_line_step[i].b = ((int_fast16_t) led_line_dest[i].b - (int_fast16_t)led_line_curr[i].b) / LED_LINE_STEPS_PER_FRAME;
     }
 }
 
 void led_line_timestep() {
-    led_line_step++;
-    if (led_line_step == LED_LINE_STEPS_PER_FRAME) {
+    led_line_frame_step++;
+    if (led_line_frame_step == LED_LINE_STEPS_PER_FRAME) {
         for (uint8_t i=0; i<6; i++) {
             led_line_curr[i] = led_line_dest[i];
         }
 
-        led_line_step = 0;
+        led_line_frame_step = 0;
         led_line_frame++;
 
         for (uint8_t i=0; i<6; i++) {
-            led_line_offset[i] = led_line_next_offset(i);
-            memcpy(&led_line_dest[i], &led_line_centers[led_line_offset[i]%6], sizeof(rgbcolor16_t));
+            if (1 || is_solved(i)) {
+                // Special case.
+                memcpy(&led_line_dest[i], ((i + led_line_frame) & 0x02) ? &led_line_centers[i] : &color_off, sizeof(rgbcolor16_t));
+            } else {
 
+                uint8_t next_offset = led_line_next_offset(i);
+
+                if (next_offset < led_line_offset[i])
+                    led_line_direction[i] = -1;
+                else
+                    led_line_direction[i] = 1;
+
+                led_line_offset[i] = next_offset;
+
+                memcpy(&led_line_dest[i], &led_line_centers[led_line_offset[i]%6], sizeof(rgbcolor16_t));
+            }
+
+            led_line_step[i].r = ((int_fast16_t) led_line_dest[i].r - (int_fast16_t)led_line_curr[i].r) / LED_LINE_STEPS_PER_FRAME;
+            led_line_step[i].g = ((int_fast16_t) led_line_dest[i].g - (int_fast16_t)led_line_curr[i].g) / LED_LINE_STEPS_PER_FRAME;
+            led_line_step[i].b = ((int_fast16_t) led_line_dest[i].b - (int_fast16_t)led_line_curr[i].b) / LED_LINE_STEPS_PER_FRAME;
         }
 
     } else {
         for (uint8_t i=0; i<6; i++) {
-            led_line_curr[i].r+= led_line_curr[i].r;
-            led_line_curr[i].g+= led_line_curr[i].g;
-            led_line_curr[i].b+= led_line_curr[i].b;
+            led_line_curr[i].r+= led_line_step[i].r;
+            led_line_curr[i].g+= led_line_step[i].g;
+            led_line_curr[i].b+= led_line_step[i].b;
         }
     }
+    ht16d_set_colors(18, 6, led_line_curr); // TODO, combine with above.
 }
 
 /// LED timestep function, which should be called 32x per second.
 void led_timestep() {
     led_ring_timestep();
-    led_line_timestep();
+    if (badge_conf.file_lights_on)
+        led_line_timestep();
+    // TODO: if animating, set colors.
 }
