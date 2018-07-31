@@ -83,7 +83,7 @@ void ht16d_init_io() {
 
     UCB0CTLW0 |= UCSWRST;
     UCB0CTLW0 |= UCMODE_3 + UCMST + UCSSEL__SMCLK;
-    UCB0BRW = 0x000A; // 100kbps (SMCLK/10)
+    UCB0BRW = 0x0003; // 333kbps (SMCLK/3)
     UCB0CTLW1 = UCASTP_0;
     UCB0TBCNT = 0;
     // The slave address is: 0b110100X,
@@ -111,10 +111,7 @@ void ht16d_send_array(uint8_t txdat[], uint8_t len) {
 
     for (uint8_t i=0; i<len; i++) {
         // Wait for the TX buffer to become available again.
-        while (!UCB0IFG & UCTXIFG) // While TX is unavailable, spin.
-            __no_operation();
-
-        __delay_cycles(1000);
+        while (!(UCB0IFG & UCTXIFG)); // While TX is unavailable, spin.
 
         UCB0IFG &= ~UCTXIFG; // Clear TX flag.
         UCB0TXBUF = txdat[i]; // write dat.
@@ -146,17 +143,14 @@ void ht16d_read_reg(uint8_t reg[]) {
     UCB0CTLW0 |= UCTR; // Transmit.
     UCB0CTLW0 |=  UCTXSTT; // Send a START.
 
-    while (!UCB0IFG & UCTXIFG) // Wait for the TX buffer to become available.
-        __no_operation();
+    while (!(UCB0IFG & UCTXIFG)); // Wait for the TX buffer to become available.
     while (UCB0CTLW0 & UCTXSTT); // Wait for the address to finish sending.
 
     // Stage HTCMD_READ_STATUS to send.
     UCB0TXBUF = HTCMD_READ_STATUS;
 
     // Wait for TX to complete.
-    while (!UCB0IFG & UCTXIFG) // While TX is unavailable, spin.
-            __no_operation();
-    delay_millis(1);
+    while (!(UCB0IFG & UCTXIFG));
 
     // Time to receive
     UCB0CTLW0 &= ~UCTR; // Set receive mode
@@ -165,8 +159,7 @@ void ht16d_read_reg(uint8_t reg[]) {
     // Now, we're going to get a dummy byte, then 20 data bytes.
     for (uint8_t i=0; i<20; i++) {
         // Wait until the RXed item is ready:
-        while (!(UCB0IFG & UCRXIFG0))
-            __no_operation();
+        while (!(UCB0IFG & UCRXIFG0));
         // Now, we've received something. Let's grab it.
         reg[i] = UCB0RXBUF;
     }
@@ -177,12 +170,7 @@ void ht16d_read_reg(uint8_t reg[]) {
 
     while (UCB0CTLW0 & UCTXSTP); // Wait for the STOP to finish sending.
 
-    // The other end is a circular buffer, so just wait for the stop to take.
-    while(UCB0IFG & UCRXIFG0) {
-        volatile uint8_t i;
-        i = UCB0RXBUF;
-        delay_millis(1);
-    }
+    UCB0IFG &= ~UCRXIFG0;
 }
 
 /// Initialize the HT16D35B, and enable the eUSCI for talking to it.
