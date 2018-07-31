@@ -40,6 +40,22 @@ void radio_send_progress_frame(uint8_t frame_id) {
              RFM75_PAYLOAD_SIZE);
 }
 
+void radio_send_status() {
+    radio_stats_payload *payload = (radio_stats_payload *)
+                                        (curr_packet_tx.msg_payload);
+
+    curr_packet_tx.badge_id = badge_status.badge_id;
+    curr_packet_tx.msg_type = RADIO_MSG_TYPE_STATS;
+    curr_packet_tx.proto_version = RADIO_PROTO_VER;
+
+    memcpy(payload, &badge_status.badges_seen_count, 12);
+
+    crc16_append_buffer((uint8_t *)&curr_packet_tx, sizeof(radio_proto)-2);
+
+    rfm75_tx(RFM75_BROADCAST_ADDR, 1, (uint8_t *)&curr_packet_tx,
+             RFM75_PAYLOAD_SIZE);
+}
+
 uint8_t validate(radio_proto *msg, uint8_t len) {
     if (len != sizeof(radio_proto)) {
         // PROBLEM
@@ -181,6 +197,8 @@ void radio_tx_done(uint8_t ack) {
             //  to send another, or whether that was the last one.
             if (progress_tx_id == 5) {
                 // This concludes our progress messages.
+                // Send a stats message.
+                radio_send_status();
                 break;
             }
             // These are unicast messages subject to auto-acknowledgment, but
@@ -196,8 +214,8 @@ void radio_tx_done(uint8_t ack) {
         case RADIO_MSG_TYPE_STATS:
             // We just sent our STATS somewhere.
             // I don't actually know whether we need to do anything after
-            //  we've done this. In fact, I'm not sure whether we're even
-            //  actually ever going to do it.
+            //  we've done this. Probably not.
+            // Break.
             break;
     }
 }

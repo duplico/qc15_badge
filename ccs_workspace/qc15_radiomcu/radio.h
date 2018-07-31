@@ -53,13 +53,13 @@ typedef struct { // Progress report payload (unicast to base)
 
 typedef struct { // Stats report payload (unicast to base???)
     uint16_t badges_seen_count;
-    uint16_t badges_connected_count;
+    uint16_t badges_downloaded_count;
     uint16_t badges_uploaded_count;
     uint8_t ubers_seen_count;
-    uint8_t ubers_connected_count;
+    uint8_t ubers_downloaded_count;
     uint8_t ubers_uploaded_count;
-    uint8_t handlers_seen;
-    uint8_t handlers_connected;
+    uint8_t handlers_seen_count;
+    uint8_t handlers_downloaded_count;
     uint8_t handlers_uploaded_count;
 } radio_stats_payload;
 

@@ -101,7 +101,7 @@ typedef struct {
     char badge_name[QC15_PERSON_NAME_LEN];
     uint8_t code_starting_part;
     uint8_t code_part_unlocks[6][CODE_SEGMENT_REP_LEN];
-    uint16_t badges_seen_count, badges_downloaded_count, badged_uploaded_count;
+    uint16_t badges_seen_count, badges_downloaded_count, badges_uploaded_count;
     uint8_t ubers_seen_count, ubers_downloaded_count, ubers_uploaded_count;
     uint8_t handlers_seen_count, handlers_downloaded_count,
             handlers_uploaded_count;
