@@ -64,7 +64,8 @@ char current_text[25] = "";
 uint8_t current_text_len = 0;
 
 uint8_t in_action_series = 0;
-uint32_t game_curr_elapsed = 0;
+uint32_t game_curr_action_elapsed = 0;
+uint32_t game_curr_state_elapsed = 0;
 
 uint8_t text_selection = 0;
 
@@ -405,16 +406,18 @@ uint8_t game_process_special() {
     return 0;
 }
 
-void game_set_state(uint16_t state_id) {
-    if (state_is_closed(state_id)) {
+void game_set_state(uint16_t state_id, uint8_t keep_previous) {
+    if (!keep_previous && state_is_closed(state_id)) {
         // State transitions to closed states have no effect.
         return;
     }
     lcd111_clear(LCD_TOP);
 
-    last_state_id = current_state_id;
+    if (!keep_previous)
+        last_state_id = current_state_id;
     in_action_series = 0;
-    game_curr_elapsed = 0;
+    game_curr_action_elapsed = 0;
+    game_curr_state_elapsed = 0;
     text_selection = 0;
 
     load_state(&loaded_state, state_id);
@@ -448,7 +451,7 @@ void game_begin() {
     all_animations[16] = anim_fallyellow;
 
     // TODO: stored state
-    game_set_state(STATE_ID_CRACKINGTHEFILE1);
+    game_set_state(current_state_id, 1);
 }
 
 uint8_t next_input_id() {
@@ -561,7 +564,7 @@ void do_action(game_action_t *action) {
         break;
     case GAME_ACTION_TYPE_STATE_TRANSITION:
         // Do a state transition
-        game_set_state(action->detail);
+        game_set_state(action->detail, 0);
         break;
     case GAME_ACTION_TYPE_PUSH:
         // Store the current state.
@@ -569,11 +572,11 @@ void do_action(game_action_t *action) {
         break;
     case GAME_ACTION_TYPE_POP:
         // Retrieve a stored state.
-        game_set_state(stored_state_id);
+        game_set_state(stored_state_id, 0);
         break;
     case GAME_ACTION_TYPE_PREVIOUS:
         // Return to the last state.
-        game_set_state(last_state_id);
+        game_set_state(last_state_id, 0);
         break;
     case GAME_ACTION_TYPE_CLOSE:
         close_state(current_state_id);
@@ -666,7 +669,7 @@ uint8_t start_action_series(uint16_t action_id) {
     // First, handle the case where this is an empty action series:
     if (action_id == ACTION_NONE) {
         in_action_series = 0;
-        game_curr_elapsed = 0;
+        game_curr_action_elapsed = 0;
         draw_text_selection();
         return 0;
     }
@@ -678,7 +681,7 @@ uint8_t start_action_series(uint16_t action_id) {
     select_action_choice(action_id);
     // We know we're in an action series, so set everything up:
     in_action_series = 1;
-    game_curr_elapsed = 0;
+    game_curr_action_elapsed = 0;
     lcd111_set_text(0, ""); // TODO
     do_action(&loaded_action);
     return 1;
@@ -690,8 +693,8 @@ void game_action_sequence_tick() {
 
         // If we haven't put all our text in yet...
         if (text_cursor < current_text_len) {
-            if (game_curr_elapsed == 2) {
-                game_curr_elapsed = 0;
+            if (game_curr_action_elapsed == 2) {
+                game_curr_action_elapsed = 0;
                 lcd111_put_char(LCD_TOP, current_text[text_cursor]);
                 text_cursor++;
             }
@@ -708,19 +711,19 @@ void game_action_sequence_tick() {
             //  advantage of the auto cleanup of signals).
             return;
         }
+    } else {
+        // Duration only counts for text:
+        game_curr_action_elapsed = loaded_action.duration;
     }
 
-    // Duration only counts for text:
-    if (loaded_action.type != GAME_ACTION_TYPE_TEXT)
-        game_curr_elapsed = loaded_action.duration;
 
     // If we're in an action series, we block out user input.
     // Check whether the current action is completed and duration expired.
     //  If so, it's time to fire the next one.
-    if (game_curr_elapsed >= loaded_action.duration ||
+    if (game_curr_action_elapsed >= loaded_action.duration ||
             ((is_text_type(loaded_action.type) && s_left))) {
         // Current action in series is over. Reset the clock.
-        game_curr_elapsed = 0;
+        game_curr_action_elapsed = 0;
         // Time to select the next one, if there is one.
         if (loaded_action.next_action_id == ACTION_NONE) {
             // This action sequence has finished. Is there anything special
@@ -786,25 +789,34 @@ void game_process_timers() {
         //  the timers populate their array. So it's important that the
         //  instructions, above, on how to order them be followed.
         // TODO: clean this shit up (appearance-wise):
-        if ((game_curr_elapsed && (
-                (game_curr_elapsed == current_state->timer_series[i].duration) ||
-                (current_state->timer_series[i].recurring && ((game_curr_elapsed % current_state->timer_series[i].duration) == 0))))) {
+        if ((game_curr_state_elapsed && (
+                (game_curr_state_elapsed == current_state->timer_series[i].duration) ||
+                (current_state->timer_series[i].recurring && ((game_curr_state_elapsed % current_state->timer_series[i].duration) == 0))))) {
             // Time `i` should fire, unless it's closed.
-            if (start_action_series(current_state->timer_series[i].result_action_id));
+            if (start_action_series(current_state->timer_series[i].result_action_id)) {
                 break;
+            }
         }
     }
 }
 
 void game_clock_tick() {
     if (in_action_series) {
+        game_curr_action_elapsed++;
         game_action_sequence_tick();
     }
+
+    // Pretty much everything here has its own !in_action_series guard,
+    //  because most of these things can CAUSE us to enter an action sequence,
+    //  in which case we most definitely do not want to do the non-action-
+    //  sequence stuff.
+
+    if (!in_action_series)
+        game_curr_state_elapsed++;
 
     // TODO: I'm concerned that our new way of processing special stuff,
     //       and of eliminating the durations for non-text results is going
     //       to do something funky.
-    // TODO: The "AB. Someone's out there" thing isn't as punchy anymore. Why?
     if (!in_action_series) {
         game_process_special();
     }
@@ -827,7 +839,6 @@ void game_clock_tick() {
 void game_handle_loop() {
     if (s_clock_tick) {
         // This is the timestep signal, so increment our elapsed counter.
-        game_curr_elapsed++;
         game_clock_tick();
     }
 }
