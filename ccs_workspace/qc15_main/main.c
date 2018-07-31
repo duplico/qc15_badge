@@ -271,6 +271,8 @@ void poll_buttons() {
 
 /// High-level message handler for IPC messages from the radio MCU.
 void handle_ipc_rx(uint8_t *rx) {
+    uint16_t id;
+
     // Grab the payload, since rx[0] is an opcode.
     switch(rx[0] & 0xF0) {
     case IPC_MSG_POST:
@@ -296,16 +298,18 @@ void handle_ipc_rx(uint8_t *rx) {
         break;
     case IPC_MSG_GD_ARR:
         // Someone has arrived
+        id = rx[1] + ((uint16_t)rx[2] << 8);
         set_badge_seen(
-                rx[1] + ((uint16_t)rx[2] << 8),
+                id,
                 &(rx[3])
         );
-        if (badges_nearby < 450)
+        if (id < QC15_BADGES_IN_SYSTEM && badges_nearby < QC15_BADGES_IN_SYSTEM)
             badges_nearby++;
         break;
     case IPC_MSG_GD_DEP:
         // Someone has departed.
-        if (badges_nearby)
+        id = rx[1] + ((uint16_t)rx[2] << 8);
+        if (id < QC15_BADGES_IN_SYSTEM && badges_nearby)
             badges_nearby--;
         break;
     case IPC_MSG_GD_DL:

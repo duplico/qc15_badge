@@ -39,7 +39,6 @@ uint8_t s_connect_needed = 0;
 uint8_t s_download_needed = 0;
 uint16_t radio_download_id = 0;
 
-
 volatile qc_clock_t qc_clock = {0};
 
 /// The current state of the switch's bit in its IN register (only BIT2 used).
