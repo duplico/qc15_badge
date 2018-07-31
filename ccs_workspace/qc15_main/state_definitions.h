@@ -6,7 +6,7 @@
 #define MAX_OTHERS 6
 #define GAME_ANIMS_LEN 17
 
-// lightsSolidWhite, lightsWhiteFader, animSpinBlue, whiteDiscovery, animSolidBlue, animSpinOrange, animSolidGreen, animSolidYellow, animSpinYellow, animSpinGreen, animSpinRed, animSolidOrange, animSolidRed, animSpinWhite, animSpinPink, animFallBlue, animFallYellow
+// lightsSolidWhite, lightsWhiteFader, animSpinBlue, whiteDiscovery, animSolidBlue, animSpinOrange, animSolidGreen, animSolidYellow, animSpinGreen, animSpinRed, animSolidOrange, animSolidRed, animSpinWhite, animSpinPink, animFallBlue, animFallYellow, animSpinYellow
 #define SPECIAL_BADGESNEARBY0 0
 #define SPECIAL_BADGESNEARBYSOME 1
 #define SPECIAL_NAME_NOT_FOUND 2

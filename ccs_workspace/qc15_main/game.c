@@ -298,25 +298,16 @@ const led_ring_animation_t anim_pan = {
 };
 
 void load_action(game_action_t *dest, uint16_t id) {
-    if (global_flash_lockout & FLASH_LOCKOUT_READ) {
-        // TODO
-    }
     s25fs_read_data((uint8_t *)dest, FLASH_ADDR_GAME_ACTIONS + id*sizeof(game_action_t),
                     sizeof(game_action_t));
 }
 
 void load_state(game_state_t *dest, uint16_t id) {
-    if (global_flash_lockout & FLASH_LOCKOUT_READ) {
-        // TODO
-    }
     s25fs_read_data((uint8_t *)dest, FLASH_ADDR_GAME_STATES + id*sizeof(game_state_t),
                     sizeof(game_state_t));
 }
 
 void load_text(char *dest, uint16_t id) {
-    if (global_flash_lockout & FLASH_LOCKOUT_READ) {
-        // TODO
-    }
     s25fs_read_data((uint8_t *)dest, FLASH_ADDR_GAME_TEXT + id*25,
                     24);
     dest[25] = 0x00; // Make SURE FOR SURE it's null-terminated.

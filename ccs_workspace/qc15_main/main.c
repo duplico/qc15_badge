@@ -435,8 +435,18 @@ void cleanup_global_signals() {
     s_clock_tick = 0;
 }
 
+extern const led_ring_animation_t anim_rainbow;
+
 /// Initialize the badge's running state to a known good one.
 void badge_startup() {
+    if (global_flash_lockout & FLASH_LOCKOUT_READ) { // TODO
+        qc15_mode = QC15_MODE_FLASH_BROKEN;
+        led_set_anim(&anim_rainbow, LED_ANIM_TYPE_NONE,
+                     0xFF, led_ring_anim_pad_loops_bg);
+        lcd111_set_text(LCD_TOP, "    Q U E E R C O N");
+        lcd111_set_text(LCD_BTM, "     F I F T E E N");
+        return;
+    }
     // Handle our main config
     init_config();
     badge_conf.active = 1;
@@ -605,8 +615,6 @@ void main (void)
     // Housekeeping is now concluded. It's time to see the wizard.
     badge_startup();
 
-    qc15_mode = QC15_MODE_TEMP;
-
     while (1) {
         handle_global_signals();
 
@@ -637,6 +645,9 @@ void main (void)
             connect_handle_loop();
             break;
         case QC15_MODE_TEMP:
+            __no_operation();
+            break;
+        case QC15_MODE_FLASH_BROKEN:
             __no_operation();
             break;
         }
