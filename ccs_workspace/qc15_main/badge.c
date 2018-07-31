@@ -27,6 +27,7 @@
 #include "ipc.h"
 #include "s25fs.h"
 #include "codes.h"
+#include "leds.h"
 
 #include "badge.h"
 
@@ -49,6 +50,17 @@ uint16_t last_state_id = 0;
 #pragma PERSISTENT(current_state_id)
 uint16_t current_state_id = 0;
 
+#pragma PERSISTENT(led_ring_anim_bg)
+/// Pointer to saved animation (if we're doing a temporary one).
+const led_ring_animation_t *led_ring_anim_bg = 0;
+
+#pragma PERSISTENT(led_ring_anim_pad_loops_bg)
+/// Saved value of `led_ring_anim_pad_loops` for backgrounds.
+uint8_t led_ring_anim_pad_loops_bg = 0;
+
+#pragma PERSISTENT(led_anim_type_bg)
+/// Saved value of `led_anim_type` for backgrounds.
+uint8_t led_anim_type_bg = 0;
 
 
 uint8_t badge_seen(uint16_t id) {

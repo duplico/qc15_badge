@@ -437,8 +437,16 @@ void badge_startup() {
     init_config();
     badge_conf.active = 1;
     save_config(); // TODO: just send it to the radio
-    // Handle our animation
-    // Handle our code LEDs
+    // Handle our animations:
+    if (led_anim_type_bg != LED_ANIM_TYPE_NONE) {
+        led_set_anim(led_ring_anim_bg, LED_ANIM_TYPE_NONE,
+                     0xFF, led_ring_anim_pad_loops_bg);
+    }
+
+    if (badge_conf.file_lights_on) {
+        led_activate_file_lights();
+    }
+
     // Handle entering the proper state
     qc15_mode = QC15_MODE_GAME;
     game_begin();
@@ -594,8 +602,6 @@ void main (void)
 
     // Housekeeping is now concluded. It's time to see the wizard.
     badge_startup();
-
-    led_activate_file_lights();
 
     qc15_mode = QC15_MODE_TEMP;
 
