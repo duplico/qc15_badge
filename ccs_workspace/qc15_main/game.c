@@ -43,6 +43,7 @@ uint8_t start_action_series(uint16_t action_id);
 #define GAME_ACTION_TYPE_TEXT_BADGNAME 17
 #define GAME_ACTION_TYPE_TEXT_USERNAME 18
 #define GAME_ACTION_TYPE_TEXT_CNT 19
+#define GAME_ACTION_TYPE_TEXT_CNCTDNAME 20
 #define GAME_ACTION_TYPE_TEXT_END 99
 #define GAME_ACTION_TYPE_OTHER 100
 
@@ -600,6 +601,12 @@ void do_action(game_action_t *action) {
         load_text(loaded_text, action->detail);
         sprintf(current_text, loaded_text, badges_nearby);
         begin_text_action();
+        break;
+    case GAME_ACTION_TYPE_TEXT_CNCTDNAME:
+        load_text(loaded_text, action->detail);
+        sprintf(current_text, loaded_text, badge_names[gd_curr_id]); //TODO
+        begin_text_action();
+        break;
     case GAME_ACTION_TYPE_NOP:
         break; // just... do nothing.
     case GAME_ACTION_TYPE_OTHER:
