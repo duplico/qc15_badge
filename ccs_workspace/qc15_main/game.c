@@ -89,17 +89,23 @@ const rgbcolor_t lsw_colors[] = {
         {255, 255, 255},
         {255, 255, 255},
         {255, 255, 255},
+        {0, 0, 0},
         {255, 255, 255},
         {255, 255, 255},
+        {0, 0, 0},
+        {255, 255, 255},
+        {255, 255, 255},
+        {255, 255, 255},
+        {0, 0, 0},
         {255, 255, 255},
 };
 
 const led_ring_animation_t anim_lsw = { // "light solid white" (bright)
         &lsw_colors[0],
-        6,
-        72,
+        12,
+        2,
         HT16D_BRIGHTNESS_MAX,
-        LED_ANIM_TYPE_SAME,
+        LED_ANIM_TYPE_SPIN,
 };
 
 const rgbcolor_t lwf_colors[] = { // "light white fade" (normal)

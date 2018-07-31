@@ -12,9 +12,9 @@
 #include <stdint.h>
 
 /// The initial global brightness setting for the LED controller.
-#define HT16D_BRIGHTNESS_DEFAULT 0x10
+#define HT16D_BRIGHTNESS_DEFAULT 0x29
 #define HT16D_BRIGHTNESS_MIN 0x01
-#define HT16D_BRIGHTNESS_MAX 0x25 // Real BRIGHTNESS_MAX is 0x40.
+#define HT16D_BRIGHTNESS_MAX 0x40 // Real BRIGHTNESS_MAX is 0x40.
 // TODO: Scale down the edge LEDs, not the max brightness.
 
 typedef struct {
