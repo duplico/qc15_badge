@@ -81,19 +81,16 @@ void ht16d_init_io() {
     P1SEL0 |= BIT6|BIT7;
     P1SEL1 &= ~(BIT6|BIT7);
 
-    EUSCI_B_I2C_initMasterParam param = {0};
-    param.selectClockSource = EUSCI_B_I2C_CLOCKSOURCE_SMCLK;
-    param.i2cClk = SMCLK_FREQ_HZ;
-    param.dataRate = EUSCI_B_I2C_SET_DATA_RATE_100KBPS;
-    param.byteCounterThreshold = 1;
-    param.autoSTOPGeneration = EUSCI_B_I2C_NO_AUTO_STOP;
-
+    UCB0CTLW0 |= UCSWRST;
+    UCB0CTLW0 |= UCMODE_3 + UCMST + UCSSEL__SMCLK;
+    UCB0BRW = 0x000A; // 100kbps (SMCLK/10)
+    UCB0CTLW1 = UCASTP_0;
+    UCB0TBCNT = 0;
     // The slave address is: 0b110100X,
     //  where X is defined by the value of pin A0 (11) on the LED controller.
     // We've connected it to ground, so the address is 0b1101000.
-    EUSCI_B_I2C_setSlaveAddress(EUSCI_B0_BASE, 0b1101000);
-
-    EUSCI_B_I2C_initMaster(EUSCI_B0_BASE, &param);
+    UCB0I2CSA = 0b1101000;
+    UCB0CTL1 &= ~UCSWRST;
 }
 
 /// Transmit a `len` byte array `txdat` to the HT16D35B.
@@ -101,18 +98,16 @@ void ht16d_send_array(uint8_t txdat[], uint8_t len) {
     // START
     UCB0CTLW0 |= UCTR; // Transmit mode.
 
+    UCB0CTLW0 |= UCSWRST; // Stop the I2C engine (clears STPIFG, too)
     // Configure auto-stops:
     UCB0CTLW1 &= ~UCASTP_3; // Clear the auto-stop bits.
     UCB0CTLW1 |= UCASTP_2; // Auto-stop.
 
-    UCB0CTLW0 |= UCSWRST; // Stop the I2C engine (clears STPIFG, too)
     UCB0TBCNT_L = len; // Set byte counter threshold (doesn't include address)
     UCB0CTLW0 &= ~UCSWRST; // Re-start engine.
 
     UCB0IFG &= ~UCTXIFG; // Clear TX flag.
     UCB0CTLW0 |=  UCTXSTT; // Send a START.
-
-    while (UCB0CTLW0 & UCTXSTT); // Wait for the address to finish sending.
 
     for (uint8_t i=0; i<len; i++) {
         // Wait for the TX buffer to become available again.
@@ -166,7 +161,6 @@ void ht16d_read_reg(uint8_t reg[]) {
     // Time to receive
     UCB0CTLW0 &= ~UCTR; // Set receive mode
     UCB0CTLW0 |=  UCTXSTT; // Send a RESTART. (but in RX mode)
-    while (UCB0CTLW0 & UCTXSTT); // Wait for the address to finish sending.
 
     // Now, we're going to get a dummy byte, then 20 data bytes.
     for (uint8_t i=0; i<20; i++) {
