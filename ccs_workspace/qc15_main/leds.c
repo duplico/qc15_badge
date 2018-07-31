@@ -67,6 +67,15 @@ rgbcolor16_t led_line_centers[6] = {
 
 const rgbcolor16_t color_off = {0, 0, 0};
 
+const rgbcolor16_t colors_dim[6] = {
+    {255<<4, 0, 0},  // Red
+    {255<<4, 20<<5, 0}, // Orange
+    {255<<4, 60<<5, 0}, // Yellow
+    {0, 64<<4, 0},   // Green
+    {0, 0, 144<<4},  // Blue
+    {128<<4, 0, 96<<4}, // Purple
+};
+
 void led_init() {
     memset(led_ring_curr, 0, sizeof(led_ring_curr));
     memset(led_ring_dest, 0, sizeof(led_ring_dest));
@@ -434,7 +443,7 @@ void led_line_timestep() {
         for (uint8_t i=0; i<6; i++) {
             if (1 || is_solved(i)) {
                 // Special case.
-                memcpy(&led_line_dest[i], ((i + led_line_frame) & 0x02) ? &led_line_centers[i] : &color_off, sizeof(rgbcolor16_t));
+                memcpy(&led_line_dest[i], ((led_line_frame+i) & 0x04) ? &led_line_centers[i] : &colors_dim[i], sizeof(rgbcolor16_t));
             } else {
 
                 uint8_t next_offset = led_line_next_offset(i);
