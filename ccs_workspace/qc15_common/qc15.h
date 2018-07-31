@@ -69,8 +69,8 @@ extern uint8_t qc15_mode;
 /// The main config struct, which will go in both the SPI flash and in FRAM.
 typedef struct {
     uint16_t badge_id;
-    uint8_t person_name[QC15_PERSON_NAME_LEN];
-    uint8_t badge_name[QC15_PERSON_NAME_LEN];
+    char person_name[QC15_PERSON_NAME_LEN];
+    char badge_name[QC15_PERSON_NAME_LEN];
     uint8_t code_starting_part;
     uint8_t code_part_unlocks[6][CODE_SEGMENT_REP_LEN];
     uint16_t badges_seen_count, badges_downloaded_count, badges_uploaded_count;
@@ -96,8 +96,8 @@ typedef struct {
  */
 typedef struct {
     uint16_t badge_id;
-    uint8_t person_name[QC15_PERSON_NAME_LEN];
-    uint8_t badge_name[QC15_PERSON_NAME_LEN];
+    char person_name[QC15_PERSON_NAME_LEN];
+    char badge_name[QC15_PERSON_NAME_LEN];
     uint8_t code_starting_part;
     uint8_t code_part_unlocks[6][CODE_SEGMENT_REP_LEN];
     uint16_t badges_seen_count, badges_downloaded_count, badged_uploaded_count;

@@ -458,8 +458,6 @@ void checkname_handle_loop() {
     //  race condition.
     static uint16_t calls = 0;
 
-    char curr_name[QC15_PERSON_NAME_LEN];
-
     if (s_got_next_id) {
         // We received the next ID from the radio MCU
         s_got_next_id = 0;
@@ -503,7 +501,7 @@ void checkname_handle_loop() {
 
         // If we're down here, we're still looking, but we also haven't found
         //  the name yet. So ask the radio MCU for the next ID.
-        while (!ipc_tx_op_buf(IPC_MSG_ID_NEXT, &gd_curr_id, 2));
+        while (!ipc_tx_op_buf(IPC_MSG_ID_NEXT, (uint8_t *)&gd_curr_id, 2));
     }
 }
 
@@ -565,7 +563,7 @@ void connect_handle_loop() {
         waiting_for_radio = 1;
         while (!ipc_tx_op_buf(
                 s_down? IPC_MSG_ID_NEXT : IPC_MSG_ID_PREV,
-                &gd_curr_id,
+                (uint8_t *)&gd_curr_id,
                 2)
         );
     } else if (s_right) {
@@ -573,7 +571,7 @@ void connect_handle_loop() {
         waiting_for_radio = 1;
         while (!ipc_tx_op_buf(
                 IPC_MSG_GD_DL,
-                &gd_curr_id,
+                (uint8_t *)&gd_curr_id,
                 2)
         );
         // Now, the IPC functions will trigger either an IPC

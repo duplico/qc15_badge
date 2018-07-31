@@ -46,7 +46,7 @@ uint8_t start_action_series(uint16_t action_id);
 #define GAME_ACTION_TYPE_TEXT_END 99
 #define GAME_ACTION_TYPE_OTHER 100
 
-uint8_t game_name_buffer[QC15_BADGE_NAME_LEN];
+char game_name_buffer[QC15_BADGE_NAME_LEN];
 
 // The following data will be loaded from the script:
 led_ring_animation_t all_animations[GAME_ANIMS_LEN];
@@ -54,13 +54,13 @@ led_ring_animation_t all_animations[GAME_ANIMS_LEN];
 uint8_t text_cursor = 0;
 game_state_t loaded_state;
 game_action_t loaded_action;
-uint8_t loaded_text[25];
 uint16_t state_last_special_event = GAME_NULL;
 game_state_t *current_state;
 uint16_t closed_states[CLOSABLE_STATES] = {0};
 uint8_t num_closed_states = 0;
 
-uint8_t current_text[25] = "";
+char loaded_text[25];
+char current_text[25] = "";
 uint8_t current_text_len = 0;
 
 uint8_t in_action_series = 0;
@@ -301,7 +301,7 @@ void load_action(game_action_t *dest, uint16_t id) {
     if (global_flash_lockout & FLASH_LOCKOUT_READ) {
         // TODO
     }
-    s25fs_read_data(dest, FLASH_ADDR_GAME_ACTIONS + id*sizeof(game_action_t),
+    s25fs_read_data((uint8_t *)dest, FLASH_ADDR_GAME_ACTIONS + id*sizeof(game_action_t),
                     sizeof(game_action_t));
 }
 
@@ -309,15 +309,15 @@ void load_state(game_state_t *dest, uint16_t id) {
     if (global_flash_lockout & FLASH_LOCKOUT_READ) {
         // TODO
     }
-    s25fs_read_data(dest, FLASH_ADDR_GAME_STATES + id*sizeof(game_state_t),
+    s25fs_read_data((uint8_t *)dest, FLASH_ADDR_GAME_STATES + id*sizeof(game_state_t),
                     sizeof(game_state_t));
 }
 
-void load_text(uint8_t *dest, uint16_t id) {
+void load_text(char *dest, uint16_t id) {
     if (global_flash_lockout & FLASH_LOCKOUT_READ) {
         // TODO
     }
-    s25fs_read_data(dest, FLASH_ADDR_GAME_TEXT + id*25,
+    s25fs_read_data((uint8_t *)dest, FLASH_ADDR_GAME_TEXT + id*25,
                     24);
     dest[25] = 0x00; // Make SURE FOR SURE it's null-terminated.
 }
@@ -611,7 +611,8 @@ void do_action(game_action_t *action) {
             gd_curr_id = GAME_NULL;
             qc15_mode = QC15_MODE_GAME_CHECKNAME;
             // IPC GET NEXT ID from ffff (any)
-            while (!ipc_tx_op_buf(IPC_MSG_ID_NEXT, &gd_starting_id, 2));
+            while (!ipc_tx_op_buf(IPC_MSG_ID_NEXT,
+                                  (uint8_t *)&gd_starting_id, 2));
             textentry_begin(game_name_buffer, 10, 0, 0);
         } else if (action->detail == OTHER_ACTION_SET_CONNECTABLE) {
             // Tell the radio module to send some connectable advertisements.
@@ -623,7 +624,8 @@ void do_action(game_action_t *action) {
             qc15_mode = QC15_MODE_GAME_CONNECT;
             gd_starting_id = GAME_NULL;
             gd_curr_id = GAME_NULL;
-            while (!ipc_tx_op_buf(IPC_MSG_ID_NEXT, &gd_starting_id, 2));
+            while (!ipc_tx_op_buf(IPC_MSG_ID_NEXT,
+                                  (uint8_t *)&gd_starting_id, 2));
             lcd111_clear(LCD_BTM);
         } else if (action->detail == OTHER_ACTION_TURN_ON_THE_LIGHTS_TO_REPRESENT_FILE_STATE) {
             badge_conf.file_lights_on = 1;

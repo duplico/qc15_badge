@@ -88,7 +88,7 @@
 
 typedef struct {
     uint16_t badge_id;
-    uint8_t name[QC15_BADGE_NAME_LEN];
+    char name[QC15_BADGE_NAME_LEN];
 } ipc_msg_gd_arr_t;
 
 //extern uint8_t ipc_state;
