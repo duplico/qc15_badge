@@ -595,6 +595,8 @@ void connect_handle_loop() {
 
 }
 
+extern const led_ring_animation_t anim_lsw;
+
 /// The main initialization and loop function.
 void main (void)
 {
@@ -614,6 +616,12 @@ void main (void)
 
     // Housekeeping is now concluded. It's time to see the wizard.
     badge_startup();
+
+//    led_set_anim(&anim_rainbow, LED_ANIM_TYPE_NONE,
+//                 0xFF, led_ring_anim_pad_loops_bg);
+
+//    led_set_anim(&anim_lsw, LED_ANIM_TYPE_NONE,
+//                 0xFF, led_ring_anim_pad_loops_bg);
 
     while (1) {
         handle_global_signals();
