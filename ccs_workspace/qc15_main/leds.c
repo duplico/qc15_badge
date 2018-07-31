@@ -38,12 +38,6 @@ uint8_t led_ring_anim_elapsed = 0;
 
 /// Pointer to the current animation.
 const led_ring_animation_t *led_ring_anim_curr;
-/// Pointer to saved animation (if we're doing a temporary one).
-const led_ring_animation_t *led_ring_anim_bg = 0;
-/// Saved value of `led_ring_anim_pad_loops` for backgrounds.
-uint8_t led_ring_anim_pad_loops_bg = 0;
-/// Saved value of `led_anim_type` for backgrounds.
-uint8_t led_anim_type_bg = 0;
 
 /// The current colors of the LED ring.
 rgbcolor16_t led_ring_curr[18];
