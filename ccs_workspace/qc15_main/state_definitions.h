@@ -1,12 +1,12 @@
-#define ALL_ACTIONS_LEN 1016
-#define ALL_TEXT_LEN 555
+#define ALL_ACTIONS_LEN 1057
+#define ALL_TEXT_LEN 560
 #define all_states_len 58
 #define MAX_TIMERS 3
 #define MAX_INPUTS 6
 #define MAX_OTHERS 6
-#define GAME_ANIMS_LEN 19
+#define GAME_ANIMS_LEN 20
 
-// lightsSolidWhite, lightsWhiteFader, animSpinBlue, whiteDiscovery, animSolidBlue, animSpinOrange, animSolidGreen, animSolidYellow, animSpinGreen, animSpinRed, animSolidOrange, animSolidRed, animSpinWhite, animSpinPink, animFallBlue, animFallYellow, flag_lblue, none, animSpinYellow
+// lightsSolidWhite, lightsWhiteFader, animSpinBlue, whiteDiscovery, animSolidBlue, animSpinOrange, animSolidGreen, animSolidYellow, animSpinGreen, animSpinRed, animSolidOrange, animSolidRed, animSpinWhite, animSpinPink, animFallBlue, animFallYellow, flag_lblue, none, animSpinYellow, flag_pan
 #define SPECIAL_BADGESNEARBY0 0
 #define SPECIAL_BADGESNEARBYSOME 1
 #define SPECIAL_NAME_NOT_FOUND 2
