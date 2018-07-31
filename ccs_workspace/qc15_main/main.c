@@ -372,6 +372,7 @@ void poll_temp() {
  */
 void handle_global_signals() {
     uint8_t rx_from_radio[IPC_MSG_LEN_MAX];
+    static uint8_t up_status = 0;
 
     if (s_turn_on_file_lights) {
         s_turn_on_file_lights = 0;
@@ -401,6 +402,9 @@ void handle_global_signals() {
     if (s_power_on && power_switch_status == POWER_SW_ON) {
         s_power_on = 0;
         led_on();
+        if (up_status && badge_conf.badge_id == 1) { // TODO: moar
+            qc15_mode = QC15_MODE_CONTROLLER;
+        }
     }
 
     if (s_buttons) {
@@ -417,8 +421,14 @@ void handle_global_signals() {
                 s_left = 1; // release
         }
         if (s_buttons & BIT3) { // UP
-            if (s_buttons & BIT7)
+            if (s_buttons & BIT7) {
                 s_up = 1; // release
+                up_status = 0;
+            }
+            else {
+                up_status = 1;
+            }
+
         }
         s_buttons = 0;
     }
