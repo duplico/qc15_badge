@@ -9,6 +9,8 @@
 #ifndef GAME_H_
 #define GAME_H_
 
+#include "state_definitions.h"
+
 #define ACTION_NONE 0xFFFF
 #define ANIM_NONE   0xFFFF
 #define GAME_NULL   0xFFFF
@@ -66,9 +68,9 @@ typedef struct {
     uint8_t input_series_len;
     uint8_t other_series_len;
 
-    game_timer_t timer_series[2];
-    game_user_in_t input_series[6];
-    game_other_in_t other_series[5];
+    game_timer_t timer_series[MAX_TIMERS];
+    game_user_in_t input_series[MAX_INPUTS];
+    game_other_in_t other_series[MAX_OTHERS];
 } game_state_t;
 
 extern uint8_t game_name_buffer[QC15_BADGE_NAME_LEN];
