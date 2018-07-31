@@ -319,11 +319,15 @@ void handle_ipc_rx(uint8_t *rx_from_main) {
     case IPC_MSG_ID_INC:
         // Send back the ID of the next nearby badge, or 0xFFFF for none.
         memcpy(&id, &rx_from_main[1], 2);
-        if (rx_from_main[0] & 0x0F) // "next"
+        if (rx_from_main[0] & 0x01) // "next"
             id = next_nearby_badge_id(id);
         else
             id = prev_nearby_badge_id(id);
-        while (!ipc_tx_op_buf(IPC_MSG_ID_NEXT, (uint8_t *)&id, 2));
+        while (!ipc_tx_op_buf(
+                ids_in_range[id].connect_intervals? IPC_MSG_ID_INC|IPC_MSG_ID_CONNECTABLE : IPC_MSG_ID_INC,
+                (uint8_t *)&id,
+                2
+            ));
         break;
     default:
         break;
