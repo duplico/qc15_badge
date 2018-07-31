@@ -204,12 +204,6 @@ void adc_init() {// Initialize the shared reference module
 void init() {
     WDT_A_hold(WDT_A_BASE);
 
-    // We're storing at least one compute-intensive function in a special
-    //  place in FRAM, and then copying it to RAM, where it will run
-    //  with lower power consumption, and possible faster, when invoked.
-    // Copy FRAM_EXECUTE to RAM_EXECUTE
-    memcpy((void *)0x1C00,(const void*)0x10000,0x0200);
-
     init_clocks();
     init_io();
 
@@ -636,8 +630,8 @@ void main (void)
     // Housekeeping is now concluded. It's time to see the wizard.
     badge_startup();
 
-//    led_set_anim(&anim_rainbow, LED_ANIM_TYPE_NONE,
-//                 0xFF, led_ring_anim_pad_loops_bg);
+    led_set_anim(&anim_rainbow, LED_ANIM_TYPE_NONE,
+                 0xFF, led_ring_anim_pad_loops_bg);
 
 //    led_set_anim(&anim_lsw, LED_ANIM_TYPE_NONE,
 //                 0xFF, led_ring_anim_pad_loops_bg);
