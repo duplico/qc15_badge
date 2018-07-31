@@ -134,6 +134,10 @@ SECTIONS
     {
         GROUP(READ_WRITE_MEMORY)
         {
+
+		   .bss        : {}                  /* Global & static vars              */
+		   .data       : {}                  /* Global & static vars              */
+		   .TI.noinit  : {}                  /* For #pragma noinit                */
            .TI.persistent : {}              /* For #pragma persistent            */
            .cio           : {}              /* C I/O Buffer                      */
            .sysmem        : {}              /* Dynamic memory allocation area    */
@@ -186,9 +190,6 @@ SECTIONS
         .jtagpassword  : {}                 /* JTAG Password                     */
     } > IPESIGNATURE
 
-    .bss        : {} > RAM                  /* Global & static vars              */
-    .data       : {} > RAM                  /* Global & static vars              */
-    .TI.noinit  : {} > RAM                  /* For #pragma noinit                */
     .stack      : {} > RAM (HIGH)           /* Software system stack             */
     .tinyram    : {} > TINYRAM              /* Tiny RAM                          */
 
