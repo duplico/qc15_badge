@@ -63,12 +63,6 @@ uint8_t num_closed_states = 0;
 uint8_t current_text[25] = "";
 uint8_t current_text_len = 0;
 
-
-// TODO: persistent
-uint16_t stored_state_id = 0;
-uint16_t last_state_id = 0;
-uint16_t current_state_id;
-
 uint8_t in_action_series = 0;
 uint32_t game_curr_elapsed = 0;
 

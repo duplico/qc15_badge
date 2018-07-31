@@ -13,6 +13,8 @@
 #include "qc15.h"
 #include "codes.h"
 #include "leds.h"
+#include "badge.h"
+#include "util.h"
 
 /// Signal to the main loop that a temporary animation has finished.
 uint8_t s_led_anim_done = 0;
