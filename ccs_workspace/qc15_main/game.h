@@ -73,7 +73,7 @@ typedef struct {
     game_other_in_t other_series[MAX_OTHERS];
 } game_state_t;
 
-extern uint8_t game_name_buffer[QC15_BADGE_NAME_LEN];
+extern char game_name_buffer[QC15_BADGE_NAME_LEN];
 extern uint8_t s_game_checkname_success;
 extern uint8_t s_turn_on_file_lights;
 

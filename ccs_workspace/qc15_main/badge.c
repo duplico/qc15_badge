@@ -39,9 +39,9 @@ qc15conf badge_conf = {0};
 qc15conf backup_conf = {0};
 
 #pragma PERSISTENT(badge_names)
-uint8_t badge_names[QC15_BADGES_IN_SYSTEM][QC15_BADGE_NAME_LEN] = {0};
+char badge_names[QC15_BADGES_IN_SYSTEM][QC15_BADGE_NAME_LEN] = {0};
 #pragma PERSISTENT(person_names)
-uint8_t person_names[QC15_BADGES_IN_SYSTEM][QC15_PERSON_NAME_LEN] = {0};
+char person_names[QC15_BADGES_IN_SYSTEM][QC15_PERSON_NAME_LEN] = {0};
 
 #pragma PERSISTENT(stored_state_id)
 uint16_t stored_state_id = 0;
