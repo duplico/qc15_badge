@@ -23,22 +23,31 @@
 
 #include <stdint.h>
 
-#include "driverlib.h"
 #include <msp430fr2422.h>
+#include "driverlib.h"
+
+#include "qc15.h"
 
 #include "radio.h"
 #include "ipc.h"
 #include "util.h"
+#include "radio_bootstrap.h"
 
-#include "qc15.h"
-
+/// Our master config/status.
+qc15status badge_status = {0};
+/// Main time loop interrupt flag.
 volatile uint8_t f_time_loop = 0;
+// Non-interrupt signals to the main loop:
 uint8_t s_switch = 0;
 uint8_t s_radio_interval = 0;
 uint8_t s_connect_needed = 0;
 uint8_t s_download_needed = 0;
 uint16_t radio_download_id = 0;
 
+// Buffer to hold messages from the IPC:
+uint8_t rx_from_main[IPC_MSG_LEN_MAX] = {0};
+
+// Our master clock:
 volatile qc_clock_t qc_clock = {0};
 
 /// The current state of the switch's bit in its IN register (only BIT2 used).
@@ -48,11 +57,7 @@ volatile qc_clock_t qc_clock = {0};
  ** is to start the switch state as 0, so that a signal will fire over IPC
  ** if that's not the case.
  */
-uint8_t sw_state = 0; // BIT2;
-
-qc15status badge_status = {0};
-
-void bootstrap();
+uint8_t sw_state = 0;
 
 /// Initialize IO configuration for the radio MCU.
 /**
@@ -291,15 +296,15 @@ uint16_t prev_nearby_badge_id(uint16_t id_curr) {
         return 0xFFFF;
 }
 
-void handle_ipc_rx(uint8_t *rx_from_main) {
+void handle_ipc_rx(uint8_t *rx_buf) {
     uint16_t id;
-    switch(rx_from_main[0] & 0xF0) {
+    switch(rx_buf[0] & 0xF0) {
     case IPC_MSG_REBOOT:
         PMMCTL0 |= PMMSWPOR; // Software reboot.
         break; // this hardly seems necessary.
     case IPC_MSG_STATS_UPDATE:
         // A stats update, which may be solicited or unsolicited:
-        memcpy(&badge_status, &rx_from_main[1], sizeof(qc15status));
+        memcpy(&badge_status, &rx_buf[1], sizeof(qc15status));
         break;
     case IPC_MSG_GD_EN:
         // Send 3 connect advertisements:
@@ -307,19 +312,20 @@ void handle_ipc_rx(uint8_t *rx_from_main) {
         break;
     case IPC_MSG_GD_DL:
         // TODO: Validate ID, return fail if bad.
-        memcpy(&id, &rx_from_main[1], 2);
+        memcpy(&id, &rx_buf[1], 2);
         if (ids_in_range[id].connect_intervals) {
             // It's downloadable.
             s_download_needed = 1;
             radio_download_id = id;
+            // TODO: Signal success regardless.
         } else {
             while (!ipc_tx_byte(IPC_MSG_GD_DL_FAILURE));
         }
         break;
     case IPC_MSG_ID_INC:
         // Send back the ID of the next nearby badge, or 0xFFFF for none.
-        memcpy(&id, &rx_from_main[1], 2);
-        if (rx_from_main[0] & 0x01) // "next"
+        memcpy(&id, &rx_buf[1], 2);
+        if (rx_buf[0] & 0x01) // "next"
             id = next_nearby_badge_id(id);
         else
             id = prev_nearby_badge_id(id);
@@ -334,10 +340,43 @@ void handle_ipc_rx(uint8_t *rx_from_main) {
     }
 }
 
+void handle_global_signals(uint8_t block_radio) {
+    if (!block_radio && f_rfm75_interrupt) {
+        rfm75_deferred_interrupt();
+    }
+
+    if (f_time_loop) {
+        f_time_loop = 0;
+        poll_switch();
+        if (!block_radio && qc_clock.time % 512 == 0) {
+            // Every 16 seconds,
+            s_radio_interval = 1;
+        }
+    }
+
+    if (f_ipc_rx) {
+        f_ipc_rx = 0;
+        if (ipc_get_rx(rx_from_main)) {
+            handle_ipc_rx(rx_from_main);
+        }
+    }
+
+    if (s_switch) {
+        // The switch has been toggled. So we need to send a message to
+        //  that effect. This is a fairly important message, so we'll
+        //  keep trying to send it every time we get here, until it
+        //  succeeds. But we're not going to wait for an ACK.
+        // Because the switch is "active low" (that is, LEFT
+        //  is "ON" and corresponds to LOW), we're going to take this
+        //  opportunity to evaluate sw_state and reverse it.
+        if (ipc_tx_byte(IPC_MSG_SWITCH | (sw_state ? 0 : 1))) {
+            s_switch = 0;
+        }
+    }
+}
+
 void main (void)
 {
-    uint8_t rx_from_main[IPC_MSG_LEN_MAX] = {0};
-
     WDT_A_hold(WDT_A_BASE);
 
     init_io();
@@ -354,25 +393,8 @@ void main (void)
     radio_init(badge_status.badge_id);
 
     while (1) {
-        if (f_rfm75_interrupt) {
-            rfm75_deferred_interrupt();
-        }
+        handle_global_signals(0);
 
-        if (f_time_loop) {
-            f_time_loop = 0;
-            poll_switch();
-            if (qc_clock.time % 512 == 0) {
-                // Every 16 seconds,
-                s_radio_interval = 1;
-            }
-        }
-
-        if (f_ipc_rx) {
-            f_ipc_rx = 0;
-            if (ipc_get_rx(rx_from_main)) {
-                handle_ipc_rx(rx_from_main);
-            }
-        }
 
         // Don't even bother checking any of the radio-transmit-causing signals
         //  unless we're in a state where TX is available.
@@ -398,18 +420,8 @@ void main (void)
             }
         }
 
-        if (s_switch) {
-            // The switch has been toggled. So we need to send a message to
-            //  that effect. This is a fairly important message, so we'll
-            //  keep trying to send it every time we get here, until it
-            //  succeeds. But we're not going to wait for an ACK.
-            // Because the switch is "active low" (that is, LEFT
-            //  is "ON" and corresponds to LOW), we're going to take this
-            //  opportunity to evaluate sw_state and reverse it.
-            if (ipc_tx_byte(IPC_MSG_SWITCH | (sw_state ? 0 : 1))) {
-                s_switch = 0;
-            }
-        }
+        if (f_ipc_rx || f_rfm75_interrupt || f_time_loop)
+            continue; // Don't sleep if we have a deferred interrupt pending.
 
         LPM;
     }
