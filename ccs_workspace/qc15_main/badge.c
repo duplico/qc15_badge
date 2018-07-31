@@ -31,7 +31,7 @@
 
 #include "badge.h"
 
-// TODO:
+// TODO
 // If I change this to NOINIT, it'll persist between flashings of the badge.
 #pragma PERSISTENT(badge_conf)
 qc15conf badge_conf = {0};
@@ -61,7 +61,6 @@ uint8_t led_ring_anim_pad_loops_bg = 0;
 #pragma PERSISTENT(led_anim_type_bg)
 /// Saved value of `led_anim_type` for backgrounds.
 uint8_t led_anim_type_bg = 0;
-
 
 uint8_t badge_seen(uint16_t id) {
     return check_id_buf(id, badge_conf.badges_seen);
@@ -133,7 +132,6 @@ uint8_t set_badge_uploaded(uint16_t id) {
     return 1;
 }
 
-// TODO: Break out the save_config part
 uint8_t set_badge_downloaded(uint16_t id) {
     if (id >= QC15_BADGES_IN_SYSTEM)
         return 0;
@@ -187,16 +185,27 @@ void generate_config() {
     //       Hopefully this won't come up, since this SHOULD(tm) only be
     //        called the once.
 
-    if (global_flash_lockout & FLASH_LOCKOUT_READ)
-    {
-        badge_conf.badge_id = 115;
-        char backup_name[] ="Skippy";
-        strcpy((char *) &(badge_conf.badge_name[0]), backup_name);
-    } else {
+    if(!(global_flash_lockout & FLASH_LOCKOUT_READ)) {
         s25fs_read_data((uint8_t *)badge_names, FLASH_ADDR_BADGE_NAMES, QC15_BADGES_IN_SYSTEM * QC15_BADGE_NAME_LEN);
         // Load ID from flash:
         s25fs_read_data((uint8_t *)(&(badge_conf.badge_id)), FLASH_ADDR_ID_MAIN, 2);
     }
+
+    // If we got a bad ID from the flash, correct to "sane" defaults:
+    if ((global_flash_lockout & FLASH_LOCKOUT_READ) ||
+            badge_conf.badge_id >= QC15_BADGES_IN_SYSTEM) {
+        badge_conf.badge_id = 115;
+    }
+
+    // SEPARATELY, if we got a bad NAME, go ahead and make one up.
+    if ((global_flash_lockout & FLASH_LOCKOUT_READ) ||
+            badge_conf.badge_name[0] == 0x00 ||
+            badge_conf.badge_name[0] == 0xFF)
+    {
+        char backup_name[] ="Forgetful";
+        strcpy((char *) &(badge_conf.badge_name[0]), backup_name);
+    }
+
 
     // TODO: REMOVE!!!
     uint8_t initial_person_name[] = "AB";
