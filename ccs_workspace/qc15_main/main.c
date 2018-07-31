@@ -65,6 +65,7 @@ uint8_t s_game_checkname_success = 0;
 uint8_t s_turn_on_file_lights = 0;
 
 uint16_t gd_curr_id = 0;
+uint16_t gd_curr_connectable = 0;
 uint16_t gd_starting_id = 0;
 
 // Not persist
@@ -328,6 +329,10 @@ void handle_ipc_rx(uint8_t *rx) {
         // We got the ID we asked for.
         s_got_next_id = 1;
         gd_curr_id = rx[1] + ((uint16_t)rx[2] << 8);
+        if (rx[0] & IPC_MSG_ID_CONNECTABLE)
+            gd_curr_connectable = 1;
+        else
+            gd_curr_connectable = 0;
         break;
     }
 }
@@ -535,7 +540,11 @@ void connect_handle_loop() {
         } else {
             // It's a REAL ONE!
             // TODO: Do we need a gaydar.c/h module?
-            sprintf(text, "Badge 0x%x:%s", gd_curr_id, badge_names[gd_curr_id]);
+            if (gd_curr_connectable) {
+                sprintf(text, "[\xA4] 0x%x:%s", gd_curr_id, badge_names[gd_curr_id]);
+            } else {
+                sprintf(text, "[ ] 0x%x:%s", gd_curr_id, badge_names[gd_curr_id]);
+            }
             draw_text(LCD_BTM, text, 1);
             sprintf(text, "Holder: %s", person_names[gd_curr_id]);
             draw_text(LCD_TOP, text, 1);
@@ -645,8 +654,7 @@ void main (void)
             textentry_handle_loop();
             break;
         case QC15_MODE_GAME_CHECKNAME:
-            // What we want here is MOSTLY going to be handled in the
-            //  ipc loop. We're starting at id 0, and
+            // A lot of this is handled in the handle_ipc loop, too:
             checkname_handle_loop();
             break;
         case QC15_MODE_GAME_CONNECT:

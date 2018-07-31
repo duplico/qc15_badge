@@ -82,6 +82,7 @@
 #define IPC_MSG_ID_INC  0x50
 #define IPC_MSG_ID_NEXT 0x51
 #define IPC_MSG_ID_PREV 0x50
+#define IPC_MSG_ID_CONNECTABLE 0x02
 /// An updates badge_status payload.
 #define IPC_MSG_STATS_UPDATE 0x70
 
