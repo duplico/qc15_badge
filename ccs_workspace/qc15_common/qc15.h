@@ -58,6 +58,7 @@
 #define QC15_MODE_STATUS    2
 #define QC15_MODE_SLEEP     3
 #define QC15_MODE_TEXTENTRY 4
+#define QC15_MODE_TEMP      5
 
 #define QC15_MODE_GAME      64
 #define QC15_MODE_GAME_CHECKNAME 65

@@ -346,6 +346,13 @@ void poll_temp() {
     temperatureDegC = (((long)ADC12MEM0 - voltage_at_30c) * (85 - 30))
                        / (voltage_at_85c - voltage_at_30c)
                        + 30;
+
+    if (qc15_mode == QC15_MODE_TEMP) {
+        char text[25];
+        sprintf(text, "T: %d", temperatureDegC);
+        lcd111_set_text(LCD_TOP, text);
+    }
+
     // Sample again.
     ADC12CTL0 |= ADC12SC;
 }
@@ -625,6 +632,9 @@ void main (void)
             break;
         case QC15_MODE_GAME_CONNECT:
             connect_handle_loop();
+            break;
+        case QC15_MODE_TEMP:
+            __no_operation();
             break;
         }
 
