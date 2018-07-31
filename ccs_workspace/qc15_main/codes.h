@@ -16,5 +16,6 @@ extern uint8_t s_part_solved;
 void decode_download(uint16_t downloaded_id);
 void decode_upload();
 void decode_event(uint8_t event_id);
+uint8_t is_solved(uint8_t code_id);
 
 #endif /* CODES_H_ */

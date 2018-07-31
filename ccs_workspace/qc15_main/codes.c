@@ -23,7 +23,7 @@ uint8_t s_part_solved = 0;
 uint8_t is_solved(uint8_t code_id) {
 //    uint8_t code_part_unlocks[6][CODE_SEGMENT_REP_LEN];
     uint8_t bits_decoded;
-    bits_decoded = buffer_rank(badge_conf.code_part_unlocks[code_id], 6);
+    bits_decoded = buffer_rank(badge_conf.code_part_unlocks[code_id], CODE_SEGMENT_REP_LEN);
     return bits_decoded == 80;
 }
 
@@ -69,9 +69,9 @@ uint8_t part_id_downloaded(uint16_t id) {
 void decode_random_chars(uint8_t part_id, uint8_t chars_to_decode) {
     uint8_t chars_left;
     chars_left=   PART_SIZE
-                - buffer_rank(badge_conf.code_part_unlocks[part_id], 6);
+                - buffer_rank(badge_conf.code_part_unlocks[part_id], CODE_SEGMENT_REP_LEN);
 
-    if (chars_to_decode < chars_left) {
+    if (chars_to_decode > chars_left) {
         chars_to_decode = chars_left;
     }
 

@@ -595,6 +595,8 @@ void main (void)
     // Housekeeping is now concluded. It's time to see the wizard.
     badge_startup();
 
+    led_activate_file_lights();
+
     while (1) {
         handle_global_signals();
 
