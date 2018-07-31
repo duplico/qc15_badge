@@ -63,6 +63,7 @@ void bootstrap() {
     while (1) {
         if (f_time_loop) {
             f_time_loop = 0;
+            poll_switch();
         }
 
         // We're only allowed to leave the bootstrap loop once we've received
@@ -93,6 +94,13 @@ void bootstrap() {
             qc_clock.time = 0;
             ipc_tx_byte(IPC_MSG_POST | failure_flags);
         }
+
+        if (s_switch) {
+            if (ipc_tx_byte(IPC_MSG_SWITCH | (sw_state ? 0 : 1))) {
+                s_switch = 0;
+            }
+        }
+
     }
     // Bootstrapping is complete. Cleanup:
     qc_clock.time = 0;
