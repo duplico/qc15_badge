@@ -46,6 +46,7 @@
 #include "main_bootstrap.h"
 #include "flash_layout.h"
 #include "badge.h"
+#include "codes.h"
 
 // None of the following persist:
 volatile uint8_t f_time_loop = 0;
@@ -328,22 +329,24 @@ void handle_ipc_rx(uint8_t *rx) {
 }
 
 void poll_temp() {
-    volatile uint16_t temperatureDegC;
+    volatile uint16_t temp_c;
     uint16_t voltage_at_30c = *((unsigned int *)0x1A1A);
     uint16_t voltage_at_85c = *((unsigned int *)0x1A1C);
 
     if (!(ADC12IFGR0 & ADC12IFG0))
         return;
 
+    temp_c = (((long)ADC12MEM0 - voltage_at_30c) * (85 - 30))
+             / (voltage_at_85c - voltage_at_30c)
+             +  30;
 
-
-    temperatureDegC = (((long)ADC12MEM0 - voltage_at_30c) * (85 - 30))
-                       / (voltage_at_85c - voltage_at_30c)
-                       + 30;
+    if (temp_c < 10) {
+        decode_event(EVENT_FREEZER);
+    }
 
     if (qc15_mode == QC15_MODE_TEMP) {
         char text[25];
-        sprintf(text, "T: %d", temperatureDegC);
+        sprintf(text, "T: %d", temp_c);
         lcd111_set_text(LCD_TOP, text);
     }
 
@@ -370,7 +373,8 @@ void handle_global_signals() {
         s_clock_tick = 1;
         led_timestep();
         poll_buttons();
-        poll_temp();
+        if (!badge_conf.freezer_done && !(qc_clock.time & 0xFF))
+            poll_temp(); // every 8 seconds, poll the temp.
     }
 
     if (f_ipc_rx) {
