@@ -135,7 +135,6 @@ SECTIONS
     {
         GROUP(READ_WRITE_MEMORY)
         {
-            .TI.persistent : {}                /* For #pragma persistent            */
         }
 
         GROUP(READ_ONLY_MEMORY)
@@ -173,7 +172,8 @@ SECTIONS
     .stack      : {} > RAM (HIGH)           /* Software system stack             */
 
     /* MSP430 INFO memory segments */
-    .info : type = NOINIT{} > INFO
+    .info : type = NOINIT{} > FRAM
+    .TI.persistent : {} > INFO               /* For #pragma persistent            */
 
 
     /* MSP430 interrupt vectors */

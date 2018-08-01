@@ -23,6 +23,13 @@ radio_proto curr_packet_tx;
 uint8_t progress_tx_id = 0;
 uint8_t s_need_progress_tx = 0;
 
+uint16_t rx_cnt[FREQ_NUM] = {0,};
+
+#pragma PERSISTENT(radio_frequency)
+uint8_t radio_frequency = FREQ_MIN;
+#pragma PERSISTENT(radio_frequency_done)
+uint8_t radio_frequency_done = 0;
+
 void radio_send_progress_frame(uint8_t frame_id) {
     radio_progress_payload *payload = (radio_progress_payload *)
                                             (curr_packet_tx.msg_payload);
@@ -153,6 +160,11 @@ void radio_handle_download(uint16_t id, radio_connect_payload *payload) {
 
 void radio_rx_done(uint8_t* data, uint8_t len, uint8_t pipe) {
     radio_proto *msg = (radio_proto *)data;
+
+    if (!radio_frequency_done) {
+        rx_cnt[radio_frequency - FREQ_MIN]++;
+    }
+
     if (!validate(msg, len)) {
         // fail
         return;
@@ -302,4 +314,5 @@ void radio_interval() {
 void radio_init(uint16_t addr) {
     rfm75_init(addr, &radio_rx_done, &radio_tx_done);
     rfm75_post();
+    rfm75_write_reg(0x05, radio_frequency);
 }
