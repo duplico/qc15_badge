@@ -335,6 +335,8 @@ void handle_ipc_rx(uint8_t *rx_buf) {
                 2
             ));
         break;
+    case IPC_MSG_CALIBRATE_FREQ:
+        radio_frequency_done = 0;
     default:
         break;
     }
@@ -348,6 +350,33 @@ void handle_global_signals(uint8_t block_radio) {
     if (f_time_loop) {
         f_time_loop = 0;
         poll_switch();
+
+        if (!radio_frequency_done) {
+            if (qc_clock.time % 64 == 0) {
+                // 2 seconds per frequency.
+                radio_frequency++;
+
+                if (radio_frequency == FREQ_MIN+FREQ_NUM) {
+                    // We just finished our last one.
+                    uint16_t cnt = 0;
+                    for (uint8_t i=FREQ_MIN; i<FREQ_MIN+FREQ_NUM; i++) {
+                        if (rx_cnt[i] > cnt) {
+                            cnt = rx_cnt[i];
+                            radio_frequency = i;
+                        }
+                    }
+                    if (cnt) {
+                        // If we got ANYTHING AT ALL, go ahead and conclude
+                        //  our search.
+                        radio_frequency_done = 1;
+                    } else {
+                        radio_frequency = FREQ_MIN; // restart the sweep
+                    }
+                }
+                rfm75_write_reg(0x05, radio_frequency);
+            }
+        }
+
         if (!block_radio && qc_clock.time % 512 == 0) {
             // Every 16 seconds,
             s_radio_interval = 1;
@@ -388,6 +417,8 @@ void main (void)
     ipc_init();
     rtc_init();
     radio_init(0);
+    // Unlock information memory for writing.
+    SYSCFG0 = FRWPPW | PFWP;
 
     __bis_SR_register(GIE);
 

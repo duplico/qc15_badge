@@ -23,6 +23,9 @@
 #define RADIO_CONNECT_FLAG_LISTENING 1
 #define RADIO_CONNECT_FLAG_DOWNLOAD 2
 
+#define FREQ_MIN 10
+#define FREQ_NUM 12
+
 typedef struct {
     uint8_t connect_intervals : 2;
     uint8_t intervals_left : 4;
@@ -68,6 +71,9 @@ extern badge_info_t ids_in_range[QC15_HOSTS_IN_SYSTEM];
 extern uint8_t progress_tx_id;
 extern uint8_t s_need_progress_tx;
 
+extern uint16_t rx_cnt[FREQ_NUM];
+extern uint8_t radio_frequency;
+extern uint8_t radio_frequency_done;
 
 rfm75_rx_callback_fn radio_rx_done;
 rfm75_tx_callback_fn radio_tx_done;

@@ -666,6 +666,12 @@ void main (void)
     // Housekeeping is now concluded. It's time to see the wizard.
     badge_startup();
 
+    if (initial_buttons & BIT7) {
+        // should be UP.
+        // Tell the radio MCU to calibrate its frequency.
+        while (!ipc_tx_byte(IPC_MSG_CALIBRATE_FREQ));
+    }
+
 //    led_set_anim(&anim_rainbow, LED_ANIM_TYPE_NONE,
 //                 0xFF, led_ring_anim_pad_loops_bg);
 
