@@ -47,8 +47,8 @@ char person_names[QC15_BADGES_IN_SYSTEM][QC15_PERSON_NAME_LEN] = {0};
 uint16_t stored_state_id = 0;
 #pragma PERSISTENT(last_state_id)
 uint16_t last_state_id = 0;
-#pragma PERSISTENT(current_state_id)
-uint16_t current_state_id = 0;
+#pragma PERSISTENT(game_curr_state_id)
+uint16_t game_curr_state_id = 0;
 
 #pragma PERSISTENT(led_ring_anim_bg)
 /// Pointer to saved animation (if we're doing a temporary one).

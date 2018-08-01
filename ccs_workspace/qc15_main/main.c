@@ -470,6 +470,10 @@ void badge_startup() {
         led_activate_file_lights();
     }
 
+    if (game_curr_state_id == STATE_ID_FIRSTBOOTCONFUSED) {
+        // TODO: BG animation per Issue #194
+    }
+
     // Handle entering the proper state
     qc15_mode = QC15_MODE_GAME;
     game_begin();

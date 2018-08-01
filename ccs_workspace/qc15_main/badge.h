@@ -18,7 +18,7 @@ extern char badge_names[QC15_BADGES_IN_SYSTEM][QC15_BADGE_NAME_LEN];
 extern char person_names[QC15_BADGES_IN_SYSTEM][QC15_PERSON_NAME_LEN];
 extern uint16_t stored_state_id;
 extern uint16_t last_state_id;
-extern uint16_t current_state_id;
+extern uint16_t game_curr_state_id;
 extern const led_ring_animation_t *led_ring_anim_bg;
 extern uint8_t led_ring_anim_pad_loops_bg;
 extern uint8_t led_anim_type_bg;
