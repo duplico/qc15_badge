@@ -415,7 +415,7 @@ void game_set_state(uint16_t state_id, uint8_t keep_previous) {
     lcd111_clear(LCD_TOP);
 
     if (!keep_previous)
-        last_state_id = current_state_id;
+        last_state_id = game_curr_state_id;
     in_action_series = 0;
     game_curr_action_elapsed = 0;
     game_curr_state_elapsed = 0;
@@ -424,7 +424,7 @@ void game_set_state(uint16_t state_id, uint8_t keep_previous) {
     load_state(&loaded_state, state_id);
 
     current_state = &loaded_state;
-    current_state_id = state_id;
+    game_curr_state_id = state_id;
     state_last_special_event = GAME_NULL;
 
     start_action_series(current_state->entry_series_id);
@@ -452,7 +452,7 @@ void game_begin() {
     all_animations[16] = anim_fallyellow;
 
     // TODO: stored state
-    game_set_state(current_state_id, 1);
+    game_set_state(game_curr_state_id, 1);
 }
 
 uint8_t next_input_id() {
@@ -569,7 +569,7 @@ void do_action(game_action_t *action) {
         break;
     case GAME_ACTION_TYPE_PUSH:
         // Store the current state.
-        stored_state_id = current_state_id;
+        stored_state_id = game_curr_state_id;
         break;
     case GAME_ACTION_TYPE_POP:
         // Retrieve a stored state.
@@ -580,7 +580,7 @@ void do_action(game_action_t *action) {
         game_set_state(last_state_id, 0);
         break;
     case GAME_ACTION_TYPE_CLOSE:
-        close_state(current_state_id);
+        close_state(game_curr_state_id);
         break;
     case GAME_ACTION_TYPE_TEXT:
         // Display some text
