@@ -80,9 +80,6 @@ void bootstrap(uint8_t fastboot) {
     // 10->11 SWITCH TOGGLE
     // 11->12 OK w/ any feedback
 
-    if (!bootstrap_completed)
-        fastboot = 0;
-
     // Tell the radio module to reboot.
     ipc_tx_byte(IPC_MSG_REBOOT);
 
@@ -117,32 +114,32 @@ void bootstrap(uint8_t fastboot) {
     }
 
     if (bootstrap_status == POST_NOR) {
-            uint8_t fail = 0;
-            if (!s25fs_post1()) { // General test for correct model & WREN.
-                lcd111_set_text(0, "SPI NOR flash POST FAIL!");
-                ht16d_all_one_color(200, 0, 0);
-                delay_millis(2000);
-                fail = 1;
-            }
-
-            if (!s25fs_post2()) { // Can we erase and write to the chip?
-                lcd111_set_text(0, "SPI NOR bad I/O ops");
-                ht16d_all_one_color(200, 50, 0);
-                delay_millis(2000);
-                fail = 1;
-            }
-
-            if (!fail) {
-                if (!fastboot) {
-                    lcd111_set_text(0, "SPI NOR flash POST: OK");
-                    delay_millis(200);
-                }
-            } else {
-                lcd111_set_text(1, "QC15 BOOTSTRAP> FAIL");
-            }
-            bootstrap_status++;
-
+        uint8_t fail = 0;
+        if (!s25fs_post1()) { // General test for correct model & WREN.
+            lcd111_set_text(0, "SPI NOR flash POST FAIL!");
+            ht16d_all_one_color(200, 0, 0);
+            delay_millis(2000);
+            fail = 1;
         }
+
+        if (!s25fs_post2()) { // Can we erase and write to the chip?
+            lcd111_set_text(0, "SPI NOR bad I/O ops");
+            ht16d_all_one_color(200, 50, 0);
+            delay_millis(2000);
+            fail = 1;
+        }
+
+        if (!fail) {
+            if (!fastboot) {
+                lcd111_set_text(0, "SPI NOR flash POST: OK");
+                delay_millis(200);
+            }
+        } else {
+            lcd111_set_text(1, "QC15 BOOTSTRAP> FAIL");
+        }
+        bootstrap_status++;
+
+    }
 
     while (1) {
         if (f_time_loop) {

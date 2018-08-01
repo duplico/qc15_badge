@@ -27,6 +27,7 @@
 #include <msp430fr2422.h>
 
 #include "radio.h"
+#include "rfm75.h"
 #include "ipc.h"
 #include "util.h"
 
@@ -269,16 +270,42 @@ void main (void)
     // Reinitialize the radio with our correct ID:
     radio_init(badge_status.badge_id);
 
+    uint16_t freqs[16] = {0};
+    uint8_t freq = 0;
+    uint8_t freq_done = 0;
+    rfm75_write_reg(0x05, freq+8);
+    uint8_t clock = 0;
+
     while (1) {
         if (f_rfm75_interrupt) {
             rfm75_deferred_interrupt();
+            freqs[freq]++;
         }
 
-        // TODO: Check last vs current and see if any steps need to happen.
         if (f_time_loop) {
             f_time_loop = 0;
             poll_switch();
-            if (qc_clock % 160 == 0) {
+
+
+            clock++;
+
+            if (!freq_done) {
+                if (clock == 32) {
+                    clock = 0;
+                    freq++;
+                    if (freq == 9) {
+                        uint8_t cnt = 0;
+                        for (uint8_t i=0; i<16; i++) {
+                            if (freqs[i] > cnt) {
+                                cnt = freqs[i];
+                                freq = i;
+                            }
+                        }
+                        freq_done = 1;
+                    }
+                    rfm75_write_reg(0x05, freq+8);
+                }
+            } else if (qc_clock % 160 == 0) {
                 // Every 5 seconds,
                 s_radio_interval = 1;
             }
