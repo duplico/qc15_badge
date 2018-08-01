@@ -48,6 +48,8 @@
 #include "badge.h"
 #include "codes.h"
 
+#include "menu.h"
+
 // None of the following persist:
 volatile uint8_t f_time_loop = 0;
 uint8_t s_clock_tick = 0;
@@ -396,7 +398,7 @@ void handle_global_signals() {
     if (s_power_on && power_switch_status == POWER_SW_ON) {
         s_power_on = 0;
         led_on();
-        if (up_status && badge_conf.badge_id == 1) { // TODO: moar
+        if (up_status) { // && badge_conf.badge_id == 1) { // TODO: moar
             qc15_mode = QC15_MODE_CONTROLLER;
         }
     }
@@ -634,8 +636,8 @@ void main (void)
     // Housekeeping is now concluded. It's time to see the wizard.
     badge_startup();
 
-    led_set_anim(&anim_rainbow, LED_ANIM_TYPE_NONE,
-                 0xFF, led_ring_anim_pad_loops_bg);
+//    led_set_anim(&anim_rainbow, LED_ANIM_TYPE_NONE,
+//                 0xFF, led_ring_anim_pad_loops_bg);
 
 //    led_set_anim(&anim_lsw, LED_ANIM_TYPE_NONE,
 //                 0xFF, led_ring_anim_pad_loops_bg);
@@ -654,6 +656,7 @@ void main (void)
         case QC15_MODE_SLEEP:
             break;
         case QC15_MODE_STATUS:
+            status_handle_loop();
             break;
         case QC15_MODE_GAME:
             game_handle_loop();
@@ -673,6 +676,8 @@ void main (void)
             break;
         case QC15_MODE_FLASH_BROKEN:
             __no_operation();
+            break;
+        case QC15_MODE_CONTROLLER:
             break;
         }
 

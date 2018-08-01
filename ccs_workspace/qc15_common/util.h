@@ -16,5 +16,6 @@ uint8_t crc16_check_buffer(uint8_t *buf, uint16_t len);
 uint8_t check_id_buf(uint16_t id, uint8_t *buf);
 void set_id_buf(uint16_t id, uint8_t *buf);
 uint16_t buffer_rank(uint8_t *buf, uint8_t len);
+uint8_t byte_rank(uint8_t v);
 
 #endif /* UTIL_H_ */

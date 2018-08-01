@@ -26,6 +26,7 @@
 #include "badge.h"
 #include "flash_layout.h"
 #include "s25fs.h"
+#include "menu.h"
 
 #include "loop_signals.h"
 
@@ -414,7 +415,7 @@ void game_set_state(uint16_t state_id, uint8_t keep_previous) {
     }
     lcd111_clear(LCD_TOP);
 
-    if (!keep_previous)
+    if (!keep_previous && last_state_id != game_curr_state_id)
         last_state_id = game_curr_state_id;
     in_action_series = 0;
     game_curr_action_elapsed = 0;
@@ -451,7 +452,6 @@ void game_begin() {
     all_animations[15] = anim_fallblue;
     all_animations[16] = anim_fallyellow;
 
-    // TODO: stored state
     game_set_state(game_curr_state_id, 1);
 }
 
@@ -612,6 +612,7 @@ void do_action(game_action_t *action) {
     case GAME_ACTION_TYPE_OTHER:
         // TODO: handle
         if (action->detail == OTHER_ACTION_CUSTOMSTATEUSERNAME) {
+            badge_conf.person_name[QC15_PERSON_NAME_LEN-1] = 0x00; // term
             textentry_begin(badge_conf.person_name, 10, 1, 1);
         } else if (action->detail == OTHER_ACTION_NAMESEARCH) {
             gd_starting_id = GAME_NULL;
@@ -638,6 +639,8 @@ void do_action(game_action_t *action) {
             badge_conf.file_lights_on = 1;
             s_turn_on_file_lights = 1;
             save_config();
+        } else if (action->detail == OTHER_ACTION_STATUS_MENU) {
+            enter_menu_status();
         }
         break;
     }
