@@ -30,6 +30,7 @@
 #include "badge.h"
 #include "codes.h"
 #include "loop_signals.h"
+#include "led_animations.h"
 #include "menu.h"
 
 #define MENU_EXIT 0
@@ -49,6 +50,8 @@
 
 uint8_t menu_sel = 0;
 uint8_t saved_mode;
+
+uint8_t curr_flag = 0;
 
 void leave_menu();
 
@@ -70,7 +73,7 @@ void status_render_choice() {
         draw_text(LCD_BTM, "Change name...", 1);
         return;
     case MENU_STATUS_SEL_SET_LIGHTS:
-        sprintf(text, "\x11  %s", "FLAGNAME");
+        sprintf(text, "\x11  %s", all_animations[curr_flag].name);
         for (uint8_t i=strlen(text); i<23; i++) {
             text[i] = ' ';
         }
@@ -151,7 +154,12 @@ void status_handle_loop() {
     } else if (s_left) {
         if (menu_sel == MENU_STATUS_SEL_SET_LIGHTS) {
             // go back
-            // TODO
+            if (curr_flag == 0)
+                curr_flag = 33;
+            else
+                curr_flag--;
+            led_set_anim(&all_animations[curr_flag], 0, 0xff, 0);
+            status_render_choice();
         }
     } else if (s_right) {
         // Select.
@@ -165,7 +173,12 @@ void status_handle_loop() {
             return;
         case MENU_STATUS_SEL_SET_LIGHTS:
             // go forward
-            // TODO
+            if (curr_flag == 33)
+                curr_flag = 0;
+            else
+                curr_flag++;
+            led_set_anim(&all_animations[curr_flag], 0, 0xff, 0);
+            status_render_choice();
             break;
         case MENU_STATUS_SEL_PART0: // fall through
         case MENU_STATUS_SEL_PART1: // fall through

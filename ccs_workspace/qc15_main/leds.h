@@ -18,7 +18,7 @@
 #define LED_ANIM_TYPE_SAME 2
 #define LED_ANIM_TYPE_FALL 3
 
-#define DEFAULT_ANIM_SPEED 30
+#define DEFAULT_ANIM_SPEED 10
 
 typedef struct {
     int_fast16_t r;
@@ -32,6 +32,7 @@ typedef struct {
     uint8_t speed; // csecs per frame
     uint8_t brightness;
     uint8_t type;
+    char name[17];
 } led_ring_animation_t;
 
 extern uint8_t s_led_anim_done;

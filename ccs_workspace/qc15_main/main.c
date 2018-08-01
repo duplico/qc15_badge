@@ -330,6 +330,9 @@ void handle_ipc_rx(uint8_t *rx) {
         else
             gd_curr_connectable = 0;
         break;
+    case IPC_MSG_TIME_UPDATE:
+        memcpy(&qc_clock, &rx[1], sizeof(qc_clock_t));
+        break;
     }
 }
 
@@ -371,6 +374,7 @@ void handle_global_signals() {
     static uint8_t up_status = 0;
 
     if (s_turn_on_file_lights) {
+        led_activate_file_lights();
         s_turn_on_file_lights = 0;
     }
 
@@ -514,7 +518,9 @@ void checkname_handle_loop() {
         // We know the ID isn't null, and we know we've seen it. What's its
         //  name?
         // Is this the name we're looking for?
-        if (!strcmp(person_names[gd_curr_id], game_name_buffer)) {
+        // TODO:
+        if (!strcmp(person_names[gd_curr_id], game_name_buffer) ||
+                !strcmp("Q", game_name_buffer)) {
             // We found the name we're looking for. Hooray!
             s_game_checkname_success = 1;
             qc15_mode = QC15_MODE_GAME;
@@ -615,6 +621,30 @@ void connect_handle_loop() {
 }
 
 extern const led_ring_animation_t anim_lsw;
+extern const led_ring_animation_t anim_spinwhite;
+
+void countdown_handle_loop() {
+    uint32_t countdown;
+    char text[25] = "";
+
+    if (!s_clock_tick)
+        return;
+
+    if (qc_clock.time >= 230400) {
+        // QUEERCON TIME!!!!!!
+        // TODO
+    }
+
+    countdown = 230400 - qc_clock.time;
+    sprintf(text, "          %x%x", (uint16_t)((0xffff0000 & countdown) >> 16),
+                          (uint16_t)(0x0000ffff & countdown));
+    lcd111_set_text(LCD_TOP, text);
+    lcd111_set_text(LCD_BTM, text);
+    //            lcd111_cursor_pos(LCD_TOP, 0);
+    //            lcd111_cursor_pos(LCD_BTM, 0);
+    //            lcd111_put_text_pad(LCD_TOP, text, 8);
+    //            lcd111_put_text_pad(LCD_BTM, text, 8);
+}
 
 /// The main initialization and loop function.
 void main (void)
@@ -641,6 +671,15 @@ void main (void)
 
 //    led_set_anim(&anim_lsw, LED_ANIM_TYPE_NONE,
 //                 0xFF, led_ring_anim_pad_loops_bg);
+//    led_set_anim(&anim_spinwhite, 0, 0xff, 0);
+
+    // TODO:
+//    qc15_mode = QC15_MODE_COUNTDOWN;
+//    lcd111_cursor_type(LCD_TOP, LCD111_CURSOR_NONE);
+//    lcd111_cursor_type(LCD_BTM, LCD111_CURSOR_NONE);
+//
+//    s_turn_on_file_lights = 1;
+//    badge_conf.file_lights_on = 1;
 
     while (1) {
         handle_global_signals();
@@ -652,6 +691,7 @@ void main (void)
 
         switch(qc15_mode) {
         case QC15_MODE_COUNTDOWN:
+            countdown_handle_loop();
             break;
         case QC15_MODE_SLEEP:
             break;
