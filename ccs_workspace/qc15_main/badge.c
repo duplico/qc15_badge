@@ -31,8 +31,10 @@
 
 #include "badge.h"
 
-// TODO
-// If I change this to NOINIT, it'll persist between flashings of the badge.
+// PERSISTENT won't let these persist between badge flashings. However, we're
+//  not putting them in a consistent place this time, so we can't guarantee
+//  that NOINIT would help us here, either. We'll have to very carefully
+//  extract these from memory first if we wanted to wipe a badge's brain.
 #pragma PERSISTENT(badge_conf)
 qc15conf badge_conf = {0};
 #pragma PERSISTENT(backup_conf)
