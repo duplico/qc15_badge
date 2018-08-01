@@ -352,8 +352,8 @@ void handle_global_signals(uint8_t block_radio) {
         poll_switch();
 
         if (!radio_frequency_done) {
-            if (qc_clock.time % 64 == 0) {
-                // 2 seconds per frequency.
+            if (qc_clock.time % 32 == 0) {
+                // 1 second per frequency.
                 radio_frequency++;
 
                 if (radio_frequency == FREQ_MIN+FREQ_NUM) {
@@ -369,6 +369,7 @@ void handle_global_signals(uint8_t block_radio) {
                         // If we got ANYTHING AT ALL, go ahead and conclude
                         //  our search.
                         radio_frequency_done = 1;
+                        while (!ipc_tx_byte(IPC_MSG_CALIBRATE_FREQ));
                     } else {
                         radio_frequency = FREQ_MIN; // restart the sweep
                     }

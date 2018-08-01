@@ -55,7 +55,7 @@
 #define IPC_MSG_GD_EN 0xc0
 /// A request for the recipient to reboot.
 #define IPC_MSG_REBOOT 0x60
-/// A request for the radio to recalibrate its center frequency.
+/// A request or response for radio frequency recalibration.
 #define IPC_MSG_CALIBRATE_FREQ 0xd0
 
 // Buffer messages:

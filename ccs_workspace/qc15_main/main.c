@@ -333,6 +333,9 @@ void handle_ipc_rx(uint8_t *rx) {
     case IPC_MSG_TIME_UPDATE:
         memcpy(&qc_clock, &rx[1], sizeof(qc_clock_t));
         break;
+    case IPC_MSG_CALIBRATE_FREQ:
+        ht16d_all_one_color_ring_only(0x00, 0x8F, 0x00);
+        break;
     }
 }
 
@@ -666,7 +669,7 @@ void main (void)
     // Housekeeping is now concluded. It's time to see the wizard.
     badge_startup();
 
-    if (initial_buttons & BIT7) {
+    if (!(initial_buttons & BIT7)) {
         // should be UP.
         // Tell the radio MCU to calibrate its frequency.
         while (!ipc_tx_byte(IPC_MSG_CALIBRATE_FREQ));
