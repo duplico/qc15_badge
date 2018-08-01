@@ -352,6 +352,10 @@ void handle_global_signals(uint8_t block_radio) {
             // Every 16 seconds,
             s_radio_interval = 1;
         }
+        if (qc_clock.time % 1024 == 256) { // try to avoid conflict w/ above
+            // Attempt this every 32 seconds.
+            ipc_tx_op_buf(IPC_MSG_TIME_UPDATE, &qc_clock, sizeof(qc_clock_t));
+        }
     }
 
     if (f_ipc_rx) {
