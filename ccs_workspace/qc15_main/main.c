@@ -651,7 +651,7 @@ void main (void)
     uint8_t last_tx = 0;
     uint8_t last_rx = 0;
     char out[25] = "";
-    if (!bootstrap_completed) {
+    if (1 || !bootstrap_completed) {
         out_of_bootstrap = 1;
 
         lcd111_set_text(LCD_TOP, "RF test:  Wht:TX, Grn:RX");
