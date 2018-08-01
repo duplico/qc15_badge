@@ -175,6 +175,10 @@ void rfm75_enter_prx() {
     // Clear interrupts: STATUS=BIT4|BIT5|BIT6
     rfm75_write_reg(STATUS, BIT4|BIT5|BIT6);
 
+    CSN_LOW_START;
+    rfm75spi_send_sync(FLUSH_TX);
+    CSN_HIGH_END;
+
     // Enter RX mode.
     CE_ACTIVATE;
 
@@ -213,14 +217,25 @@ void rfm75_tx(uint16_t addr, uint8_t noack, uint8_t* data, uint8_t len) {
         return;
     }
 
+    // TODO: Must call the deferred interrupt before calling this.
+
+    CE_DEACTIVATE;
+
+    CSN_LOW_START;
+    rfm75spi_send_sync(FLUSH_RX);
+    CSN_HIGH_END;
+
     rfm75_state = RFM75_TX_INIT;
     uint8_t wr_cmd = WR_TX_PLOAD_NOACK;
 
-    CE_DEACTIVATE;
 
     rfm75_write_reg(CONFIG, CONFIG_MASK_RX_DR +
                             CONFIG_EN_CRC + CONFIG_CRCO_2BYTE +
                             CONFIG_PWR_UP + CONFIG_PRIM_TX);
+
+    CSN_LOW_START;
+    rfm75spi_send_sync(FLUSH_TX);
+    CSN_HIGH_END;
 
     // Setup our destination address:
     uint8_t tx_addr[3] = {0};
@@ -280,14 +295,12 @@ void rfm75_deferred_interrupt() {
 
     if (iv & BIT4) { // no ACK interrupt
         // Clear the interrupt flag on the radio module:
-        rfm75_write_reg(STATUS, BIT5);
         rfm75_state = RFM75_TX_DONE;
     }
 
     if (iv & BIT5 && rfm75_state == RFM75_TX_SEND) { // TX interrupt
         // The ISR already took us back to standby.
         // Clear the interrupt flag on the radio module:
-        rfm75_write_reg(STATUS, BIT5);
         rfm75_state = RFM75_TX_DONE;
     }
 
@@ -296,6 +309,7 @@ void rfm75_deferred_interrupt() {
     //  (b) we sent an ackable message that was acked, and
     //  (c) we sent an ackable message that was NOT acked.
     if (iv & (BIT4|BIT5)) { // TX or NOACK.
+        rfm75_write_reg(STATUS, BIT5|BIT4|BIT6);
         // We pass TRUE if we did NOT receive a NOACK flag from
         //  the radio module (meaning EITHER, it was ACKed, OR
         //  we did not request an ACK).
