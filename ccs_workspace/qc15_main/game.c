@@ -28,6 +28,8 @@
 #include "s25fs.h"
 #include "menu.h"
 
+#include "led_animations.h"
+
 #include "loop_signals.h"
 
 uint8_t start_action_series(uint16_t action_id);
@@ -41,17 +43,14 @@ uint8_t start_action_series(uint16_t action_id);
 #define GAME_ACTION_TYPE_CLOSE 6
 #define GAME_ACTION_TYPE_NOP 7
 #define GAME_ACTION_TYPE_TEXT 16
-#define GAME_ACTION_TYPE_TEXT_BADGNAME 17
-#define GAME_ACTION_TYPE_TEXT_USERNAME 18
+#define GAME_ACTION_TYPE_TEXT_BADGENAME 17
+#define GAME_ACTION_TYPE_TEXT_USER_NAME 18
 #define GAME_ACTION_TYPE_TEXT_CNT 19
 #define GAME_ACTION_TYPE_TEXT_CNCTDNAME 20
 #define GAME_ACTION_TYPE_TEXT_END 99
 #define GAME_ACTION_TYPE_OTHER 100
 
 char game_name_buffer[QC15_BADGE_NAME_LEN];
-
-// The following data will be loaded from the script:
-led_ring_animation_t all_animations[GAME_ANIMS_LEN];
 
 uint8_t text_cursor = 0;
 game_state_t loaded_state;
@@ -70,241 +69,6 @@ uint32_t game_curr_action_elapsed = 0;
 uint32_t game_curr_state_elapsed = 0;
 
 uint8_t text_selection = 0;
-
-const rgbcolor_t rainbow_colors[] = {
-        {255, 0, 0}, // Red
-        {255, 24, 0x00}, // Orange
-        {128, 40, 0x00}, // Yellow
-        {0, 64, 0}, // Green
-        {0, 0, 196}, // Blue
-        {128, 0, 128}, // Purple
-};
-
-const led_ring_animation_t anim_rainbow = {
-        &rainbow_colors[0],
-        6,
-        5,
-        HT16D_BRIGHTNESS_DEFAULT,
-        LED_ANIM_TYPE_SPIN,
-};
-
-const rgbcolor_t lsw_colors[] = {
-        {255, 255, 255},
-        {255, 255, 255},
-        {255, 255, 255},
-        {0, 0, 0},
-        {255, 255, 255},
-        {255, 255, 255},
-        {0, 0, 0},
-        {255, 255, 255},
-        {255, 255, 255},
-        {255, 255, 255},
-        {0, 0, 0},
-        {255, 255, 255},
-};
-
-const led_ring_animation_t anim_lsw = { // "light solid white" (bright)
-        &lsw_colors[0],
-        12,
-        2,
-        HT16D_BRIGHTNESS_MAX,
-        LED_ANIM_TYPE_SPIN,
-};
-
-const rgbcolor_t lwf_colors[] = { // "light white fade" (normal)
-        {96, 96, 96},
-        {255, 255, 255},
-        {0, 0, 0},
-        {96, 96, 96},
-        {255, 255, 255},
-        {0, 0, 0},
-        {96, 96, 96},
-        {255, 255, 255},
-        {0, 0, 0},
-};
-
-const led_ring_animation_t anim_lwf = {
-        &lwf_colors[0],
-        9,
-        16,
-        HT16D_BRIGHTNESS_DEFAULT,
-        LED_ANIM_TYPE_FALL,
-};
-
-const rgbcolor_t spinblue_colors[] = { // "light white fade" (normal)
-        {0, 0, 10},
-        {0, 0, 32},
-        {0, 0, 64},
-        {0, 0, 100},
-        {0, 0, 196},
-        {0, 0, 255},
-};
-
-const led_ring_animation_t anim_spinblue = {
-        &spinblue_colors[0],
-        6,
-        6,
-        HT16D_BRIGHTNESS_DEFAULT,
-        LED_ANIM_TYPE_SPIN,
-};
-
-const led_ring_animation_t anim_fallblue = {
-        &spinblue_colors[0],
-        6,
-        6,
-        HT16D_BRIGHTNESS_DEFAULT,
-        LED_ANIM_TYPE_FALL,
-};
-
-const led_ring_animation_t anim_solidblue = {
-        &spinblue_colors[0],
-        6,
-        6,
-        HT16D_BRIGHTNESS_DEFAULT,
-        LED_ANIM_TYPE_SAME,
-};
-
-const rgbcolor_t whitediscovery_colors[] = { // "light white fade" (normal)
-        {255, 255, 255},
-        {0, 0, 0},
-        {64, 64, 64},
-};
-
-const led_ring_animation_t anim_whitediscovery = {
-        &whitediscovery_colors[0],
-        3,
-        6,
-        HT16D_BRIGHTNESS_DEFAULT,
-        LED_ANIM_TYPE_SAME,
-};
-
-const rgbcolor_t spinorange_colors[] = { // "light white fade" (normal)
-        {255, 24, 0},
-};
-
-const led_ring_animation_t anim_spinorange = (led_ring_animation_t) {
-        .colors = &spinorange_colors[0],
-        .len = 1,
-        .speed = 6,
-        .brightness = HT16D_BRIGHTNESS_DEFAULT,
-        .type = LED_ANIM_TYPE_SPIN,
-};
-
-const rgbcolor_t solidgreen_colors[] = { // "light white fade" (normal)
-        {0, 64, 0},
-};
-
-const led_ring_animation_t anim_solidgreen = (led_ring_animation_t) {
-        .colors = &solidgreen_colors[0],
-        .len = 1,
-        .speed = 6,
-        .brightness = HT16D_BRIGHTNESS_DEFAULT,
-        .type = LED_ANIM_TYPE_SAME,
-};
-
-const rgbcolor_t solidyellow_colors[] = { // "light white fade" (normal)
-        {128, 40, 0},
-};
-
-const led_ring_animation_t anim_solidyellow = (led_ring_animation_t) {
-        .colors = &solidyellow_colors[0],
-        .len = 1,
-        .speed = 6,
-        .brightness = HT16D_BRIGHTNESS_DEFAULT,
-        .type = LED_ANIM_TYPE_SAME,
-};
-
-const led_ring_animation_t anim_spinyellow = (led_ring_animation_t) {
-        .colors = &solidyellow_colors[0],
-        .len = 1,
-        .speed = 6,
-        .brightness = HT16D_BRIGHTNESS_DEFAULT,
-        .type = LED_ANIM_TYPE_SPIN,
-};
-
-const led_ring_animation_t anim_fallyellow = (led_ring_animation_t) {
-        .colors = &solidyellow_colors[0],
-        .len = 1,
-        .speed = 6,
-        .brightness = HT16D_BRIGHTNESS_DEFAULT,
-        .type = LED_ANIM_TYPE_FALL,
-};
-
-const led_ring_animation_t anim_spingreen = (led_ring_animation_t) {
-        .colors = &solidgreen_colors[0],
-        .len = 1,
-        .speed = 6,
-        .brightness = HT16D_BRIGHTNESS_DEFAULT,
-        .type = LED_ANIM_TYPE_SPIN,
-};
-
-const rgbcolor_t solidred_colors[] = { // "light white fade" (normal)
-        {255, 0, 0},
-};
-
-const led_ring_animation_t anim_spinred = (led_ring_animation_t) {
-        .colors = &solidred_colors[0],
-        .len = 1,
-        .speed = 6,
-        .brightness = HT16D_BRIGHTNESS_DEFAULT,
-        .type = LED_ANIM_TYPE_SPIN,
-};
-
-const led_ring_animation_t anim_solidorange = (led_ring_animation_t) {
-        .colors = &spinorange_colors[0],
-        .len = 1,
-        .speed = 6,
-        .brightness = HT16D_BRIGHTNESS_DEFAULT,
-        .type = LED_ANIM_TYPE_SAME,
-};
-
-const led_ring_animation_t anim_solidred = (led_ring_animation_t) {
-        .colors = &solidred_colors[0],
-        .len = 1,
-        .speed = 6,
-        .brightness = HT16D_BRIGHTNESS_DEFAULT,
-        .type = LED_ANIM_TYPE_SAME,
-};
-
-const rgbcolor_t solidwhite_colors[] = { // "light white fade" (normal)
-        {255, 0, 0},
-};
-
-const led_ring_animation_t anim_spinwhite = (led_ring_animation_t) {
-        .colors = &solidwhite_colors[0],
-        .len = 1,
-        .speed = 6,
-        .brightness = HT16D_BRIGHTNESS_DEFAULT,
-        .type = LED_ANIM_TYPE_SPIN,
-};
-
-const rgbcolor_t solidpink_colors[] = { // "light white fade" (normal)
-        {128, 0, 128},
-};
-
-const led_ring_animation_t anim_spinpink = (led_ring_animation_t) {
-        .colors = &solidpink_colors[0],
-        .len = 1,
-        .speed = 6,
-        .brightness = HT16D_BRIGHTNESS_DEFAULT,
-        .type = LED_ANIM_TYPE_SPIN,
-};
-
-
-const rgbcolor_t pan_colors[] = {
-        {0xff, 0x21, 0x8c}, // 255,33,140
-        {0xff, 0xd8, 0x00}, //255,216,0
-        {0xff, 0xd8, 0x00}, //255,216,0
-        {0x21, 0xb1, 0xff}, //33,177,255
-};
-
-const led_ring_animation_t anim_pan = {
-        &pan_colors[0],
-        4,
-        6,
-        HT16D_BRIGHTNESS_DEFAULT,
-        LED_ANIM_TYPE_SPIN,
-};
 
 void load_action(game_action_t *dest, uint16_t id) {
     s25fs_read_data((uint8_t *)dest, FLASH_ADDR_GAME_ACTIONS + id*sizeof(game_action_t),
@@ -434,25 +198,8 @@ void game_set_state(uint16_t state_id, uint8_t keep_previous) {
 extern uint16_t gd_starting_id;
 
 void game_begin() {
-    all_animations[0] = anim_lsw;
-    all_animations[1] = anim_lwf;
-    all_animations[2] = anim_spinblue;
-    all_animations[3] = anim_whitediscovery;
-    all_animations[4] = anim_solidblue;
-    all_animations[5] = anim_spinorange;
-    all_animations[6] = anim_solidgreen;
-    all_animations[7] = anim_solidyellow;
-    all_animations[8] = anim_spinyellow;
-    all_animations[9] = anim_spingreen;
-    all_animations[10] = anim_spinred;
-    all_animations[11] = anim_solidorange;
-    all_animations[12] = anim_solidred;
-    all_animations[13] = anim_spinwhite;
-    all_animations[14] = anim_spinpink;
-    all_animations[15] = anim_fallblue;
-    all_animations[16] = anim_fallyellow;
-
     game_set_state(game_curr_state_id, 1);
+//    game_set_state(33, 1);
 }
 
 uint8_t next_input_id() {
@@ -587,12 +334,12 @@ void do_action(game_action_t *action) {
         load_text(current_text, action->detail);
         begin_text_action();
         break;
-    case GAME_ACTION_TYPE_TEXT_BADGNAME:
+    case GAME_ACTION_TYPE_TEXT_BADGENAME:
         load_text(loaded_text, action->detail);
         sprintf(current_text, loaded_text, badge_conf.badge_name);
         begin_text_action();
         break;
-    case GAME_ACTION_TYPE_TEXT_USERNAME:
+    case GAME_ACTION_TYPE_TEXT_USER_NAME:
         load_text(loaded_text, action->detail);
         sprintf(current_text, loaded_text, badge_conf.person_name);
         begin_text_action();

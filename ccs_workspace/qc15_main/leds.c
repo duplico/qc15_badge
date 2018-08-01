@@ -440,9 +440,10 @@ void led_line_timestep() {
         led_line_frame++;
 
         for (uint8_t i=0; i<6; i++) {
-            if (is_solved(i)) {
+            if (1 || is_solved(i)) {
                 // Special case.
-                memcpy(&led_line_dest[i], ((led_line_frame+i) & 0x04) ? &led_line_centers[i] : &colors_dim[i], sizeof(rgbcolor16_t));
+//                memcpy(&led_line_dest[i], ((led_line_frame+i) & 0x04) ? &led_line_centers[i] : &colors_dim[i], sizeof(rgbcolor16_t));
+                memcpy(&led_line_dest[i], ((led_line_frame) & 0x01) ? &led_line_centers[i] : &colors_dim[i], sizeof(rgbcolor16_t));
             } else {
 
                 uint8_t next_offset = led_line_next_offset(i);
