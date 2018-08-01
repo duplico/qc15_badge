@@ -1,5 +1,5 @@
-#define ALL_ACTIONS_LEN 1198
-#define ALL_TEXT_LEN 668
+#define ALL_ACTIONS_LEN 1196
+#define ALL_TEXT_LEN 667
 #define all_states_len 64
 #define MAX_TIMERS 3
 #define MAX_INPUTS 8
