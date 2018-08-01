@@ -35,6 +35,7 @@ uint8_t ht16d_post();
 void ht16d_send_gray();
 void ht16d_all_one_color(uint8_t r, uint8_t g, uint8_t b);
 void ht16d_all_one_color_ring_only(uint8_t r, uint8_t g, uint8_t b);
+void ht16d_put_colors(uint8_t id_start, uint8_t id_len, rgbcolor16_t* colors);
 void ht16d_set_colors(uint8_t id_start, uint8_t id_end, rgbcolor16_t* colors);
 void ht16d_set_global_brightness(uint8_t brightness);
 
