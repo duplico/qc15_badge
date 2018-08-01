@@ -33,7 +33,7 @@
 //  [x] Reboot (M->R)
 //  [x] POST/bootstrap (R->M)
 //  [ ] Time setting (manual, not time virus) (M->R)
-//  [ ] Time event (R->M)
+//  [x] Time event (R->M)
 //  [x] Update status (M->R)
 //  [x] Make me connectable (M->R)      (GD_EN)
 //  [x] Attempt to download (M->R)      (GD_DL)
@@ -85,7 +85,8 @@
 #define IPC_MSG_ID_CONNECTABLE 0x02
 /// An updates badge_status payload.
 #define IPC_MSG_STATS_UPDATE 0x70
-
+/// Time update:
+#define IPC_MSG_TIME_UPDATE 0x80
 
 typedef struct {
     uint16_t badge_id;

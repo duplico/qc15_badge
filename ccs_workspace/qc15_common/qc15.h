@@ -110,9 +110,9 @@ typedef struct {
 } qc15status;
 
 typedef struct {
-    uint32_t authoritative : 1;
-    uint32_t fault : 1;
-    uint32_t time : 30;
+    volatile uint8_t authoritative;
+    volatile uint8_t fault;
+    volatile uint32_t time;
 } qc_clock_t;
 
 /// Our 1/32 second clock, which is ephemeral and sourced from the radio MCU.
