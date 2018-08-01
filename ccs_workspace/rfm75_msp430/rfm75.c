@@ -175,17 +175,22 @@ void rfm75_enter_prx() {
     // Clear interrupts: STATUS=BIT4|BIT5|BIT6
     rfm75_write_reg(STATUS, BIT4|BIT5|BIT6);
 
+    CSN_LOW_START;
+    rfm75spi_send_sync(FLUSH_TX);
+    CSN_HIGH_END;
+
     // Enter RX mode.
     CE_ACTIVATE;
 
     // This takes 130 us:
-    __delay_cycles(130); // TODO!!!!!
+    __delay_cycles(130); // TODO!!!!! // UNNECESSARY
 
     rfm75_state = RFM75_RX_LISTEN;
 }
 
 /// Query whether a call to rfm75_tx() is allowed right now.
 uint8_t rfm75_tx_avail() {
+    // TODO: we need a method to HOLD the RFM so we can TX after we call this.
     return rfm75_state == RFM75_RX_LISTEN || rfm75_state == RFM75_TX_DONE ||
            rfm75_state == RFM75_RX_READY;
 }
@@ -208,14 +213,29 @@ uint8_t rfm75_tx_avail() {
  **
  */
 void rfm75_tx(uint16_t addr, uint8_t noack, uint8_t* data, uint8_t len) {
+    if (!rfm75_tx_avail()) {
+        return;
+    }
+
+    // TODO: Must call the deferred interrupt before calling this.
+
+    CE_DEACTIVATE;
+
+    CSN_LOW_START;
+    rfm75spi_send_sync(FLUSH_RX);
+    CSN_HIGH_END;
+
     rfm75_state = RFM75_TX_INIT;
     uint8_t wr_cmd = WR_TX_PLOAD_NOACK;
 
-    CE_DEACTIVATE;
 
     rfm75_write_reg(CONFIG, CONFIG_MASK_RX_DR +
                             CONFIG_EN_CRC + CONFIG_CRCO_2BYTE +
                             CONFIG_PWR_UP + CONFIG_PRIM_TX);
+
+    CSN_LOW_START;
+    rfm75spi_send_sync(FLUSH_TX);
+    CSN_HIGH_END;
 
     // Setup our destination address:
     uint8_t tx_addr[3] = {0};
@@ -275,14 +295,12 @@ void rfm75_deferred_interrupt() {
 
     if (iv & BIT4) { // no ACK interrupt
         // Clear the interrupt flag on the radio module:
-        rfm75_write_reg(STATUS, BIT5);
         rfm75_state = RFM75_TX_DONE;
     }
 
     if (iv & BIT5 && rfm75_state == RFM75_TX_SEND) { // TX interrupt
         // The ISR already took us back to standby.
         // Clear the interrupt flag on the radio module:
-        rfm75_write_reg(STATUS, BIT5);
         rfm75_state = RFM75_TX_DONE;
     }
 
@@ -291,6 +309,7 @@ void rfm75_deferred_interrupt() {
     //  (b) we sent an ackable message that was acked, and
     //  (c) we sent an ackable message that was NOT acked.
     if (iv & (BIT4|BIT5)) { // TX or NOACK.
+        rfm75_write_reg(STATUS, BIT5|BIT4|BIT6);
         // We pass TRUE if we did NOT receive a NOACK flag from
         //  the radio module (meaning EITHER, it was ACKed, OR
         //  we did not request an ACK).
@@ -402,7 +421,6 @@ void rfm75_io_init() {
 void rfm75_init(uint16_t unicast_address, rfm75_rx_callback_fn* rx_callback,
                 rfm75_tx_callback_fn* tx_callback)
 {
-
     //  one of the chinese documents (rfm73 -> rfm75 migration) says that it should be executed after every PWR_UP, not only during initialization
 
     // Disable the IRQ pin interrupt, while we set up our inputs.
@@ -434,7 +452,6 @@ void rfm75_init(uint16_t unicast_address, rfm75_rx_callback_fn* rx_callback,
         {0x00, 0x00, 0x4b, 0xc0}, // reserved (prescribed)
         {0x02, 0x8c, 0xfc, 0xd0}, // reserved (prescribed)
         {0x21, 0x39, 0x00, 0x99}, // reserved (prescribed)
-        // {0x21 was 0x41 TODO
         {0x1b, 0x82, 0x96, 0xf9}, // 1 Mbps, 4 dBm (max power)
         {0xa6, 0x0f, 0x06, 0x24}, // 1 Mbps
     };
@@ -452,7 +469,6 @@ void rfm75_init(uint16_t unicast_address, rfm75_rx_callback_fn* rx_callback,
 
     uint8_t bank1_config_0x0c[][4] = {
                                       {0x05, 0x73, 0x12, 0x00}, // 130 us mode (PLL settle time?)
-                                      //TODO:      0x12 was 0x10
                                       {0x00, 0x80, 0xb4, 0x36}, // reserved?
     };
 
@@ -502,7 +518,7 @@ void rfm75_init(uint16_t unicast_address, rfm75_rx_callback_fn* rx_callback,
     rfm75_select_bank(1);
 
     // Ok, we've configured everything but haven't powered up yet...
-
+    // From some Chinese datasheet or instructions or something:
     //  4. RFM75 PowerUP after the first packet of data sent unsuccessful solution
     //  RFM75 from the POWER DOWN state to switch to POWER UP state, send the first packet is not successful, the reason
     //  Is the PLL is not locked, the solution is as follows:
