@@ -140,6 +140,7 @@ uint8_t rfm75_post();
 void rfm75_deferred_interrupt();
 uint8_t rfm75_tx_avail();
 void rfm75_tx(uint16_t addr, uint8_t noack, uint8_t* data, uint8_t len);
+void rfm75_write_reg(uint8_t reg, uint8_t data);
 
 extern uint32_t rfm75_seqnum;
 extern volatile uint8_t f_rfm75_interrupt;
