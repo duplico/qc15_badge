@@ -21,6 +21,7 @@
 #include "ht16d35b.h"
 #include "ipc.h"
 #include "leds.h"
+#include "loop_signals.h"
 
 #include "flash_layout.h"
 
@@ -39,7 +40,6 @@
 #define POST_OK 12
 
 extern volatile uint8_t f_time_loop;
-extern uint8_t s_buttons, s_up;
 void poll_buttons();
 void handle_global_signals();
 void cleanup_global_signals();
@@ -57,7 +57,7 @@ void flash_bootstrap() {
             break;
         }
         cleanup_global_signals();
-        delay_millis(31);
+        delay_millis(31); // TODO: Why this number?
     }
 
     // Cleanup from flash programming mode.
@@ -120,6 +120,7 @@ void bootstrap(uint8_t fastboot) {
     if (bootstrap_status == POST_NOR) {
         uint8_t fail = 0;
         if (!s25fs_post1()) { // General test for correct model & WREN.
+            lcd111_set_text(1, "QC15 BOOTSTRAP> FAIL");
             lcd111_set_text(0, "SPI NOR flash POST FAIL!");
             ht16d_all_one_color(200, 0, 0);
             delay_millis(2000);
@@ -129,6 +130,7 @@ void bootstrap(uint8_t fastboot) {
         uint8_t sentinel = 0;
         s25fs_read_data(&sentinel, FLASH_ADDR_sentinel, 1);
         if (sentinel != FLASH_sentinel_BYTE) { // Is the first byte correct?
+            lcd111_set_text(1, "QC15 BOOTSTRAP> FAIL");
             lcd111_set_text(0, "SPI NOR bad sentinel");
             ht16d_all_one_color(200, 0, 50);
             delay_millis(2000);
@@ -137,6 +139,7 @@ void bootstrap(uint8_t fastboot) {
         }
 
         if (!fastboot && !s25fs_post2()) { // Can we erase and write to the chip?
+            lcd111_set_text(1, "QC15 BOOTSTRAP> FAIL");
             lcd111_set_text(0, "SPI NOR bad I/O ops");
             ht16d_all_one_color(200, 50, 0);
             delay_millis(2000);

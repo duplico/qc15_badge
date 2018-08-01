@@ -90,7 +90,7 @@ void bootstrap() {
 
         // Re-send our POST message (which doubles as a request for our startup
         //  status/config struct) every quarter-second.
-        if (bootstrap_status == POST_IPC && qc_clock.time==8) {
+        if (bootstrap_status == POST_IPC && qc_clock.time==4) {
             qc_clock.time = 0;
             ipc_tx_byte(IPC_MSG_POST | failure_flags);
         }

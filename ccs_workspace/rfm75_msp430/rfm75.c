@@ -407,7 +407,6 @@ void rfm75_io_init() {
 void rfm75_init(uint16_t unicast_address, rfm75_rx_callback_fn* rx_callback,
                 rfm75_tx_callback_fn* tx_callback)
 {
-
     //  one of the chinese documents (rfm73 -> rfm75 migration) says that it should be executed after every PWR_UP, not only during initialization
 
     // Disable the IRQ pin interrupt, while we set up our inputs.

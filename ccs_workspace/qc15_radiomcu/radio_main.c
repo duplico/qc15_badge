@@ -389,6 +389,8 @@ void main (void)
 
     bootstrap();
 
+    delay_millis(150); // CRAZY radio boot-up time before re-initializing it.
+
     // Reinitialize the radio with our correct ID:
     radio_init(badge_status.badge_id);
 

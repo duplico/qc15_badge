@@ -168,17 +168,6 @@ void textentry_update_single_char() {
         }
     }
 
-//    if (curr_text[text_entry_cursor_pos] == CH_ENTER &&
-//            text_entry_cursor_pos < text_entry_len-1) {
-//        // If we have ENTER selected, and this isn't the last character of
-//        //  the field, we need to write some blanks to show that ENTER terms
-//        //  the string.
-//        lcd111_cursor_pos(LCD_BTM, text_entry_cursor_pos+1);
-//        for (uint8_t i=text_entry_cursor_pos; i < text_entry_len; i++) {
-//            lcd111_put_char(LCD_BTM, ' ');
-//        }
-//    }
-
     lcd111_cursor_pos(LCD_BTM, text_entry_cursor_pos);
 }
 
@@ -189,8 +178,6 @@ void textentry_complete() {
     lcd111_clear_nodelay(LCD_BTM);
     lcd111_clear_nodelay(LCD_TOP);
     text_entry_in_progress = 0;
-    // TODO: Does text always go to game, or do we have to save our previous
-    //  state?
     qc15_mode = textentry_exit_mode;
     // Do a SAVE, out of an abundance of caution.
     save_config();

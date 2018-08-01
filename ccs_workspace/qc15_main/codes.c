@@ -140,4 +140,5 @@ void decode_event(uint8_t event_id) {
             badge_conf.code_part_unlocks[2][i] |= BIT7; // extra bit for freezer
         }
     }
+    save_config();
 }

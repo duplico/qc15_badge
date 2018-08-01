@@ -67,6 +67,20 @@ void set_id_buf(uint16_t id, uint8_t *buf) {
     buf[byte] |= (BIT0 << bit);
 }
 
+/// Counts the bits set in a byte and return the total.
+/**
+ ** This is the Brian Kernighan, Peter Wegner, and Derrick Lehmer way of
+ ** counting bits in a bitstring. See _The C Programming Language_, 2nd Ed.,
+ ** Exercise 2-9; or _CACM 3_ (1960), 322.
+ */
+uint8_t byte_rank(uint8_t v) {
+    uint8_t c;
+    for (c = 0; v; c++) {
+        v &= v - 1; // clear the least significant bit set
+    }
+    return c;
+}
+
 /// Counts the bits set in all the bytes of a buffer and returns it.
 /**
  ** This is the Brian Kernighan, Peter Wegner, and Derrick Lehmer way of
