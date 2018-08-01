@@ -287,8 +287,8 @@ void ht16d_send_gray() {
     }
 }
 
-/// Set some of the colors, and immediately send them to the LED controller.
-void ht16d_set_colors(uint8_t id_start, uint8_t id_len, rgbcolor16_t* colors) {
+/// Set some of the colors, but don't send them to the LED controller.
+void ht16d_put_colors(uint8_t id_start, uint8_t id_len, rgbcolor16_t* colors) {
     if (id_start >= HT16D_LED_COUNT || id_start+id_len > HT16D_LED_COUNT) {
         return;
     }
@@ -297,6 +297,11 @@ void ht16d_set_colors(uint8_t id_start, uint8_t id_len, rgbcolor16_t* colors) {
         ht16d_gs_values[(id_start+i)][1] = (uint8_t)(colors[i].g >> 7);
         ht16d_gs_values[(id_start+i)][2] = (uint8_t)(colors[i].b >> 7);
     }
+}
+
+/// Set some of the colors, and immediately send them to the LED controller.
+void ht16d_set_colors(uint8_t id_start, uint8_t id_len, rgbcolor16_t* colors) {
+    ht16d_put_colors(id_start, id_len, colors);
     ht16d_send_gray();
 }
 
