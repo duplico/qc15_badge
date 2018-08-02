@@ -223,8 +223,13 @@ void status_handle_loop() {
 void controller_handle_loop() {
 }
 
+extern uint8_t text_entry_in_progress;
+
 void enter_menu() {
-    menu_sel = 0;
+    // Tricky edge case: Don't reset our menu selection if we're coming
+    //  from the name setting.
+    if (text_entry_in_progress)
+        menu_sel = 0;
     saved_mode = qc15_mode;
 }
 
