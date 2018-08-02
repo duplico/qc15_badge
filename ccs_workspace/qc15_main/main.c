@@ -767,6 +767,11 @@ void main (void)
     if (!(initial_buttons & BIT7)) {
         // UP:
         // Tell the radio MCU to calibrate its frequency.
+        badge_conf.freq_center = 0;
+        badge_conf.freq_set = 0;
+        unlock_radio_status = 0;
+        save_config();
+        unlock_radio_status = 1;
         delay_millis(500);
         while (!ipc_tx_byte(IPC_MSG_CALIBRATE_FREQ));
     }
