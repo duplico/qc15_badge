@@ -580,7 +580,6 @@ void connect_handle_loop() {
             draw_text(LCD_BTM, "Cancel", 0);
         } else {
             // It's a REAL ONE!
-            // TODO: Do we need a gaydar.c/h module?
             if (gd_curr_connectable) {
                 sprintf(text, "[\xA4] 0x%x:%s", gd_curr_id, badge_names[gd_curr_id]);
             } else {
@@ -736,7 +735,7 @@ void main (void)
             textentry_handle_loop();
             break;
         case QC15_MODE_GAME_CHECKNAME:
-            // A lot of this is handled in the handle_ipc loop, too:
+            // A lot of this is handled in the handle ipc loop, too:
             checkname_handle_loop();
             break;
         case QC15_MODE_GAME_CONNECT:
