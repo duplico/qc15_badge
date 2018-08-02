@@ -104,6 +104,7 @@ uint8_t set_badge_seen(uint16_t id, uint8_t *name) {
     }
 
     memcpy(person_names[id], name, QC15_PERSON_NAME_LEN-1);
+    person_names[id][QC15_PERSON_NAME_LEN-1]=0x00;
 
     save_config();
     return 1;
