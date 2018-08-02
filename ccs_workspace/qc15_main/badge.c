@@ -160,6 +160,7 @@ uint8_t set_badge_downloaded(uint16_t id) {
 }
 
 void save_config() {
+    badge_conf.last_clock = qc_clock.time;
     crc16_append_buffer((uint8_t *) (&badge_conf), sizeof(qc15conf)-2);
     memcpy(&backup_conf, &badge_conf, sizeof(qc15conf));
 
@@ -250,5 +251,6 @@ void init_config() {
     //  we must generate a new one.
     generate_config();
 
+    qc_clock.time = badge_conf.last_clock;
     srand(badge_conf.badge_id);
 }
