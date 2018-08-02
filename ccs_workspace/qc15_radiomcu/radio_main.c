@@ -360,8 +360,8 @@ void handle_global_signals(uint8_t block_radio) {
                     // We just finished our last one.
                     uint16_t cnt = 0;
                     for (uint8_t i=FREQ_MIN; i<FREQ_MIN+FREQ_NUM; i++) {
-                        if (rx_cnt[i] > cnt) {
-                            cnt = rx_cnt[i];
+                        if (rx_cnt[i-FREQ_MIN] > cnt) {
+                            cnt = rx_cnt[i-FREQ_MIN];
                             radio_frequency = i;
                         }
                     }
