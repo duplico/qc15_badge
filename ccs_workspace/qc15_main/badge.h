@@ -34,6 +34,9 @@ void load_badge_name(uint8_t *buf, uint16_t id);
 void init_config();
 void draw_text(uint8_t lcd_id, char *txt, uint8_t more);
 void qc15_set_mode(uint8_t mode);
+uint8_t flag_unlocked(uint16_t flag_num);
+void unlock_flag(uint16_t flag_num);
+
 
 extern uint8_t s_gd_success;
 extern uint8_t s_gd_failure;

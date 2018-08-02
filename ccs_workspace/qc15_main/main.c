@@ -353,7 +353,10 @@ void poll_temp() {
              +  30;
 
     if (temp_c < 10) {
-        decode_event(EVENT_FREEZER);
+        badge_conf.freezer_done = 1;
+        led_set_anim(&all_animations[FLAG_FREEZER], 0, 0xFF, 0);
+        unlock_flag(FLAG_FREEZER);
+        decode_event(EVENT_FREEZER); // this also saves right before returning.
     }
 
     if (qc15_mode == QC15_MODE_TEMP) {
