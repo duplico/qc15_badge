@@ -325,7 +325,7 @@ void controller_handle_loop() {
             return;
         case MENU_CONTROL_SEL_EVENT_OFF:
             badge_conf.event_beacon = 0;
-            save_config();
+            save_config(1);
             return;
         case MENU_CONTROL_SEL_EVENT_FRIMIX:
         case MENU_CONTROL_SEL_EVENT_BADGETALK:
@@ -336,20 +336,20 @@ void controller_handle_loop() {
             badge_conf.event_beacon = 1;
             // [0 .. 5]
             badge_conf.event_id = menu_sel - MENU_CONTROL_SEL_EVENT_FRIMIX;
-            save_config();
+            save_config(1);
             break;
         case MENU_CONTROL_SEL_ZEROCLOCK:
             // Zero our clock:
             qc_clock.authoritative = 0;
             qc_clock.time = 0;
-            save_config();
+            save_config(0);
             while (!ipc_tx_op_buf(IPC_MSG_TIME_UPDATE, (uint8_t *)&qc_clock,
                                   sizeof(qc_clock_t)));
             control_render_choice();
             break;
         case MENU_CONTROL_SEL_AUTHORITY:
             qc_clock.authoritative = 1;
-            save_config();
+            save_config(0);
             while (!ipc_tx_op_buf(IPC_MSG_TIME_UPDATE, (uint8_t *)&qc_clock,
                                   sizeof(qc_clock_t)));
             control_render_choice();

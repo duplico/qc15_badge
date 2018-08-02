@@ -103,7 +103,7 @@ void decode_random_chars(uint8_t part_id, uint8_t chars_to_decode) {
         s_part_solved = 0x80 | part_id;
     }
 
-    save_config();
+    save_config(1);
 }
 
 void decode_download(uint16_t downloaded_id) {
@@ -153,5 +153,5 @@ void decode_event(uint8_t event_id) {
     //  machine about it. It would just cause spurious notifications.
     // TODO: unless we do an animation or something.
     s_part_solved = 0;
-    save_config();
+    save_config(1);
 }

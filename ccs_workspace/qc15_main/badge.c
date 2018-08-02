@@ -112,7 +112,7 @@ uint8_t set_badge_seen(uint16_t id, uint8_t *name) {
         badge_conf.handlers_seen_count++;
     }
 
-    save_config();
+    save_config(1);
     return 1;
 }
 
@@ -136,7 +136,7 @@ uint8_t set_badge_uploaded(uint16_t id) {
     }
 
     decode_upload(id);
-    save_config();
+    save_config(1);
 
     return 1;
 }
@@ -161,16 +161,16 @@ uint8_t set_badge_downloaded(uint16_t id) {
     }
 
     decode_download(id);
-    save_config();
+    save_config(1);
     return 1;
 }
 
-void save_config() {
+void save_config(uint8_t send_to_radio) {
     badge_conf.last_clock = qc_clock.time;
     crc16_append_buffer((uint8_t *) (&badge_conf), sizeof(qc15conf)-2);
     memcpy(&backup_conf, &badge_conf, sizeof(qc15conf));
 
-    if (unlock_radio_status) {
+    if (unlock_radio_status && send_to_radio) {
         // And, update our friend the radio MCU:
         // (spin until the send is successful)
         ipc_tx_op_buf(IPC_MSG_STATS_UPDATE, (uint8_t *) &badge_conf, sizeof(qc15status));
@@ -252,7 +252,7 @@ void unlock_flag(uint16_t flag_num) {
         return;
 
     badge_conf.flag_unlocks |= (0x0001 << flag_num);
-    save_config();
+    save_config(0);
 }
 
 /// Validate, load, and/or generate this badge's configuration as appropriate.

@@ -299,6 +299,8 @@ uint16_t prev_nearby_badge_id(uint16_t id_curr) {
 
 void handle_ipc_rx(uint8_t *rx_buf) {
     uint16_t id;
+    qc_clock_t temp_clock;
+
     switch(rx_buf[0] & 0xF0) {
     case IPC_MSG_REBOOT:
         PMMCTL0 |= PMMSWPOR; // Software reboot.
@@ -342,10 +344,9 @@ void handle_ipc_rx(uint8_t *rx_buf) {
         memset(rx_cnt, 0x00, sizeof(rx_cnt));
         rfm75_write_reg(0x05, radio_frequency);
     case IPC_MSG_TIME_UPDATE:
-        __bic_SR_register(GIE);
-        // Suspend interrupts BRIEFLY during this copy:
-        memcpy((uint8_t *)&qc_clock, &rx_buf[1], sizeof(qc_clock_t));
-        __bis_SR_register(GIE);
+        memcpy((uint8_t *)&temp_clock, &rx_buf[1], sizeof(qc_clock_t));
+        qc_clock.time = temp_clock.time;
+        qc_clock.authoritative = temp_clock.authoritative;
         break;
     default:
         break;
