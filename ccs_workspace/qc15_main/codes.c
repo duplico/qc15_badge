@@ -1,6 +1,9 @@
 /// The implementation of the multi-badge codebreaking game.
 /**
- *  \file codes.c
+ **
+ ** NB: These are only ever called if it's a NEW download or upload or event.
+ **
+ **  \file codes.c
  ** \author George Louthan
  ** \date   2018
  ** \copyright (c) 2018 George Louthan @duplico. MIT License.
@@ -36,7 +39,7 @@ uint8_t part_id_downloaded(uint16_t id) {
     }
     // If not, we can keep checking the following:
 
-    // If not, is it the same as us?
+    // If not, is it a badge with the same segment as us?
     if (!is_solved(5) && (badge_conf.badge_id % 16 == id % 16)) {
         // If it's the same, and we still have characters to decode in our
         //  "same" part, then pick that one.
@@ -121,12 +124,15 @@ void decode_download(uint16_t downloaded_id) {
         chars_to_decode = 3;
 
     decode_random_chars(part_id, chars_to_decode);
-
 }
 
 void decode_upload() {
     // This is PART 3!
     decode_random_chars(3, 3);
+    // This wasn't a game action, so there's no reason to tell our state
+    //  machine about it. It would just cause spurious notifications.
+    // TODO: unless we do an animation or something.
+    s_part_solved = 0;
 }
 
 void decode_event(uint8_t event_id) {
@@ -140,5 +146,12 @@ void decode_event(uint8_t event_id) {
             badge_conf.code_part_unlocks[2][i] |= BIT7; // extra bit for freezer
         }
     }
+    if (is_solved(2)) {
+        s_part_solved = 0x80 | 2;
+    }
+    // This wasn't a game action, so there's no reason to tell our state
+    //  machine about it. It would just cause spurious notifications.
+    // TODO: unless we do an animation or something.
+    s_part_solved = 0;
     save_config();
 }

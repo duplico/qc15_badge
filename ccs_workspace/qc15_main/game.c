@@ -156,6 +156,11 @@ uint8_t game_process_special() {
             s_gd_failure = 0;
             fire_special = 1;
         }
+        if (current_state->other_series[i].type_id == SPECIAL_CONNECT_SUCCESS_DONE &&
+                s_part_solved) {
+            s_part_solved = 0;
+            fire_special = 1;
+        }
         if (fire_special) {
             fire_special = 0;
             state_last_special_event = current_state->other_series[i].type_id;

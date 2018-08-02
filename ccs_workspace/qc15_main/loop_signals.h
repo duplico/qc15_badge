@@ -16,7 +16,7 @@ extern uint8_t s_left;
 extern uint8_t s_right;
 extern uint8_t s_power_on;
 extern uint8_t s_power_off;
-
+extern uint8_t s_part_solved;
 
 extern uint16_t gd_curr_id;
 extern uint16_t gd_starting_id;
