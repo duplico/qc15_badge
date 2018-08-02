@@ -332,7 +332,7 @@ void handle_ipc_rx(uint8_t *rx) {
             gd_curr_connectable = 0;
         break;
     case IPC_MSG_TIME_UPDATE:
-        memcpy(&qc_clock, &rx[1], sizeof(qc_clock_t));
+        memcpy((uint8_t *)&qc_clock, &rx[1], sizeof(qc_clock_t));
         break;
     case IPC_MSG_CALIBRATE_FREQ:
         ht16d_all_one_color_ring_only(0x00, 0x8F, 0x00);
@@ -454,14 +454,51 @@ void cleanup_global_signals() {
     s_clock_tick = 0;
 }
 
-/// Initialize the badge's running state to a known good one.
-void badge_startup() {
-    if (global_flash_lockout & FLASH_LOCKOUT_READ) {
-        qc15_mode = QC15_MODE_FLASH_BROKEN;
+void qc15_set_mode(uint8_t mode) {
+    switch(mode) {
+    case QC15_MODE_COUNTDOWN:
+        // This one is fine by itself.
+        break;
+    case QC15_MODE_SLEEP:
+        break;
+    case QC15_MODE_STATUS:
+        enter_menu_status();
+        status_render_choice();
+        break;
+    case QC15_MODE_GAME:
+        // Clear top screen
+        // Render bottom screen.
+        game_render_current();
+        break;
+    case QC15_MODE_TEXTENTRY:
+        // This is entirely handled by textentry_begin()
+        break;
+    case QC15_MODE_GAME_CHECKNAME:
+        // This is entirely handled by the game and checkname engine.
+        break;
+    case QC15_MODE_GAME_CONNECT:
+        // This is entirely handled by the game and checkname engine.
+        break;
+    case QC15_MODE_TEMP:
+        // This is handled by the time loop.
+        break;
+    case QC15_MODE_FLASH_BROKEN:
         led_set_anim(&anim_rainbow_spin, LED_ANIM_TYPE_NONE,
                      0xFF, led_ring_anim_pad_loops_bg);
         lcd111_set_text(LCD_TOP, "    Q U E E R C O N");
         lcd111_set_text(LCD_BTM, "     F I F T E E N");
+        break;
+    case QC15_MODE_CONTROLLER:
+        enter_menu_controller();
+        break;
+    }
+    qc15_mode = mode;
+}
+
+/// Initialize the badge's running state to a known good one.
+void badge_startup() {
+    if (global_flash_lockout & FLASH_LOCKOUT_READ) {
+        qc15_set_mode(QC15_MODE_FLASH_BROKEN);
         return;
     }
     // Handle our main config
@@ -504,8 +541,13 @@ void badge_startup() {
     }
 
     // Handle entering the proper state
-    qc15_mode = QC15_MODE_GAME;
-    game_begin();
+    if (badge_conf.countdown_over) {
+        qc15_set_mode(QC15_MODE_GAME);
+        game_begin();
+    }
+    else {
+        qc15_set_mode(QC15_MODE_COUNTDOWN);
+    }
 }
 
 /// Handle the inner loop of the mode where we're searching for a named badge.
@@ -643,22 +685,30 @@ void connect_handle_loop() {
 
 }
 
-extern const led_ring_animation_t anim_lsw;
-extern const led_ring_animation_t anim_spinwhite;
-
 void countdown_handle_loop() {
     uint32_t countdown;
     char text[25] = "";
 
     if (!s_clock_tick)
         return;
-
-    if (qc_clock.time >= 230400) {
+//#define QC_START_TIME 230400
+#define QC_START_TIME 640
+//    if (qc_clock.time >= 230400) {
+    if (qc_clock.time >= QC_START_TIME) {
         // QUEERCON TIME!!!!!!
-        // TODO
+        badge_conf.countdown_over = 1;
+        led_set_anim_none();
+        save_config();
+        qc15_set_mode(QC15_MODE_GAME);
+        game_begin();
+        return;
     }
 
-    countdown = 230400 - qc_clock.time;
+    if (qc_clock.time % 256 == 0) {
+        led_set_anim(&all_animations[14], LED_ANIM_TYPE_SPIN, 0, 0);
+    }
+
+    countdown = QC_START_TIME - qc_clock.time;
     sprintf(text, "          %x%x", (uint16_t)((0xffff0000 & countdown) >> 16),
                           (uint16_t)(0x0000ffff & countdown));
     lcd111_set_text(LCD_TOP, text);
