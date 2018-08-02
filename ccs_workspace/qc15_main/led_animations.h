@@ -8,6 +8,8 @@
 #ifndef LED_ANIMATIONS_H_
 #define LED_ANIMATIONS_H_
 
+#include "state_definitions.h"
+
 #define FLAG_COUNT 20
 
 extern const led_ring_animation_t anim_rainbow_spin;

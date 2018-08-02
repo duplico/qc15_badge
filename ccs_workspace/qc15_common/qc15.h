@@ -40,6 +40,8 @@
 #define EVENT_CLOSING 5
 #define EVENT_FREEZER 6
 
+#define FLAG_FREEZER 18
+
 #define QC15_BADGES_IN_SYSTEM 450
 #define QC15_BASE_ID QC15_BADGES_IN_SYSTEM
 #define QC15_EVENT_ID_START (QC15_BADGES_IN_SYSTEM + 1) // 451
@@ -89,6 +91,7 @@ typedef struct {
     uint8_t badges_seen[57];
     uint8_t badges_downloaded[57];
     uint8_t badges_uploaded[57];
+    uint16_t flag_unlocks;
     uint32_t ubers_seen, ubers_downloaded, ubers_uploaded;
     uint32_t handlers_seen, handlers_downloaded, handlers_uploaded;
     uint8_t file_lights_on : 1;

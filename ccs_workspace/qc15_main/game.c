@@ -191,7 +191,7 @@ void game_set_state(uint16_t state_id, uint8_t keep_previous) {
 
 void game_begin() {
     game_set_state(game_curr_state_id, 1);
-//    game_set_state(STATE_ID_CRACKINGTHEFILE1, 1); // TODO
+    game_set_state(STATE_ID_CRACKINGTHEFILE1, 1); // TODO
 }
 
 uint8_t next_input_id() {
@@ -308,6 +308,7 @@ void do_action(game_action_t *action) {
             led_set_anim_none();
         }
         led_set_anim(&all_animations[action->detail], 0, 0xFF, 0);
+        unlock_flag(action->detail);
         break;
     case GAME_ACTION_TYPE_STATE_TRANSITION:
         // Do a state transition

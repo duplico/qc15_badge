@@ -144,20 +144,27 @@ void status_handle_loop() {
             menu_sel = 0;
         else
             menu_sel++;
+        // Don't show the flags if we don't have any available:
+        if (menu_sel == MENU_STATUS_SEL_SET_LIGHTS && !badge_conf.flag_unlocks)
+            menu_sel++;
         status_render_choice();
     } else if (s_down) {
         if (menu_sel == 0)
             menu_sel = MENU_STATUS_MAX;
         else
             menu_sel--;
+        if (menu_sel == MENU_STATUS_SEL_SET_LIGHTS && !badge_conf.flag_unlocks)
+            menu_sel--;
         status_render_choice();
     } else if (s_left) {
         if (menu_sel == MENU_STATUS_SEL_SET_LIGHTS) {
             // go back
-            if (curr_flag == 0)
-                curr_flag = 33;
-            else
-                curr_flag--;
+            do {
+                if (curr_flag == 0)
+                    curr_flag = FLAG_COUNT-1;
+                else
+                    curr_flag--;
+            } while (!flag_unlocked(curr_flag));
             led_set_anim(&all_animations[curr_flag], 0, 0xff, 0);
             status_render_choice();
         }
@@ -173,10 +180,12 @@ void status_handle_loop() {
             return;
         case MENU_STATUS_SEL_SET_LIGHTS:
             // go forward
-            if (curr_flag == 33)
-                curr_flag = 0;
-            else
-                curr_flag++;
+            do {
+                if (curr_flag == FLAG_COUNT)
+                    curr_flag = 0;
+                else
+                    curr_flag++;
+            } while (!flag_unlocked(curr_flag));
             led_set_anim(&all_animations[curr_flag], 0, 0xff, 0);
             status_render_choice();
             break;
@@ -213,6 +222,12 @@ void leave_menu() {
 }
 
 void enter_menu_status() {
+    for (uint8_t i=0; i<FLAG_COUNT; i++) {
+        if (&all_animations[i] == led_ring_anim_bg) {
+            curr_flag = i;
+            break;
+        }
+    }
     enter_menu();
 }
 

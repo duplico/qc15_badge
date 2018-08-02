@@ -28,6 +28,7 @@
 #include "s25fs.h"
 #include "codes.h"
 #include "leds.h"
+#include "led_animations.h"
 
 #include "badge.h"
 
@@ -237,6 +238,22 @@ uint8_t config_is_valid() {
         return 0;
 
     return 1;
+}
+
+uint8_t flag_unlocked(uint16_t flag_num) {
+    if (flag_num >= FLAG_COUNT) {
+        return 0;
+    }
+
+    return badge_conf.flag_unlocks & (0x0001 << flag_num);
+}
+
+void unlock_flag(uint16_t flag_num) {
+    if (flag_num >= FLAG_COUNT || flag_unlocked(flag_num))
+        return;
+
+    badge_conf.flag_unlocks |= (0x0001 << flag_num);
+    save_config();
 }
 
 /// Validate, load, and/or generate this badge's configuration as appropriate.
