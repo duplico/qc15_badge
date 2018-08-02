@@ -297,14 +297,12 @@ void led_set_anim(const led_ring_animation_t *anim, uint8_t anim_type,
 uint8_t sleep_anim_type;
 
 void led_off() {
-    // TODO: sleep mode, if it exists
     ht16d_all_one_color(0,0,0); // Turn all LEDs off.
     sleep_anim_type = led_anim_type;
     led_anim_type = LED_ANIM_TYPE_NONE;
 }
 
 void led_on() {
-    // TODO: We need a way to tell whether we're currently sleeping.
     if (sleep_anim_type)
         led_anim_type = sleep_anim_type;
 }
@@ -399,7 +397,7 @@ uint8_t led_line_next_offset(uint8_t file_id) {
     }
 
     // Calculate how far away we are (distance /5 + 1)
-    distance = (5 - 5 * buffer_rank(badge_conf.code_part_unlocks[file_id], CODE_SEGMENT_REP_LEN) / 80) + 1; //TODO
+    distance = (5 - 5 * buffer_rank(badge_conf.code_part_unlocks[file_id], CODE_SEGMENT_REP_LEN) / 80) + 1;
     file_id_min = file_id_center - distance;
     file_id_max = file_id_center + distance;
 
@@ -473,7 +471,7 @@ void led_line_timestep() {
             led_line_curr[i].b+= led_line_step[i].b;
         }
     }
-    ht16d_set_colors(18, 6, led_line_curr); // TODO, combine with above.
+    ht16d_set_colors(18, 6, led_line_curr);
 }
 
 /// LED timestep function, which should be called 32x per second.
@@ -481,5 +479,4 @@ void led_timestep() {
     led_ring_timestep();
     if (badge_conf.file_lights_on)
         led_line_timestep();
-    // TODO: if animating, set colors.
 }

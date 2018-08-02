@@ -15,7 +15,8 @@
 
 #include "textentry.h"
 
-// TODO: What of this will need to be persistent?
+// None of this needs to be persisted, because we can only ever startup into
+//  the GAME or COUNTDOWN modes, really.
 
 char *textentry_dest;
 char curr_text[25];
@@ -33,7 +34,7 @@ uint8_t text_entry_in_progress = 0;
 void textentry_begin(char *destination, uint8_t len, uint8_t start_populated,
                      uint8_t show_instructions) {
     if (text_entry_in_progress || !len) {
-        return; // TODO
+        return; // SUPER DUPER INVALID INVOCATION OF THIS FUNCTION
     }
     textentry_dest = destination;
     textentry_len = len;

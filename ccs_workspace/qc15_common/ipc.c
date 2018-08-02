@@ -63,7 +63,6 @@ uint8_t ipc_tx(uint8_t *tx_buf, uint8_t len) {
 
     if (len > IPC_MSG_LEN_MAX) {
         len = IPC_MSG_LEN_MAX;
-        while (1); // TODO: ASSERT/SPIN
     }
 
     memcpy(ipc_tx_buf, tx_buf, len);

@@ -17,4 +17,8 @@ extern uint8_t s_right;
 extern uint8_t s_power_on;
 extern uint8_t s_power_off;
 
+
+extern uint16_t gd_curr_id;
+extern uint16_t gd_starting_id;
+
 #endif /* LOOP_SIGNALS_H_ */
