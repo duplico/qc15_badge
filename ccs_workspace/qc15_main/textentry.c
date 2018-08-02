@@ -182,7 +182,7 @@ void textentry_complete() {
     qc15_set_mode(textentry_exit_mode);
     text_entry_in_progress = 0;
     // Do a SAVE, out of an abundance of caution.
-    save_config();
+    save_config(1);
 }
 
 void textentry_handle_loop() {

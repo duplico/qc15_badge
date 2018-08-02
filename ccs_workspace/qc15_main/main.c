@@ -338,14 +338,13 @@ void handle_ipc_rx(uint8_t *rx) {
     case IPC_MSG_CALIBRATE_FREQ:
         badge_conf.freq_set = 1;
         badge_conf.freq_center = rx[1];
-        unlock_radio_status=0; // don't send this to the radio.
-        save_config();
-        unlock_radio_status=1;
+        save_config(0);
         // WDT hold
         WDT_A_hold(WDT_A_BASE);
         ht16d_all_one_color_ring_only(0x00, 0x8F, 0x00);
         delay_millis(2000);
         // WDT unhold
+        ht16d_all_one_color_ring_only(0x00, 0x00, 0x00);
         WDTCTL = WDTPW | WDTSSEL__ACLK | WDTIS__32K;
         break;
     }
@@ -553,7 +552,7 @@ void badge_startup() {
 
     badge_conf.active = 1;
     unlock_radio_status = 1;
-    save_config(); // Recompute CRC for active=1, and tell the radio.
+    save_config(1); // Recompute CRC for active=1, and tell the radio.
                    // This is the VERY FIRST MESSAGE we will send the radio.
 
     // Handle our animations:
@@ -730,7 +729,7 @@ void countdown_handle_loop() {
         badge_conf.countdown_over = 1;
         led_set_anim_none();
         led_set_anim(&anim_countdown_done, 0, 0, 0);
-        save_config();
+        save_config(0);
         qc15_set_mode(QC15_MODE_GAME);
         game_begin();
         return;
@@ -738,7 +737,7 @@ void countdown_handle_loop() {
 
     if (qc_clock.time % 56 == 0) {
         led_set_anim(&anim_countdown_tick, 0, 0, 0);
-        save_config(); // save our clock.
+        save_config(0); // save our clock.
     }
 
     countdown = QC_START_TIME - qc_clock.time;
@@ -786,7 +785,7 @@ void main (void)
         badge_conf.freq_center = 0;
         badge_conf.freq_set = 0;
         unlock_radio_status = 0;
-        save_config();
+        save_config(0);
         unlock_radio_status = 1;
         delay_millis(500);
         while (!ipc_tx_byte(IPC_MSG_CALIBRATE_FREQ));

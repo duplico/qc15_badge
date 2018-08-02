@@ -389,7 +389,7 @@ void do_action(game_action_t *action) {
         } else if (action->detail == OTHER_ACTION_TURN_ON_THE_LIGHTS_TO_REPRESENT_FILE_STATE) {
             badge_conf.file_lights_on = 1;
             s_turn_on_file_lights = 1;
-            save_config();
+            save_config(0);
         } else if (action->detail == OTHER_ACTION_STATUS_MENU) {
             qc15_set_mode(QC15_MODE_STATUS);
         }

@@ -72,8 +72,8 @@
 #define QC_START_TIME 172800
 
 // TODO!!!!
-//#define DEFAULT_CLOCK_TIME (QC_START_TIME - 28800)
-#define DEFAULT_CLOCK_TIME (QC_START_TIME - 640)
+#define DEFAULT_CLOCK_TIME (QC_START_TIME - 28800)
+//#define DEFAULT_CLOCK_TIME (QC_START_TIME - 640)
 
 /// The main config struct, which will go in both the SPI flash and in FRAM.
 typedef struct {
@@ -99,6 +99,8 @@ typedef struct {
     uint8_t freezer_done : 1;
     uint8_t countdown_over : 1;
     uint8_t freq_set : 1;
+    uint8_t event_beacon : 1;
+    uint8_t event_id;
     uint8_t freq_center;
     uint16_t crc16;
 } qc15conf;
@@ -160,7 +162,7 @@ extern qc15status badge_status;
 extern uint16_t badges_nearby;
 extern uint8_t global_flash_lockout;
 extern uint8_t qc15_mode;
-void save_config();
+void save_config(uint8_t send_to_radio);
 #endif
 
 
