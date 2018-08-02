@@ -312,10 +312,12 @@ void handle_ipc_rx(uint8_t *rx_buf) {
         break;
     case IPC_MSG_GD_DL:
         memcpy(&id, &rx_buf[1], 2);
-        if (ids_in_range[id].connect_intervals) {
+        if (ids_in_range[id].connect_intervals && id < QC15_BADGES_IN_SYSTEM) {
             // It's downloadable.
             s_download_needed = 1;
             radio_download_id = id;
+            // send the message.
+            while (!ipc_tx_byte(IPC_MSG_GD_DL_SUCCESS));
         } else {
             while (!ipc_tx_byte(IPC_MSG_GD_DL_FAILURE));
         }
@@ -382,7 +384,8 @@ void handle_global_signals(uint8_t block_radio) {
         }
         if (qc_clock.time % 1024 == 256) { // try to avoid conflict w/ above
             // Attempt this every 32 seconds.
-            ipc_tx_op_buf(IPC_MSG_TIME_UPDATE, &qc_clock, sizeof(qc_clock_t));
+            ipc_tx_op_buf(IPC_MSG_TIME_UPDATE, (uint8_t *)&qc_clock,
+                          sizeof(qc_clock_t));
         }
     }
 

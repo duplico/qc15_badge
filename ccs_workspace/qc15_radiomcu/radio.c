@@ -185,12 +185,26 @@ void radio_tx_done(uint8_t ack) {
             // We just attempted a download. Did it succeed?
             rcp = (radio_connect_payload*) (curr_packet_tx.msg_payload);
             if (rcp->connect_flags == RADIO_CONNECT_FLAG_DOWNLOAD) {
-                if (ack) {
-                    while (!ipc_tx_byte(IPC_MSG_GD_DL_SUCCESS));
-                } else {
-                    // no.
-                    while (!ipc_tx_byte(IPC_MSG_GD_DL_FAILURE));
-                }
+                // REALLY, if our radios were reliable enough, we would do
+                //  the following:
+                  /*
+                  if (ack) {
+                      while (!ipc_tx_byte(IPC_MSG_GD_DL_SUCCESS));
+                  } else {
+                      // no.
+                      while (!ipc_tx_byte(IPC_MSG_GD_DL_FAILURE));
+                  }
+                 */
+                // HOWEVER, because we sometimes have radio issues, and
+                //  because in the UI we display the readiness of a target
+                //  to be connected to, it's bad UX to have it fail for
+                //  seemingly no reason. For that reason, we accept the
+                //  tradeoff that sometimes a connection may not be
+                //  recorded as BOTH an upload and a download, and we do the
+                //  SUCCESS transmission in the IPC handler, rather than here.
+                // This if statement is left in the code in order to provide
+                //  the opportunity to explain this logic - and to change it
+                //  in the future if it's decided that it should be.
             }
             // If we just sent an advertisement, we don't care.
             break;
