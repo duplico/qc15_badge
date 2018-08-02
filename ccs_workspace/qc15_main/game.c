@@ -125,11 +125,11 @@ uint8_t game_process_special() {
             continue;
 
         if (current_state->other_series[i].type_id == SPECIAL_BADGESNEARBY0 &&
-                badges_nearby==0) {
+                (badges_nearby==0 && badge_conf.freq_set)) {
             fire_special = 1;
         }
         if (current_state->other_series[i].type_id == SPECIAL_BADGESNEARBYSOME &&
-                badges_nearby>0) {
+                (badges_nearby>0 || !badge_conf.freq_set)) {
             fire_special = 1;
         }
         if (current_state->other_series[i].type_id == SPECIAL_NAME_FOUND &&
