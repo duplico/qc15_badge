@@ -660,7 +660,10 @@ void connect_handle_loop() {
         }
 
         // We specifically do NOT clear these signals here.
-        qc15_mode = QC15_MODE_GAME;
+        qc15_set_mode(QC15_MODE_GAME);
+        return;
+    } else if (s_gd_failure) {
+        qc15_set_mode(QC15_MODE_GAME);
         return;
     }
 
