@@ -214,6 +214,8 @@ void leave_menu() {
 
 void enter_menu_status() {
     enter_menu();
-    qc15_mode = QC15_MODE_STATUS;
-    status_render_choice();
+}
+
+void enter_menu_controller() {
+    enter_menu();
 }

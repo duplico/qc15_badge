@@ -189,11 +189,9 @@ void game_set_state(uint16_t state_id, uint8_t keep_previous) {
     start_action_series(current_state->entry_series_id);
 }
 
-extern uint16_t gd_starting_id;
-
 void game_begin() {
     game_set_state(game_curr_state_id, 1);
-//    game_set_state(33, 1);
+//    game_set_state(STATE_ID_CRACKINGTHEFILE1, 1); // TODO
 }
 
 uint8_t next_input_id() {
@@ -387,7 +385,7 @@ void do_action(game_action_t *action) {
             s_turn_on_file_lights = 1;
             save_config();
         } else if (action->detail == OTHER_ACTION_STATUS_MENU) {
-            enter_menu_status();
+            qc15_set_mode(QC15_MODE_STATUS);
         }
         break;
     }
@@ -594,6 +592,13 @@ void game_clock_tick() {
         game_process_timers();
     }
 
+}
+
+// Display the currently appropriate game display.
+void game_render_current() {
+    lcd111_clear(LCD_TOP);
+    lcd111_cursor_type(LCD_TOP, LCD111_CURSOR_BLINK);
+    draw_text_selection();
 }
 
 /// Called repeatedly from the main loop to handle steps of the game states.

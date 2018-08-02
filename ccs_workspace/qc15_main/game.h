@@ -79,5 +79,6 @@ extern uint8_t s_turn_on_file_lights;
 
 void game_begin();
 void game_handle_loop();
+void game_render_current();
 
 #endif /* GAME_H_ */

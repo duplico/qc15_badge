@@ -88,6 +88,7 @@ typedef struct {
     uint32_t handlers_seen, handlers_downloaded, handlers_uploaded;
     uint8_t file_lights_on : 1;
     uint8_t freezer_done : 1;
+    uint8_t countdown_over : 1;
     uint16_t crc16;
 } qc15conf;
 
