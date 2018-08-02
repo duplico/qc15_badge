@@ -297,8 +297,8 @@ void control_render_choice() {
 
 void controller_handle_loop() {
     if (s_up) {
-        if ((badge_conf.badge_id == 1 && menu_sel == MENU_CONTROL_SEL_AUTHORITY) ||
-            (badge_conf.badge_id != 1 && menu_sel >= MENU_CONTROL_SEL_EVENT_CLOSING))
+        if ((badge_conf.badge_id <= 1 && menu_sel == MENU_CONTROL_SEL_AUTHORITY) ||
+            (badge_conf.badge_id > 1 && menu_sel >= MENU_CONTROL_SEL_EVENT_CLOSING))
         {
             menu_sel = 0;
         }
@@ -308,7 +308,7 @@ void controller_handle_loop() {
         control_render_choice();
     } else if (s_down) {
         if (menu_sel == 0) {
-            if (1 || badge_conf.badge_id == 1) // TODO TODO TODO TODO
+            if (badge_conf.badge_id <= 1)
                 menu_sel = MENU_CONTROL_SEL_AUTHORITY;
             else
                 menu_sel = MENU_CONTROL_SEL_EVENT_CLOSING;
