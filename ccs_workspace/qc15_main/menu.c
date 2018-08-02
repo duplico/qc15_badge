@@ -49,6 +49,18 @@
 #define MENU_STATUS_SEL_RADIOCAL 12
 #define MENU_STATUS_MAX 12
 
+#define MENU_CONTROL_SEL_EXIT 0
+#define MENU_CONTROL_SEL_EVENT_OFF 1
+#define MENU_CONTROL_SEL_EVENT_FRIMIX 2
+#define MENU_CONTROL_SEL_EVENT_BADGETALK 3
+#define MENU_CONTROL_SEL_EVENT_SATMIX 4
+#define MENU_CONTROL_SEL_EVENT_PARTY 5
+#define MENU_CONTROL_SEL_EVENT_KARAOKE 6
+#define MENU_CONTROL_SEL_EVENT_CLOSING 7
+#define MENU_CONTROL_SEL_ZEROCLOCK 8
+#define MENU_CONTROL_SEL_AUTHORITY 9
+#define MENU_CONTROL_MAX 9
+
 uint8_t menu_sel = 0;
 uint8_t saved_mode;
 
@@ -220,7 +232,132 @@ void status_handle_loop() {
     }
 }
 
+void control_render_choice() {
+    char text[25] = {0,};
+
+    switch(menu_sel) {
+    case MENU_EXIT:
+        // Return to the game.
+        sprintf(text, "CONTROLLER");
+        lcd111_set_text(LCD_TOP, text);
+        draw_text(LCD_BTM, "Exit...", 1);
+        return;
+    case MENU_CONTROL_SEL_EVENT_OFF:
+        lcd111_set_text(LCD_TOP, "CONTROLLER");
+        draw_text(LCD_BTM, "Turn OFF event beacon", 1);
+        return;
+    case MENU_CONTROL_SEL_EVENT_FRIMIX:
+        lcd111_set_text(LCD_TOP, "Friday mixer");
+        draw_text(LCD_BTM, "Turn ON event ^ beacon", 1);
+        break;
+    case MENU_CONTROL_SEL_EVENT_BADGETALK:
+        lcd111_set_text(LCD_TOP, "Badge talk");
+        draw_text(LCD_BTM, "Turn ON event ^ beacon", 1);
+        break;
+    case MENU_CONTROL_SEL_EVENT_SATMIX:
+        lcd111_set_text(LCD_TOP, "Saturday mixer");
+        draw_text(LCD_BTM, "Turn ON event ^ beacon", 1);
+        break;
+    case MENU_CONTROL_SEL_EVENT_PARTY:
+        lcd111_set_text(LCD_TOP, "Saturday PARTY");
+        draw_text(LCD_BTM, "Turn ON event ^ beacon", 1);
+        break;
+    case MENU_CONTROL_SEL_EVENT_KARAOKE:
+        lcd111_set_text(LCD_TOP, "Karaoke!!");
+        draw_text(LCD_BTM, "Turn ON event ^ beacon", 1);
+        break;
+    case MENU_CONTROL_SEL_EVENT_CLOSING:
+        lcd111_set_text(LCD_TOP, "QC Closing Ceremonies");
+        draw_text(LCD_BTM, "Turn ON event ^ beacon", 1);
+        break;
+    case MENU_CONTROL_SEL_ZEROCLOCK:
+        sprintf(text, "curr:   0x%x%x",
+                (uint16_t)((0xffff0000 & qc_clock.time) >> 16),
+                (uint16_t)(0x0000ffff & qc_clock.time));
+        if (qc_clock.authoritative) {
+            text[6] = 'A';
+        }
+        lcd111_set_text(LCD_TOP, text);
+        draw_text(LCD_BTM, "ZERO CLOCK.", 1);
+        break;
+    case MENU_CONTROL_SEL_AUTHORITY:
+        sprintf(text, "curr:   0x%x%x",
+                (uint16_t)((0xffff0000 & qc_clock.time) >> 16),
+                (uint16_t)(0x0000ffff & qc_clock.time));
+        if (qc_clock.authoritative) {
+            text[6] = 'A';
+        }
+        lcd111_set_text(LCD_TOP, text);
+        draw_text(LCD_BTM, "Give clock authority", 1);
+        break;
+    default:
+        break;
+    }
+}
+
 void controller_handle_loop() {
+    if (s_up) {
+        if ((badge_conf.badge_id == 1 && menu_sel == MENU_CONTROL_SEL_AUTHORITY) ||
+            (badge_conf.badge_id != 1 && menu_sel >= MENU_CONTROL_SEL_EVENT_CLOSING))
+        {
+            menu_sel = 0;
+        }
+        else {
+            menu_sel++;
+        }
+        control_render_choice();
+    } else if (s_down) {
+        if (menu_sel == 0) {
+            if (1 || badge_conf.badge_id == 1) // TODO TODO TODO TODO
+                menu_sel = MENU_CONTROL_SEL_AUTHORITY;
+            else
+                menu_sel = MENU_CONTROL_SEL_EVENT_CLOSING;
+        }
+        else
+            menu_sel--;
+        control_render_choice();
+    } else if (s_right) {
+        // Select.
+        switch(menu_sel) {
+        case MENU_EXIT:
+            // Return to the game.
+            leave_menu();
+            return;
+        case MENU_CONTROL_SEL_EVENT_OFF:
+            badge_conf.event_beacon = 0;
+            save_config();
+            return;
+        case MENU_CONTROL_SEL_EVENT_FRIMIX:
+        case MENU_CONTROL_SEL_EVENT_BADGETALK:
+        case MENU_CONTROL_SEL_EVENT_SATMIX:
+        case MENU_CONTROL_SEL_EVENT_PARTY:
+        case MENU_CONTROL_SEL_EVENT_KARAOKE:
+        case MENU_CONTROL_SEL_EVENT_CLOSING:
+            badge_conf.event_beacon = 1;
+            // [0 .. 5]
+            badge_conf.event_id = menu_sel - MENU_CONTROL_SEL_EVENT_FRIMIX;
+            save_config();
+            break;
+        case MENU_CONTROL_SEL_ZEROCLOCK:
+            // Zero our clock:
+            qc_clock.authoritative = 0;
+            qc_clock.time = 0;
+            save_config();
+            while (!ipc_tx_op_buf(IPC_MSG_TIME_UPDATE, (uint8_t *)&qc_clock,
+                                  sizeof(qc_clock_t)));
+            control_render_choice();
+            break;
+        case MENU_CONTROL_SEL_AUTHORITY:
+            qc_clock.authoritative = 1;
+            save_config();
+            while (!ipc_tx_op_buf(IPC_MSG_TIME_UPDATE, (uint8_t *)&qc_clock,
+                                  sizeof(qc_clock_t)));
+            control_render_choice();
+            break;
+        default:
+            break;
+        }
+    }
 }
 
 extern uint8_t text_entry_in_progress;

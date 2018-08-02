@@ -341,6 +341,12 @@ void handle_ipc_rx(uint8_t *rx_buf) {
         radio_frequency = FREQ_MIN;
         memset(rx_cnt, 0x00, sizeof(rx_cnt));
         rfm75_write_reg(0x05, radio_frequency);
+    case IPC_MSG_TIME_UPDATE:
+        __bic_SR_register(GIE);
+        // Suspend interrupts BRIEFLY during this copy:
+        memcpy((uint8_t *)&qc_clock, &rx_buf[1], sizeof(qc_clock_t));
+        __bis_SR_register(GIE);
+        break;
     default:
         break;
     }

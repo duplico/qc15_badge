@@ -330,7 +330,10 @@ void handle_ipc_rx(uint8_t *rx) {
             gd_curr_connectable = 0;
         break;
     case IPC_MSG_TIME_UPDATE:
+        __bic_SR_register(GIE);
+        // Suspend interrupts BRIEFLY during this copy:
         memcpy((uint8_t *)&qc_clock, &rx[1], sizeof(qc_clock_t));
+        __bis_SR_register(GIE);
         break;
     case IPC_MSG_CALIBRATE_FREQ:
         badge_conf.freq_set = 1;
@@ -413,12 +416,16 @@ void handle_global_signals() {
 
     if (s_power_off && power_switch_status == POWER_SW_OFF) {
         s_power_off = 0;
-        led_off();
+        qc15_set_mode(QC15_MODE_SLEEP);
     }
 
     if (s_power_on && power_switch_status == POWER_SW_ON) {
         s_power_on = 0;
         led_on();
+        if (badge_conf.countdown_over)
+            qc15_set_mode(QC15_MODE_GAME);
+        else
+            qc15_set_mode(QC15_MODE_COUNTDOWN);
         if (up_status) { // && badge_conf.badge_id == 1) // TODO
             qc15_set_mode(QC15_MODE_CONTROLLER);
         } else if (up_status) {
@@ -471,11 +478,16 @@ void cleanup_global_signals() {
 }
 
 void qc15_set_mode(uint8_t mode) {
+    if (qc15_mode == QC15_MODE_SLEEP) {
+        // TODO: turn stuff on.
+    }
+
     switch(mode) {
     case QC15_MODE_COUNTDOWN:
         // This one is fine by itself.
         break;
     case QC15_MODE_SLEEP:
+        // TODO: turn everything off.
         break;
     case QC15_MODE_STATUS:
         enter_menu_status();
@@ -506,6 +518,7 @@ void qc15_set_mode(uint8_t mode) {
         break;
     case QC15_MODE_CONTROLLER:
         enter_menu_controller();
+        control_render_choice();
         break;
     }
     qc15_mode = mode;
@@ -818,7 +831,7 @@ void main (void)
             __no_operation();
             break;
         case QC15_MODE_CONTROLLER:
-            // TODO
+            controller_handle_loop();
             break;
         }
 

@@ -18,5 +18,6 @@ void enter_menu_controller();
 void status_handle_loop();
 void controller_handle_loop();
 void status_render_choice();
+void control_render_choice();
 
 #endif /* MENU_H_ */
