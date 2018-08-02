@@ -39,8 +39,9 @@ const rgbcolor_t flag_trans_colors[] = {
         {0x1B, 0xCE, 0xFA},
         {0x1B, 0xCE, 0xFA},
         {0xff, 0x00, 0xb0},
+        {0xff, 0x00, 0xb0},
         {0xFF, 0xFF, 0xFF},
-        {0xFF, 0xFF, 0xFF},
+        {0xff, 0x00, 0xb0},
         {0xff, 0x00, 0xb0},
         {0x1B, 0xCE, 0xFA},
         {0x1B, 0xCE, 0xFA},
@@ -79,9 +80,7 @@ const rgbcolor_t flag_leather_colors[] = {
         {0x08, 0x08, 0x6B},
         {0x00, 0x00, 0x00},
         {0x00, 0x00, 0x00},
-        {0x00, 0x00, 0x00},
         {0xFF, 0x00, 0x00},
-        {0x00, 0x00, 0x00},
         {0x00, 0x00, 0x00},
 };
 const rgbcolor_t flag_bear_colors[] = {
@@ -285,7 +284,7 @@ const led_ring_animation_t all_animations[GAME_ANIMS_LEN] = {
     },
     {
      &flag_trans_colors[0],
-     8,
+     9,
      DEFAULT_FLAG_ANIM_SPEED,
      HT16D_BRIGHTNESS_DEFAULT,
      LED_ANIM_TYPE_FALL,
@@ -309,7 +308,7 @@ const led_ring_animation_t all_animations[GAME_ANIMS_LEN] = {
     },
      {
       &flag_leather_colors[0],
-      14,
+      12,
       DEFAULT_FLAG_ANIM_SPEED,
       HT16D_BRIGHTNESS_DEFAULT,
       LED_ANIM_TYPE_FALL,
