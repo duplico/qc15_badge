@@ -384,7 +384,7 @@ void handle_global_signals(uint8_t block_radio) {
             }
         }
 
-        if (!block_radio && qc_clock.time % 512 == 0) {
+        if (!block_radio && qc_clock.time % 512 == badge_status.badge_id) {
             // Every 16 seconds,
             s_radio_interval = 1;
         }
