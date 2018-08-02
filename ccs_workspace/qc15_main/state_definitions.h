@@ -6,7 +6,7 @@
 #define MAX_OTHERS 6
 #define GAME_ANIMS_LEN 35
 
-// lightsSolidWhite, lightsWhiteFader, animSpinBlue, whiteDiscovery, animSolidBlue, animSpinOrange, animSolidGreen, animSolidYellow, animSpinGreen, animSpinRed, animSolidOrange, animSolidRed, animSpinWhite, animSpinPink, animFallBlue, animFallYellow, flag_lblue, none, animFallWhite, animSpinYellow, flag_newbie, flag_original, flag_regular, flag_pan, flag_ally, animFallPink, flag_bear, animFallOrange, animFallRed, animFallGreen, flag_leather, flag_pink, flag_trans, flag_ace, flag_bi
+// flag_rainbow, flag_bi, flag_pan, flag_trans, flag_ace, flag_ally, flag_leather, flag_bear, flag_blue, flag_lblue, flag_green, flag_red, flag_yellow, flag_pink, flag_white, flag_newbie, flag_original, flag_regular, flag_freezer, flag_techsupport, animFirstLights, whiteDiscovery, animSpinBlue, animSpinOrange, animSpinYellow, animSpinGreen, animSpinRed, animSpinWhite, animSpinPink, animSolidBlue, animSolidGreen, animSolidYellow, animSolidOrange, animSolidRed, animSolidWhite
 #define SPECIAL_BADGESNEARBY0 0
 #define SPECIAL_BADGESNEARBYSOME 1
 #define SPECIAL_NAME_NOT_FOUND 2

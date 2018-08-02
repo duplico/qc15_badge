@@ -8,8 +8,8 @@
 #ifndef LED_ANIMATIONS_H_
 #define LED_ANIMATIONS_H_
 
-#define FLAG_COUNT 14
+#define FLAG_COUNT 20
 
-extern const led_ring_animation_t all_animations[GAME_ANIMS_LEN+FLAG_COUNT];
+extern const led_ring_animation_t all_animations[GAME_ANIMS_LEN];
 
 #endif /* LED_ANIMATIONS_H_ */
