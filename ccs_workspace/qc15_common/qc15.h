@@ -9,6 +9,7 @@
 #define QC15_H_
 
 #include "msp430.h"
+#include <stdint.h>
 
 #define QC15_CRC_SEED 0x5321
 

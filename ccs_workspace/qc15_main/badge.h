@@ -17,7 +17,7 @@ extern uint8_t unlock_radio_status;
 // Persistent values:
 extern qc15conf badge_conf;
 extern qc15conf backup_conf;
-extern char badge_names[QC15_BADGES_IN_SYSTEM][QC15_BADGE_NAME_LEN];
+extern const char badge_names[QC15_BADGES_IN_SYSTEM][QC15_BADGE_NAME_LEN];
 extern char person_names[QC15_BADGES_IN_SYSTEM][QC15_PERSON_NAME_LEN];
 extern uint16_t stored_state_id;
 extern uint16_t last_state_id;

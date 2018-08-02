@@ -44,8 +44,9 @@ qc15conf badge_conf = {0};
 #pragma PERSISTENT(backup_conf)
 qc15conf backup_conf = {0};
 
-#pragma PERSISTENT(badge_names)
-char badge_names[QC15_BADGES_IN_SYSTEM][QC15_BADGE_NAME_LEN] = {0};
+// Badge names don't need to be persistent - they're just consts:
+#include "badge_names.c"
+
 #pragma PERSISTENT(person_names)
 char person_names[QC15_BADGES_IN_SYSTEM][QC15_PERSON_NAME_LEN] = {0};
 
@@ -196,7 +197,6 @@ void generate_config() {
     //        called the once.
 
     if(!(global_flash_lockout & FLASH_LOCKOUT_READ)) {
-        s25fs_read_data((uint8_t *)badge_names, FLASH_ADDR_BADGE_NAMES, QC15_BADGES_IN_SYSTEM * QC15_BADGE_NAME_LEN);
         // Load ID from flash:
         s25fs_read_data((uint8_t *)(&(badge_conf.badge_id)), FLASH_ADDR_ID_MAIN, 2);
     }
