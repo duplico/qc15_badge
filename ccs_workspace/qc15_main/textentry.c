@@ -13,6 +13,7 @@
 #include "lcd111.h"
 #include "loop_signals.h"
 
+#include "badge.h"
 #include "textentry.h"
 
 // None of this needs to be persisted, because we can only ever startup into

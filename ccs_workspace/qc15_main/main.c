@@ -420,7 +420,10 @@ void handle_global_signals() {
         s_power_on = 0;
         led_on();
         if (up_status) { // && badge_conf.badge_id == 1) // TODO
-            qc15_mode = QC15_MODE_CONTROLLER;
+            qc15_set_mode(QC15_MODE_CONTROLLER);
+        } else if (up_status) {
+            // non-special people, it goes to the status menu.
+            qc15_set_mode(QC15_MODE_STATUS);
         }
     }
 
@@ -522,17 +525,10 @@ void badge_startup() {
     qc_clock.authoritative = 0;
     qc_clock.fault = 0;
 
-    // Guarantee null-terms on badge names:
-    for (uint16_t i=0; i<QC15_BADGES_IN_SYSTEM; i++) {
-        badge_names[i][QC15_BADGE_NAME_LEN-1] = 0x00;
-        if (badge_names[i][0] == 0xff || badge_names[i][0] == 0x00) {
-            // bad name:
-            badge_names[i][0] = '?';
-            badge_names[i][1] = 0x00;
-        }
-    }
+    // All badges' names have guaranteed null-terms because they're
+    //  declared explicitly.
 
-    // And on person names:
+    // Guarantee null-terms on person names:
     for (uint16_t i=0; i<QC15_BADGES_IN_SYSTEM; i++) {
         person_names[i][QC15_BADGE_NAME_LEN-1] = 0x00;
         if (person_names[i][0] == 0xff || person_names[i][0] == 0x00) {
@@ -822,6 +818,7 @@ void main (void)
             __no_operation();
             break;
         case QC15_MODE_CONTROLLER:
+            // TODO
             break;
         }
 
