@@ -90,6 +90,10 @@ uint8_t set_badge_seen(uint16_t id, uint8_t *name) {
 
     // If we're here, it's a badge.
 
+    // Let's update its name.
+    memcpy(person_names[id], name, QC15_PERSON_NAME_LEN-1);
+    person_names[id][QC15_PERSON_NAME_LEN-1]=0x00;
+
     if (badge_seen(id)) {
         return 0;
     }
@@ -106,9 +110,6 @@ uint8_t set_badge_seen(uint16_t id, uint8_t *name) {
         badge_conf.handlers_seen |= (BIT0 << (id - QC15_HANDLER_START));
         badge_conf.handlers_seen_count++;
     }
-
-    memcpy(person_names[id], name, QC15_PERSON_NAME_LEN-1);
-    person_names[id][QC15_PERSON_NAME_LEN-1]=0x00;
 
     save_config();
     return 1;
