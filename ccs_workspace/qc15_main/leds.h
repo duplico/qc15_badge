@@ -18,7 +18,7 @@
 #define LED_ANIM_TYPE_SAME 2
 #define LED_ANIM_TYPE_FALL 3
 
-#define DEFAULT_ANIM_SPEED 10
+#define DEFAULT_FLAG_ANIM_SPEED 10
 
 typedef struct {
     int_fast16_t r;
