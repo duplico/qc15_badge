@@ -201,21 +201,18 @@ void generate_config() {
         s25fs_read_data((uint8_t *)(&(badge_conf.badge_id)), FLASH_ADDR_ID_MAIN, 2);
     }
 
+    if (badge_conf.badge_id >= QC15_BADGES_IN_SYSTEM) {
+        s25fs_read_data((uint8_t *)(&(badge_conf.badge_id)), FLASH_ADDR_ID_BACKUP, 2);
+    }
+
+    // TODO: Delete and lockout reads.
     // If we got a bad ID from the flash, correct to "sane" defaults:
-    if ((global_flash_lockout & FLASH_LOCKOUT_READ) ||
-            badge_conf.badge_id >= QC15_BADGES_IN_SYSTEM) {
+    if (badge_conf.badge_id >= QC15_BADGES_IN_SYSTEM) {
         badge_conf.badge_id = 115;
     }
 
-    // SEPARATELY, if we got a bad NAME, go ahead and make one up.
-    if ((global_flash_lockout & FLASH_LOCKOUT_READ) ||
-            badge_conf.badge_name[0] == 0x00 ||
-            badge_conf.badge_name[0] == 0xFF)
-    {
-        char backup_name[] ="Forgetful";
-        strcpy((char *) &(badge_conf.badge_name[0]), backup_name);
-    }
-
+    memcpy(badge_conf.badge_name, badge_names[badge_conf.badge_id],
+           QC15_BADGE_NAME_LEN);
 
     // TODO: REMOVE!!!
     uint8_t initial_person_name[] = "AB";
@@ -237,9 +234,6 @@ uint8_t config_is_valid() {
         return 0;
 
     if (badge_conf.badge_id > QC15_BADGES_IN_SYSTEM)
-        return 0;
-
-    if (badge_conf.badge_name[0] == 0xFF)
         return 0;
 
     return 1;
