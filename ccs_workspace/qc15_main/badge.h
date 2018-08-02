@@ -11,6 +11,9 @@
 
 #include "leds.h"
 
+// Non-persistent:
+extern uint8_t unlock_radio_status;
+
 // Persistent values:
 extern qc15conf badge_conf;
 extern qc15conf backup_conf;

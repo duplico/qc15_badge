@@ -22,6 +22,7 @@
  */
 
 #include <stdint.h>
+#include <string.h>
 
 #include <msp430fr2422.h>
 #include "driverlib.h"
@@ -337,6 +338,9 @@ void handle_ipc_rx(uint8_t *rx_buf) {
         break;
     case IPC_MSG_CALIBRATE_FREQ:
         radio_frequency_done = 0;
+        radio_frequency = FREQ_MIN;
+        memset(rx_cnt, 0x00, sizeof(rx_cnt));
+        rfm75_write_reg(0x05, radio_frequency);
     default:
         break;
     }
@@ -369,7 +373,9 @@ void handle_global_signals(uint8_t block_radio) {
                         // If we got ANYTHING AT ALL, go ahead and conclude
                         //  our search.
                         radio_frequency_done = 1;
-                        while (!ipc_tx_byte(IPC_MSG_CALIBRATE_FREQ));
+                        while (!ipc_tx_op_buf(IPC_MSG_CALIBRATE_FREQ,
+                                              &radio_frequency,
+                                              1));
                     } else {
                         radio_frequency = FREQ_MIN; // restart the sweep
                     }
@@ -430,6 +436,12 @@ void main (void)
 
     // Reinitialize the radio with our correct ID:
     radio_init(badge_status.badge_id);
+
+    // Bootstrap has cleared our time to 0. We also received a message with
+    //  a clock setting in it. Here it comes...
+    if (!qc_clock.authoritative && badge_status.last_clock > qc_clock.time) {
+        qc_clock.time = badge_status.last_clock;
+    }
 
     while (1) {
         handle_global_signals(0);

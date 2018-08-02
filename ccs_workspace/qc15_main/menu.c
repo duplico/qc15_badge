@@ -46,7 +46,8 @@
 #define MENU_STATUS_SEL_SEEN 9
 #define MENU_STATUS_SEL_DOWNLOADED 10
 #define MENU_STATUS_SEL_UPLOADED 11
-#define MENU_STATUS_MAX 11
+#define MENU_STATUS_SEL_RADIOCAL 12
+#define MENU_STATUS_MAX 12
 
 uint8_t menu_sel = 0;
 uint8_t saved_mode;
@@ -133,6 +134,16 @@ void status_render_choice() {
                 badge_conf.handlers_uploaded_count);
         lcd111_set_text(LCD_TOP, text);
         break;
+    case MENU_STATUS_SEL_RADIOCAL:
+        draw_text(LCD_BTM, "(Radio Calibration)", 1);
+        if (badge_conf.freq_set) {
+            sprintf(text, "Freq: 2400 + %d",
+                    badge_conf.freq_center);
+        } else {
+            sprintf(text, "Not set!");
+        }
+        lcd111_set_text(LCD_TOP, text);
+        break;
     default:
         break;
     }
@@ -200,6 +211,8 @@ void status_handle_loop() {
         case MENU_STATUS_SEL_DOWNLOADED:
             break; // no action
         case MENU_STATUS_SEL_UPLOADED:
+            break; // no action
+        case MENU_STATUS_SEL_RADIOCAL:
             break; // no action
         default:
             break;

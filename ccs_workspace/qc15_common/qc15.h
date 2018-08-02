@@ -97,6 +97,8 @@ typedef struct {
     uint8_t file_lights_on : 1;
     uint8_t freezer_done : 1;
     uint8_t countdown_over : 1;
+    uint8_t freq_set : 1;
+    uint8_t freq_center;
     uint16_t crc16;
 } qc15conf;
 

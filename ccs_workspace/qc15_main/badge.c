@@ -32,6 +32,9 @@
 
 #include "badge.h"
 
+// NOT persistent:
+uint8_t unlock_radio_status = 0;
+
 // PERSISTENT won't let these persist between badge flashings. However, we're
 //  not putting them in a consistent place this time, so we can't guarantee
 //  that NOINIT would help us here, either. We'll have to very carefully
@@ -165,10 +168,11 @@ void save_config() {
     crc16_append_buffer((uint8_t *) (&badge_conf), sizeof(qc15conf)-2);
     memcpy(&backup_conf, &badge_conf, sizeof(qc15conf));
 
-    // And, update our friend the radio MCU:
-    // (spin until the send is successful)
-    while (!ipc_tx_op_buf(IPC_MSG_STATS_UPDATE, (uint8_t *) (uint8_t *) (&badge_conf), sizeof(qc15status)));
-
+    if (unlock_radio_status) {
+        // And, update our friend the radio MCU:
+        // (spin until the send is successful)
+        ipc_tx_op_buf(IPC_MSG_STATS_UPDATE, (uint8_t *) &badge_conf, sizeof(qc15status));
+    }
 }
 
 uint8_t is_handler(uint16_t id) {
