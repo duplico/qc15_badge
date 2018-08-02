@@ -468,6 +468,27 @@ void badge_startup() {
     }
     // Handle our main config
     init_config();
+
+    // Guarantee null-terms on badge names:
+    for (uint16_t i=0; i<QC15_BADGES_IN_SYSTEM; i++) {
+        badge_names[i][QC15_BADGE_NAME_LEN-1] = 0x00;
+        if (badge_names[i][0] == 0xff || badge_names[i][0] == 0x00) {
+            // bad name:
+            badge_names[i][0] = '?';
+            badge_names[i][1] = 0x00;
+        }
+    }
+
+    // And on person names:
+    for (uint16_t i=0; i<QC15_BADGES_IN_SYSTEM; i++) {
+        person_names[i][QC15_BADGE_NAME_LEN-1] = 0x00;
+        if (person_names[i][0] == 0xff || person_names[i][0] == 0x00) {
+            // bad name:
+            person_names[i][0] = '?';
+            person_names[i][1] = 0x00;
+        }
+    }
+
     badge_conf.active = 1;
     save_config(); // TODO: just send it to the radio
     // Handle our animations:
