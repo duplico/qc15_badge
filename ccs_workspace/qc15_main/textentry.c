@@ -178,8 +178,8 @@ void textentry_complete() {
     memcpy(textentry_dest, curr_text, textentry_len+1);
     lcd111_clear_nodelay(LCD_BTM);
     lcd111_clear_nodelay(LCD_TOP);
+    qc15_set_mode(textentry_exit_mode);
     text_entry_in_progress = 0;
-    qc15_mode = textentry_exit_mode;
     // Do a SAVE, out of an abundance of caution.
     save_config();
 }
