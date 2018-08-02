@@ -66,9 +66,11 @@
 #define QC15_MODE_GAME_CHECKNAME 65
 #define QC15_MODE_GAME_CONNECT 66
 
+#define QC_START_TIME 172800
+
 // TODO!!!!
-//#define QC_START_TIME 172800
-#define QC_START_TIME 640
+//#define DEFAULT_CLOCK_TIME (QC_START_TIME - 28800)
+#define DEFAULT_CLOCK_TIME (QC_START_TIME - 640)
 
 /// The main config struct, which will go in both the SPI flash and in FRAM.
 typedef struct {

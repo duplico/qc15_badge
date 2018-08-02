@@ -216,13 +216,14 @@ void generate_config() {
     strcpy((char *) &(badge_conf.person_name[0]), (char *)initial_person_name);
     ///////////////////
 
+    badge_conf.last_clock = DEFAULT_CLOCK_TIME;
+    qc_clock.time = badge_conf.last_clock;
+
     // Determine which segment we have (and therefore which parts)
     badge_conf.code_starting_part = (badge_conf.badge_id % 16) * 6;
     set_badge_seen(badge_conf.badge_id, initial_person_name);
     set_badge_uploaded(badge_conf.badge_id);
     set_badge_downloaded(badge_conf.badge_id);
-
-    qc15_mode = QC15_MODE_GAME;
 }
 
 uint8_t config_is_valid() {
@@ -251,6 +252,5 @@ void init_config() {
     //  we must generate a new one.
     generate_config();
 
-    qc_clock.time = badge_conf.last_clock;
     srand(badge_conf.badge_id);
 }

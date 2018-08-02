@@ -504,6 +504,11 @@ void badge_startup() {
     // Handle our main config
     init_config();
 
+    // Setup our initial time.
+    qc_clock.time = badge_conf.last_clock;
+    qc_clock.authoritative = 0;
+    qc_clock.fault = 0;
+
     // Guarantee null-terms on badge names:
     for (uint16_t i=0; i<QC15_BADGES_IN_SYSTEM; i++) {
         badge_names[i][QC15_BADGE_NAME_LEN-1] = 0x00;
@@ -703,7 +708,7 @@ void countdown_handle_loop() {
         return;
     }
 
-    if (qc_clock.time % 96 == 0) {
+    if (qc_clock.time % 64 == 0) {
         led_set_anim(&anim_countdown_tick, 0, 0, 0);
     }
 
