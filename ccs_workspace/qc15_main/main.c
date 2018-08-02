@@ -275,8 +275,6 @@ void handle_ipc_rx(uint8_t *rx) {
     switch(rx[0] & 0xF0) {
     case IPC_MSG_POST:
         // The radio MCU has rebooted.
-        // fall through:
-    case IPC_MSG_STATS_REQ:
         // We need to prep and send a stats message for the radio.
         // Because badge_status is a subset of badge_conf that appears at
         //  its beginning, that's what we copy from.
@@ -335,6 +333,11 @@ void handle_ipc_rx(uint8_t *rx) {
         memcpy((uint8_t *)&qc_clock, &rx[1], sizeof(qc_clock_t));
         break;
     case IPC_MSG_CALIBRATE_FREQ:
+        badge_conf.freq_set = 1;
+        badge_conf.freq_center = rx[1];
+        unlock_radio_status=0; // don't send this to the radio.
+        save_config();
+        unlock_radio_status=1;
         ht16d_all_one_color_ring_only(0x00, 0x8F, 0x00);
         break;
     }
@@ -533,7 +536,10 @@ void badge_startup() {
     }
 
     badge_conf.active = 1;
+    unlock_radio_status = 1;
     save_config(); // Recompute CRC for active=1, and tell the radio.
+                   // This is the VERY FIRST MESSAGE we will send the radio.
+
     // Handle our animations:
     if (led_anim_type_bg != LED_ANIM_TYPE_NONE) {
         led_set_anim(led_ring_anim_bg, LED_ANIM_TYPE_NONE,
@@ -725,6 +731,10 @@ void countdown_handle_loop() {
     lcd111_set_text(LCD_BTM, text);
 }
 
+// We need the following:
+//  We HAVE TO have an initial clock before enabling interrupts, and it
+//  NEEDS to be right.
+
 /// The main initialization and loop function.
 void main (void)
 {
@@ -736,18 +746,27 @@ void main (void)
     if (!(initial_buttons & BIT5))
         flash_bootstrap();
 
+    // Prevent the radio MCU from leaving POST until we want it to, by
+    //  sending an active=1 update.
+    badge_conf.active = 0;
+    // Prevent our config save function from updating the radio like normal,
+    //  until we actually have a sane config.
+    unlock_radio_status = 0;
+
     __bis_SR_register(GIE);
 
-    badge_conf.active = 0;
     // hold DOWN on turn-on for verbose boot:
     bootstrap(initial_buttons & BIT4); // interrupts required.
 
     // Housekeeping is now concluded. It's time to see the wizard.
+    // This function will set active and unlock_radio_status at the
+    //  correct time:
     badge_startup();
 
     if (!(initial_buttons & BIT7)) {
         // UP:
         // Tell the radio MCU to calibrate its frequency.
+        delay_millis(500);
         while (!ipc_tx_byte(IPC_MSG_CALIBRATE_FREQ));
     }
 

@@ -48,7 +48,6 @@
 //  [ ] Profit
 
 // Single-byte messages:
-#define IPC_MSG_STATS_REQ 0x90
 #define IPC_MSG_POST 0xa0
 #define IPC_MSG_SWITCH 0xb0
 /// Request the radio MCU to set ourselves as connectable.

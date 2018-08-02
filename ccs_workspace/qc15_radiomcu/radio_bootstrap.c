@@ -78,8 +78,6 @@ void bootstrap() {
                 if (rx_from_main[0] == IPC_MSG_STATS_UPDATE) {
                     // Read the current status into our volatile copy of it.
                     memcpy(&badge_status, &rx_from_main[1], sizeof(qc15status));
-                    if (!qc_clock.authoritative)
-                        qc_clock.time = badge_status.last_clock;
                     if (badge_status.active) {
                         // POST/bootstrap process is done.
                         break;
