@@ -352,7 +352,12 @@ void handle_global_signals(uint8_t block_radio) {
     }
 
     if (f_time_loop) {
+        // pat pat pat
+        WDT_A_resetTimer(WDT_A_BASE);
+
         f_time_loop = 0;
+        // pat pat pat
+        WDT_A_resetTimer(WDT_A_BASE);
         poll_switch();
 
         if (!radio_frequency_done) {
@@ -442,6 +447,9 @@ void main (void)
     if (!qc_clock.authoritative && badge_status.last_clock > qc_clock.time) {
         qc_clock.time = badge_status.last_clock;
     }
+
+    // Enable WDT:
+    WDTCTL = WDTPW | WDTSSEL__ACLK | WDTIS__32K;
 
     while (1) {
         handle_global_signals(0);
