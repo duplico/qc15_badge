@@ -301,7 +301,18 @@ void do_action(game_action_t *action) {
     switch(action->type) {
     case GAME_ACTION_TYPE_ANIM_TEMP:
         // Set a temporary animation
-        led_set_anim(&all_animations[action->detail], 0, action->duration, 0);
+        if (action->detail >= GAME_ANIMS_LEN || action->detail == GAME_NULL) {
+            if (led_ring_anim_bg) {
+                // If we have a background animation stored, that this one
+                //  was briefly superseding, then go ahead and start it
+                //  up again.
+                led_set_anim(led_ring_anim_bg, led_anim_type_bg,
+                             0xff, led_ring_anim_pad_loops_bg);
+            }
+        } else {
+            led_set_anim(&all_animations[action->detail], 0,
+                         action->duration, 0);
+        }
         break;
     case GAME_ACTION_TYPE_SET_ANIM_BG:
         // Set a new background animation
