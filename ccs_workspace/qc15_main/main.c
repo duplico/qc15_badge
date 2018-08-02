@@ -338,7 +338,12 @@ void handle_ipc_rx(uint8_t *rx) {
         unlock_radio_status=0; // don't send this to the radio.
         save_config();
         unlock_radio_status=1;
+        // WDT hold
+        WDT_A_hold(WDT_A_BASE);
         ht16d_all_one_color_ring_only(0x00, 0x8F, 0x00);
+        delay_millis(2000);
+        // WDT unhold
+        WDTCTL = WDTPW | WDTSSEL__ACLK | WDTIS__32K;
         break;
     }
 }
@@ -389,6 +394,8 @@ void handle_global_signals() {
     }
 
     if (f_time_loop) {
+        // pat pat pat
+        WDT_A_resetTimer(WDT_A_BASE);
         f_time_loop = 0;
         s_clock_tick = 1;
         led_timestep();
@@ -720,7 +727,7 @@ void countdown_handle_loop() {
         return;
     }
 
-    if (qc_clock.time % 54 == 0) {
+    if (qc_clock.time % 56 == 0) {
         led_set_anim(&anim_countdown_tick, 0, 0, 0);
         save_config(); // save our clock.
     }
@@ -775,6 +782,8 @@ void main (void)
         delay_millis(500);
         while (!ipc_tx_byte(IPC_MSG_CALIBRATE_FREQ));
     }
+
+    WDTCTL = WDTPW | WDTSSEL__ACLK | WDTIS__32K;
 
     while (1) {
         handle_global_signals();
