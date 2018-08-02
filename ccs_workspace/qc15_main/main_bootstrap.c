@@ -57,7 +57,8 @@ void flash_bootstrap() {
             break;
         }
         cleanup_global_signals();
-        delay_millis(31); // TODO: Why this number?
+        delay_millis(31); // I have no idea where I got this number from,
+                          //  but it works. ¯\_(^^ )_/¯
     }
 
     // Cleanup from flash programming mode.

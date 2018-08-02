@@ -311,13 +311,11 @@ void handle_ipc_rx(uint8_t *rx_buf) {
         s_connect_needed = RADIO_CONNECT_ADVERTISEMENT_COUNT;
         break;
     case IPC_MSG_GD_DL:
-        // TODO: Validate ID, return fail if bad.
         memcpy(&id, &rx_buf[1], 2);
         if (ids_in_range[id].connect_intervals) {
             // It's downloadable.
             s_download_needed = 1;
             radio_download_id = id;
-            // TODO: Signal success regardless.
         } else {
             while (!ipc_tx_byte(IPC_MSG_GD_DL_FAILURE));
         }

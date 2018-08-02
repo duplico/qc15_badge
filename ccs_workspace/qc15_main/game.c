@@ -117,15 +117,9 @@ uint8_t leads_to_closed_state(uint16_t action_id) {
 uint8_t game_process_special() {
     uint8_t fire_special = 0;
     for (uint8_t i=0; i<current_state->other_series_len; i++) {
-        // TODO: This is _really_ just a bigass OR, since every if statement
-        //       has the same body.
-
-        // TODO: We currently have a special firing OVER AND OVER AND OVER.
-        //       This is a problem.
-
-        // TODO: We should probably only consider these when we're LEAVING
-        //       an action sequence (including an empty entry sequence). And
-        //       most definitely NOT do the same one we just did.
+        // The following is effectively a bigass OR, since every if statement
+        //  has a similar (if not identical) body. But it's more readable like
+        //  this.
 
         if (current_state->other_series[i].type_id == state_last_special_event)
             continue;
@@ -148,17 +142,17 @@ uint8_t game_process_special() {
             fire_special = 1;
         }
         if (current_state->other_series[i].type_id == SPECIAL_CONNECT_SUCCESS_NEW &&
-                s_gd_success == 2) { // TODO
+                s_gd_success == 2) {
             s_gd_success = 0;
             fire_special = 1;
         }
         if (current_state->other_series[i].type_id == SPECIAL_CONNECT_SUCCESS_OLD &&
-                s_gd_success == 1) { // TODO
+                s_gd_success == 1) {
             s_gd_success = 0;
             fire_special = 1;
         }
         if (current_state->other_series[i].type_id == SPECIAL_CONNECT_FAILURE &&
-                s_gd_failure) { // TODO
+                s_gd_failure) {
             s_gd_failure = 0;
             fire_special = 1;
         }
@@ -293,10 +287,6 @@ void begin_text_action() {
     }
 }
 
-// TODO: move
-extern uint16_t gd_curr_id;
-extern uint16_t gd_starting_id;
-
 void do_action(game_action_t *action) {
     switch(action->type) {
     case GAME_ACTION_TYPE_ANIM_TEMP:
@@ -362,13 +352,12 @@ void do_action(game_action_t *action) {
         break;
     case GAME_ACTION_TYPE_TEXT_CNCTDNAME:
         load_text(loaded_text, action->detail);
-        sprintf(current_text, loaded_text, badge_names[gd_curr_id]); //TODO
+        sprintf(current_text, loaded_text, badge_names[gd_curr_id]);
         begin_text_action();
         break;
     case GAME_ACTION_TYPE_NOP:
         break; // just... do nothing.
     case GAME_ACTION_TYPE_OTHER:
-        // TODO: handle
         if (action->detail == OTHER_ACTION_CUSTOMSTATEUSERNAME) {
             badge_conf.person_name[QC15_PERSON_NAME_LEN-1] = 0x00; // term
             textentry_begin(badge_conf.person_name, 10, 1, 1);
@@ -450,7 +439,7 @@ uint8_t start_action_series(uint16_t action_id) {
     // We know we're in an action series, so set everything up:
     in_action_series = 1;
     game_curr_action_elapsed = 0;
-    lcd111_set_text(0, ""); // TODO
+    lcd111_set_text(0, "");
     do_action(&loaded_action);
     return 1;
 }
@@ -556,12 +545,19 @@ void game_process_timers() {
         // Note that this method is quite sensitive to the order in which
         //  the timers populate their array. So it's important that the
         //  instructions, above, on how to order them be followed.
-        // TODO: clean this shit up (appearance-wise):
-        if ((game_curr_state_elapsed && (
-                (game_curr_state_elapsed == current_state->timer_series[i].duration) ||
-                (current_state->timer_series[i].recurring && ((game_curr_state_elapsed % current_state->timer_series[i].duration) == 0))))) {
+        if (!game_curr_state_elapsed)
+            continue; // We don't fire timers at time 0.
+        // If we did, it would be *chaos* because we evaluate
+        // whether a timer should fire by checking whether the
+        // current state time elapsed is 0, mod the duration.
+        // (which, of course, 0 always is.)
+        if ((game_curr_state_elapsed == current_state->timer_series[i].duration) ||
+                (current_state->timer_series[i].recurring &&
+                        ((game_curr_state_elapsed % current_state->timer_series[i].duration) == 0))) {
             // Time `i` should fire, unless it's closed.
-            if (start_action_series(current_state->timer_series[i].result_action_id)) {
+            if (start_action_series(
+                    current_state->timer_series[i].result_action_id))
+            {
                 break;
             }
         }
@@ -582,9 +578,6 @@ void game_clock_tick() {
     if (!in_action_series)
         game_curr_state_elapsed++;
 
-    // TODO: I'm concerned that our new way of processing special stuff,
-    //       and of eliminating the durations for non-text results is going
-    //       to do something funky.
     if (!in_action_series) {
         game_process_special();
     }

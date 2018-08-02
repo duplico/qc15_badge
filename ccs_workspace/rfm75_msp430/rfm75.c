@@ -182,15 +182,14 @@ void rfm75_enter_prx() {
     // Enter RX mode.
     CE_ACTIVATE;
 
-    // This takes 130 us:
-    __delay_cycles(130); // TODO!!!!! // UNNECESSARY
+    // This takes 130 us, but that doesn't matter because we'll be in
+    //  STANDBY in the meantime.
 
     rfm75_state = RFM75_RX_LISTEN;
 }
 
 /// Query whether a call to rfm75_tx() is allowed right now.
 uint8_t rfm75_tx_avail() {
-    // TODO: we need a method to HOLD the RFM so we can TX after we call this.
     return rfm75_state == RFM75_RX_LISTEN || rfm75_state == RFM75_TX_DONE ||
            rfm75_state == RFM75_RX_READY;
 }
@@ -216,8 +215,6 @@ void rfm75_tx(uint16_t addr, uint8_t noack, uint8_t* data, uint8_t len) {
     if (!rfm75_tx_avail()) {
         return;
     }
-
-    // TODO: Must call the deferred interrupt before calling this.
 
     CE_DEACTIVATE;
 

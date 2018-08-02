@@ -47,6 +47,7 @@
 #include "flash_layout.h"
 #include "badge.h"
 #include "codes.h"
+#include "led_animations.h"
 
 #include "menu.h"
 
@@ -405,7 +406,7 @@ void handle_global_signals() {
     if (s_power_on && power_switch_status == POWER_SW_ON) {
         s_power_on = 0;
         led_on();
-        if (up_status) { // && badge_conf.badge_id == 1) { // TODO: moar
+        if (up_status) { // && badge_conf.badge_id == 1) // TODO
             qc15_mode = QC15_MODE_CONTROLLER;
         }
     }
@@ -453,12 +454,9 @@ void cleanup_global_signals() {
     s_clock_tick = 0;
 }
 
-// TODO
-extern const led_ring_animation_t anim_rainbow_spin;
-
 /// Initialize the badge's running state to a known good one.
 void badge_startup() {
-    if (global_flash_lockout & FLASH_LOCKOUT_READ) { // TODO
+    if (global_flash_lockout & FLASH_LOCKOUT_READ) {
         qc15_mode = QC15_MODE_FLASH_BROKEN;
         led_set_anim(&anim_rainbow_spin, LED_ANIM_TYPE_NONE,
                      0xFF, led_ring_anim_pad_loops_bg);
@@ -490,7 +488,7 @@ void badge_startup() {
     }
 
     badge_conf.active = 1;
-    save_config(); // TODO: just send it to the radio
+    save_config(); // Recompute CRC for active=1, and tell the radio.
     // Handle our animations:
     if (led_anim_type_bg != LED_ANIM_TYPE_NONE) {
         led_set_anim(led_ring_anim_bg, LED_ANIM_TYPE_NONE,
@@ -543,9 +541,11 @@ void checkname_handle_loop() {
         // We know the ID isn't null, and we know we've seen it. What's its
         //  name?
         // Is this the name we're looking for?
-        // TODO:
-        if (!strcmp(person_names[gd_curr_id], game_name_buffer) ||
-                !strcmp("Q", game_name_buffer)) {
+        if (!strcmp("QUEERCON", game_name_buffer)) {
+            s_game_checkname_success = 1;
+            qc15_mode = QC15_MODE_GAME;
+            return;
+        } else if (!strcmp(person_names[gd_curr_id], game_name_buffer)){
             // We found the name we're looking for. Hooray!
             s_game_checkname_success = 1;
             qc15_mode = QC15_MODE_GAME;
@@ -597,7 +597,6 @@ void connect_handle_loop() {
 
     if (waiting_for_radio) {
         // User input is BLOCKED OUT while we're talking to the other MCU.
-        // TODO: Consider a timeout.
         return;
     }
 
@@ -691,25 +690,10 @@ void main (void)
     badge_startup();
 
     if (!(initial_buttons & BIT7)) {
-        // should be UP.
+        // UP:
         // Tell the radio MCU to calibrate its frequency.
         while (!ipc_tx_byte(IPC_MSG_CALIBRATE_FREQ));
     }
-
-//    led_set_anim(&anim_rainbow, LED_ANIM_TYPE_NONE,
-//                 0xFF, led_ring_anim_pad_loops_bg);
-
-//    led_set_anim(&anim_lsw, LED_ANIM_TYPE_NONE,
-//                 0xFF, led_ring_anim_pad_loops_bg);
-//    led_set_anim(&anim_spinwhite, 0, 0xff, 0);
-
-    // TODO:
-//    qc15_mode = QC15_MODE_COUNTDOWN;
-//    lcd111_cursor_type(LCD_TOP, LCD111_CURSOR_NONE);
-//    lcd111_cursor_type(LCD_BTM, LCD111_CURSOR_NONE);
-//
-//    s_turn_on_file_lights = 1;
-//    badge_conf.file_lights_on = 1;
 
     while (1) {
         handle_global_signals();

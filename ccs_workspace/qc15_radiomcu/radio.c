@@ -66,12 +66,7 @@ void radio_send_status() {
 uint8_t validate(radio_proto *msg, uint8_t len) {
     if (len != sizeof(radio_proto)) {
         // PROBLEM
-        // TODO: check that this is working correctly, please.
         return 0;
-    }
-    if (msg->badge_id == badge_status.badge_id) {
-        // TODO: Make sure it's not from me.
-        __no_operation();
     }
 
     // Check for bad ID:
@@ -91,7 +86,17 @@ void set_badge_in_range(uint16_t id, uint8_t *name) {
         // Guarantee send:
         while (!ipc_tx_op_buf(IPC_MSG_GD_ARR, (uint8_t *)&ipc_out,
                               sizeof(ipc_msg_gd_arr_t)));
-
+        if (id == QC15_BASE_ID) {
+            // It's the suite base
+            // Let's transmit our progress!
+            progress_tx_id = 0;
+            s_need_progress_tx = 1;
+        } else if (id == QC15_CONTROL_ID) {
+            // It's the remote control thingy, which may or may not do anything.
+        } else if (id >= QC15_EVENT_ID_START && id <= QC15_EVENT_ID_END) {
+            // It's an event beacon.
+            // Do we need to do anything special?
+        }
     }
     ids_in_range[id].intervals_left = RADIO_GD_INTERVAL;
 }
@@ -101,21 +106,6 @@ void radio_handle_beacon(uint16_t id, radio_beacon_payload *payload) {
         // Whatever it is (badge, base, event, controller),
         //  inform the main MCU.
         set_badge_in_range(id, payload->name);
-    }
-
-    if (id == QC15_BASE_ID) {
-        // It's the suite base
-        // Let's transmit our progress!
-        // TODO: we shouldn't do this on every single one.
-        // TODO: We should do the above badge interval logic with bases.
-        // TODO: need to ask for tx_available
-        progress_tx_id = 0;
-        s_need_progress_tx = 1;
-    } else if (id == QC15_CONTROL_ID) {
-        // It's the remote control thingy, which may or may not do anything.
-    } else if (id >= QC15_EVENT_ID_START && id <= QC15_EVENT_ID_END) {
-        // It's an event beacon.
-        // Do we need to do anything special?
     }
 
     // That was easy. The main MCU will handle the rest of the logic. All we
@@ -189,7 +179,7 @@ void radio_tx_done(uint8_t ack) {
     switch(curr_packet_tx.msg_type) {
         case RADIO_MSG_TYPE_BEACON:
             // We just sent a beacon.
-            // TODO: Clear any state that needs cleared.
+            // There's no state that needs to be cleared at this point.
             break;
         case RADIO_MSG_TYPE_DLOAD:
             // We just attempted a download. Did it succeed?
@@ -281,11 +271,6 @@ void radio_interval() {
                 ids_in_range[i].intervals_left = 0;
         } else if (ids_in_range[i].intervals_left) {
             // Otherwise, just decrement it.
-            // This subtraction is OK, because it can't affect the flags in
-            //  the upper nibble until the lower bits get to 0, which we've
-            //  already checked for.
-            // TODO: this doesn't consider the case where we've not re-upped
-            //  its intervals_left
             ids_in_range[i].intervals_left--;
         }
 
