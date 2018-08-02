@@ -370,7 +370,7 @@ const led_ring_animation_t all_animations[GAME_ANIMS_LEN] = {
       LED_ANIM_TYPE_FALL,
       "Pink"
      },
-    { // "light solid white" (bright) // TODO: CHANGE
+    {
       &flag_white_colors[0],
       1,
       DEFAULT_FLAG_ANIM_SPEED,
@@ -551,3 +551,21 @@ const led_ring_animation_t all_animations[GAME_ANIMS_LEN] = {
 };
 
 /////////////////////////////////////////////////////////////
+
+const led_ring_animation_t anim_countdown_tick = (led_ring_animation_t) {
+  .colors = &flag_white_colors[0],
+  .len = 1,
+  .speed = 3,
+  .brightness = HT16D_BRIGHTNESS_DEFAULT,
+  .type = LED_ANIM_TYPE_SPIN,
+  "Countdown1"
+};
+
+const led_ring_animation_t anim_countdown_done = (led_ring_animation_t) {
+  .colors = flag_rainbow_colors,
+  .len = 6,
+  .speed = 40,
+  .brightness = HT16D_BRIGHTNESS_DEFAULT,
+  .type = LED_ANIM_TYPE_SAME,
+  "Countdown2"
+};

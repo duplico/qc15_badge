@@ -691,21 +691,20 @@ void countdown_handle_loop() {
 
     if (!s_clock_tick)
         return;
-//#define QC_START_TIME 230400
-#define QC_START_TIME 640
-//    if (qc_clock.time >= 230400) {
+
     if (qc_clock.time >= QC_START_TIME) {
         // QUEERCON TIME!!!!!!
         badge_conf.countdown_over = 1;
         led_set_anim_none();
+        led_set_anim(&anim_countdown_done, 0, 0, 0);
         save_config();
         qc15_set_mode(QC15_MODE_GAME);
         game_begin();
         return;
     }
 
-    if (qc_clock.time % 256 == 0) {
-        led_set_anim(&all_animations[14], LED_ANIM_TYPE_SPIN, 0, 0);
+    if (qc_clock.time % 96 == 0) {
+        led_set_anim(&anim_countdown_tick, 0, 0, 0);
     }
 
     countdown = QC_START_TIME - qc_clock.time;
@@ -713,10 +712,6 @@ void countdown_handle_loop() {
                           (uint16_t)(0x0000ffff & countdown));
     lcd111_set_text(LCD_TOP, text);
     lcd111_set_text(LCD_BTM, text);
-    //            lcd111_cursor_pos(LCD_TOP, 0);
-    //            lcd111_cursor_pos(LCD_BTM, 0);
-    //            lcd111_put_text_pad(LCD_TOP, text, 8);
-    //            lcd111_put_text_pad(LCD_BTM, text, 8);
 }
 
 /// The main initialization and loop function.

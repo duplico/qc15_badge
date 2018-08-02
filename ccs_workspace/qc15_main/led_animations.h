@@ -13,4 +13,7 @@
 extern const led_ring_animation_t anim_rainbow_spin;
 extern const led_ring_animation_t all_animations[GAME_ANIMS_LEN];
 
+extern const led_ring_animation_t anim_countdown_tick;
+extern const led_ring_animation_t anim_countdown_done;
+
 #endif /* LED_ANIMATIONS_H_ */

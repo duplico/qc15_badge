@@ -66,7 +66,9 @@
 #define QC15_MODE_GAME_CHECKNAME 65
 #define QC15_MODE_GAME_CONNECT 66
 
-extern uint8_t qc15_mode;
+// TODO!!!!
+//#define QC_START_TIME 172800
+#define QC_START_TIME 640
 
 /// The main config struct, which will go in both the SPI flash and in FRAM.
 typedef struct {
@@ -79,6 +81,7 @@ typedef struct {
     uint8_t ubers_seen_count, ubers_downloaded_count, ubers_uploaded_count;
     uint8_t handlers_seen_count, handlers_downloaded_count,
             handlers_uploaded_count;
+    uint32_t last_clock;
     uint8_t active;
     //////// Above this line should EXACTLY MATCH qc15status. ////////////////
     uint8_t badges_seen[57];
@@ -107,6 +110,7 @@ typedef struct {
     uint8_t ubers_seen_count, ubers_downloaded_count, ubers_uploaded_count;
     uint8_t handlers_seen_count, handlers_downloaded_count,
             handlers_uploaded_count;
+    uint32_t last_clock;
     uint8_t active;
 } qc15status;
 
@@ -147,6 +151,7 @@ extern qc15status badge_status;
 #define MCLK_FREQ_HZ 8000000
 extern uint16_t badges_nearby;
 extern uint8_t global_flash_lockout;
+extern uint8_t qc15_mode;
 void save_config();
 #endif
 
