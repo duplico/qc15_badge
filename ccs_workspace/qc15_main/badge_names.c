@@ -9,7 +9,7 @@
 #include "qc15.h"
 
 const char badge_names[QC15_BADGES_IN_SYSTEM][QC15_BADGE_NAME_LEN] = {
-    "Nagatha",
+    "Arthur",
     "Kermit",
     "Niubi",
     "Marvin",
@@ -18,7 +18,7 @@ const char badge_names[QC15_BADGES_IN_SYSTEM][QC15_BADGE_NAME_LEN] = {
     "XedGeek",
     "Skippy",
     "Daddy",
-    "boy",
+    "ZeroCool",
     "Spork",
     "Lipsyncki",
     "Parzival",
@@ -84,7 +84,7 @@ const char badge_names[QC15_BADGES_IN_SYSTEM][QC15_BADGE_NAME_LEN] = {
     "Apollo",
     "Aquila",
     "Armand",
-    "Arthur",
+    "Nagatha",
     "Ashton",
     "Atticus",
     "Dawson",
