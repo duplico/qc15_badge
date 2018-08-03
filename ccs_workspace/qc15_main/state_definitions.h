@@ -1,4 +1,4 @@
-#define ALL_ACTIONS_LEN 1160
+#define ALL_ACTIONS_LEN 1170
 #define ALL_TEXT_LEN 644
 #define all_states_len 64
 #define MAX_TIMERS 3
