@@ -40,7 +40,7 @@ const rgbcolor_t flag_trans_colors[] = {
         {0x1B, 0xCE, 0xFA},
         {0xff, 0x00, 0xb0},
         {0xff, 0x00, 0xb0},
-        {0xFF, 0xFF, 0xFF},
+        {255, 200, 196},
         {0xff, 0x00, 0xb0},
         {0xff, 0x00, 0xb0},
         {0x1B, 0xCE, 0xFA},
@@ -51,7 +51,7 @@ const rgbcolor_t flag_ace_colors[] = {
         {0x70, 0x00, 0xFF},
         {0x00, 0x00, 0x00},
         {0x00, 0x00, 0x00},
-        {0xFF, 0xFF, 0xFF},
+        {255, 200, 196},
         {0x03, 0x03, 0x03},
         {0x03, 0x03, 0x03},
         {0x00, 0x00, 0x00},
@@ -75,7 +75,7 @@ const rgbcolor_t flag_leather_colors[] = {
         {0x00, 0x00, 0x00},
         {0x08, 0x08, 0x6B},
         {0x08, 0x08, 0x6B},
-        {0xFF, 0xFF, 0xFF},
+        {255, 200, 196},
         {0x08, 0x08, 0x6B},
         {0x08, 0x08, 0x6B},
         {0x00, 0x00, 0x00},
@@ -115,31 +115,54 @@ const rgbcolor_t flag_pink_colors[] = {
         {0xd5, 0x00, 0x69},
 };
 
-// End of flag colors
 
 const rgbcolor_t flag_white_colors[] = {
-        {255, 255, 255},
-        {255, 255, 255},
-        {255, 255, 255},
+        {255, 200, 196},
+        {255, 200, 196},
+        {255, 200, 196},
         {0, 0, 0},
-        {255, 255, 255},
-        {255, 255, 255},
+        {255, 200, 196},
+        {255, 200, 196},
         {0, 0, 0},
-        {255, 255, 255},
-        {255, 255, 255},
-        {255, 255, 255},
+        {255, 200, 196},
+        {255, 200, 196},
+        {255, 200, 196},
         {0, 0, 0},
-        {255, 255, 255},
+        {255, 200, 196},
 };
 
+const rgbcolor_t flag_freezer_colors[] = {
+        {96, 128, 255},
+        {96, 128, 255},
+        {96, 128, 255},
+        {0, 0, 0},
+        {0, 0, 0},
+        {32, 50, 224},
+        {32, 50, 224},
+        {32, 50, 224},
+        {0, 0, 0},
+        {0, 0, 0},
+        {10, 20, 128},
+        {10, 20, 128},
+        {10, 20, 128},
+        {0, 0, 0},
+        {0, 0, 0},
+        {0, 0, 16},
+        {0, 0, 16},
+        {0, 0, 16},
+};
+
+
+// end of flag
+
 const rgbcolor_t lwf_colors[] = {
-        {32, 32, 32},
-        {96, 96, 96},
-        {128, 128, 128},
-        {255, 255, 255},
-        {128, 128, 128},
-        {96, 96, 96},
-        {32, 32, 32},
+        {32, 24, 20},
+        {96, 90, 80},
+        {128, 114, 100},
+        {255, 200, 196},
+        {128, 114, 100},
+        {96, 90, 80},
+        {32, 24, 20},
         {0, 0, 0},
 };
 
@@ -158,9 +181,9 @@ const rgbcolor_t blue_colors[] = {
 };
 
 const rgbcolor_t whitediscovery_colors[] = {
-        {255, 255, 255},
+        {255, 200, 196},
         {0, 0, 0},
-        {64, 64, 64},
+        {64, 50, 40},
 };
 
 const rgbcolor_t orange_colors[] = {
@@ -220,8 +243,8 @@ const rgbcolor_t red_colors[] = { // "light white fade" (normal)
 };
 
 const rgbcolor_t white_colors[] = { // "light white fade" (normal)
-        {255, 255, 255},
-        {255, 255, 255},
+        {255, 200, 196},
+        {255, 200, 196},
         {0, 0, 0},
         {0, 0, 0},
         {0, 0, 0},
@@ -229,8 +252,8 @@ const rgbcolor_t white_colors[] = { // "light white fade" (normal)
         {0, 0, 0},
         {0, 0, 0},
         {0, 0, 0},
-        {255, 255, 255},
-        {255, 255, 255},
+        {255, 200, 196},
+        {255, 200, 196},
 };
 
 const rgbcolor_t pink_colors[] = { // "light white fade" (normal)
@@ -402,10 +425,10 @@ const led_ring_animation_t all_animations[GAME_ANIMS_LEN] = {
       LED_ANIM_TYPE_FALL,
       "QC Regular"
     },
-    { // Freezer flag TODO
-      &flag_white_colors[0],
-      12,
-      DEFAULT_FLAG_ANIM_SPEED,
+    { // Freezer flag
+      flag_freezer_colors,
+      18,
+      DEFAULT_FLAG_ANIM_SPEED*2,
       HT16D_BRIGHTNESS_DEFAULT,
       LED_ANIM_TYPE_FALL,
       "Frozen!"
@@ -425,7 +448,7 @@ const led_ring_animation_t all_animations[GAME_ANIMS_LEN] = {
       &flag_white_colors[0],
       12,
       4,
-      HT16D_BRIGHTNESS_MAX,
+      HT16D_BRIGHTNESS_DEFAULT,
       LED_ANIM_TYPE_SPIN,
       "firstLights"
     },
