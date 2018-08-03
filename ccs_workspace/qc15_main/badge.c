@@ -194,8 +194,8 @@ void generate_config() {
     // The struct is no good. Zero it out.
     memset(&badge_conf, 0x00, sizeof(qc15conf));
 
-    uint16_t id=0;
-    uint16_t id_bak=0;
+    uint16_t id=0xffff;
+    uint16_t id_bak=0xffff;
 
     // Handle global_flash_lockout.
     //       Hopefully this won't come up, since this SHOULD(tm) only be
