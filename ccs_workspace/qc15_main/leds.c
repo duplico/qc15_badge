@@ -76,6 +76,15 @@ const rgbcolor16_t colors_dim[6] = {
     {128<<4, 0, 96<<4}, // Purple
 };
 
+const rgbcolor16_t colors_lessdim[6] = {
+    {255<<5, 0, 0},  // Red
+    {255<<5, 20<<6, 0}, // Orange
+    {255<<5, 60<<6, 0}, // Yellow
+    {0, 64<<5, 0},   // Green
+    {0, 0, 144<<5},  // Blue
+    {128<<5, 0, 96<<5}, // Purple
+};
+
 void led_init() {
     memset(led_ring_curr, 0, sizeof(led_ring_curr));
     memset(led_ring_dest, 0, sizeof(led_ring_dest));
@@ -440,7 +449,7 @@ void led_line_timestep() {
         for (uint8_t i=0; i<6; i++) {
             if (is_solved(i)) {
                 // Special case.
-                memcpy(&led_line_dest[i], ((led_line_frame) & 0x01) ? &led_line_centers[i] : &colors_dim[i], sizeof(rgbcolor16_t));
+                memcpy(&led_line_dest[i], ((led_line_frame) & 0x03) ? &led_line_centers[i] : &colors_dim[i], sizeof(rgbcolor16_t));
             } else {
 
                 uint8_t next_offset = led_line_next_offset(i);
@@ -452,7 +461,10 @@ void led_line_timestep() {
 
                 led_line_offset[i] = next_offset;
 
-                memcpy(&led_line_dest[i], &led_line_centers[led_line_offset[i]%6], sizeof(rgbcolor16_t));
+                if (led_line_offset[i]%6 == i)
+                    memcpy(&led_line_dest[i], &led_line_centers[led_line_offset[i]%6], sizeof(rgbcolor16_t));
+                else
+                    memcpy(&led_line_dest[i], &colors_lessdim[led_line_offset[i]%6], sizeof(rgbcolor16_t));
             }
 
             led_line_step[i].r = ((int_fast16_t) led_line_dest[i].r - (int_fast16_t)led_line_curr[i].r) / LED_LINE_STEPS_PER_FRAME;
