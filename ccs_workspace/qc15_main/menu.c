@@ -151,8 +151,8 @@ void status_render_choice() {
     case MENU_STATUS_SEL_RADIOCAL:
         draw_text(LCD_BTM, "(Radio Calibration)", 1);
         if (badge_conf.freq_set) {
-            sprintf(text, "Freq: 2400 + %d",
-                    badge_conf.freq_center);
+            sprintf(text, "Freq: %d",
+                    2400+badge_conf.freq_center);
         } else {
             sprintf(text, "Not set!");
         }
@@ -191,9 +191,8 @@ void status_handle_loop() {
             // go back
             do {
                 if (curr_flag == 0)
-                    curr_flag = FLAG_COUNT-1;
-                else
-                    curr_flag--;
+                    curr_flag = FLAG_COUNT;
+                curr_flag--;
             } while (!flag_unlocked(curr_flag));
             led_set_anim(&all_animations[curr_flag], 0, 0xff, 0);
             status_render_choice();
@@ -211,10 +210,9 @@ void status_handle_loop() {
         case MENU_STATUS_SEL_SET_LIGHTS:
             // go forward
             do {
+                curr_flag++;
                 if (curr_flag == FLAG_COUNT)
                     curr_flag = 0;
-                else
-                    curr_flag++;
             } while (!flag_unlocked(curr_flag));
             led_set_anim(&all_animations[curr_flag], 0, 0xff, 0);
             status_render_choice();
@@ -399,10 +397,19 @@ void leave_menu() {
 }
 
 void enter_menu_status() {
-    for (uint8_t i=0; i<FLAG_COUNT; i++) {
-        if (&(all_animations[i]) == led_ring_anim_bg) {
-            curr_flag = i;
-            break;
+    if (led_ring_anim_bg) {
+        for (uint8_t i=0; i<FLAG_COUNT; i++) {
+            if (&(all_animations[i]) == led_ring_anim_bg) {
+                curr_flag = i;
+                break;
+            }
+        }
+    } else {
+        for (uint8_t i=0; i<FLAG_COUNT; i++) {
+            if (flag_unlocked(i)) {
+                curr_flag = i;
+                break;
+            }
         }
     }
     enter_menu();
