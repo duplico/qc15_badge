@@ -504,6 +504,8 @@ void qc15_set_mode(uint8_t mode) {
                          0xff, led_ring_anim_pad_loops_bg);
         }
         ht16d_display_on();
+        lcd111_wake(LCD_TOP);
+        lcd111_wake(LCD_BTM);
     }
 
     switch(mode) {
@@ -518,6 +520,8 @@ void qc15_set_mode(uint8_t mode) {
         lcd111_clear(LCD_BTM);
         lcd111_cursor_type(LCD_TOP, LCD111_CURSOR_NONE);
         lcd111_cursor_type(LCD_BTM, LCD111_CURSOR_NONE);
+        lcd111_standby(LCD_TOP);
+        lcd111_standby(LCD_BTM);
         break;
     case QC15_MODE_STATUS:
         enter_menu_status();
