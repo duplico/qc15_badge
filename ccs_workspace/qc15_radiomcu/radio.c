@@ -310,6 +310,26 @@ void radio_interval() {
              RFM75_PAYLOAD_SIZE);
 }
 
+void radio_event_beacon() {
+    if (!badge_status.event_beacon)
+        return;
+
+    radio_beacon_payload *payload = (radio_beacon_payload *)
+                                                        (curr_packet_tx.msg_payload);
+    curr_packet_tx.badge_id = QC15_EVENT_ID_START + badge_status.event_id;
+    curr_packet_tx.msg_type = RADIO_MSG_TYPE_BEACON;
+    curr_packet_tx.proto_version = RADIO_PROTO_VER;
+    memcpy(&payload->time, (uint8_t *)&qc_clock, sizeof(qc_clock_t));
+
+    memcpy(payload->name, badge_status.person_name, QC15_PERSON_NAME_LEN);
+    crc16_append_buffer((uint8_t *)&curr_packet_tx, sizeof(radio_proto)-2);
+
+    // Send our beacon.
+    rfm75_tx(RFM75_BROADCAST_ADDR, 1, (uint8_t *)&curr_packet_tx,
+             RFM75_PAYLOAD_SIZE);
+
+}
+
 void radio_init(uint16_t addr) {
     rfm75_init(addr, &radio_rx_done, &radio_tx_done);
     rfm75_post();

@@ -737,7 +737,7 @@ void countdown_handle_loop() {
         return;
     }
 
-    if (qc_clock.time % 56 == 0) {
+    if (qc_clock.time % 54 == 0) {
         led_set_anim(&anim_countdown_tick, 0, 0, 0);
         save_config(0); // save our clock.
     }

@@ -398,7 +398,10 @@ void handle_global_signals(uint8_t block_radio) {
 
         if (!block_radio && qc_clock.time % 512 == badge_status.badge_id) {
             // Every 16 seconds,
-            s_radio_interval = 1;
+            if (badge_status.event_beacon)
+                s_radio_interval = 2;
+            else
+                s_radio_interval = 1;
         }
         if (qc_clock.time % 1024 == 256) { // try to avoid conflict w/ above
             // Attempt this every 32 seconds.
@@ -464,26 +467,30 @@ void main (void)
 
         // Don't even bother checking any of the radio-transmit-causing signals
         //  unless we're in a state where TX is available.
-        if (rfm75_tx_avail()) {
-            if (s_connect_needed) {
-                s_connect_needed--;
-                radio_set_connectable();
-            }
 
-            if (s_download_needed) {
-                s_download_needed = 0;
-                radio_send_download(radio_download_id);
-            }
+        if (rfm75_tx_avail() &&s_connect_needed) {
+            s_connect_needed--;
+            radio_set_connectable();
+        }
 
-            if (s_need_progress_tx) {
-                s_need_progress_tx = 0;
-                radio_send_progress_frame(progress_tx_id);
-            }
+        if (rfm75_tx_avail() && s_download_needed) {
+            s_download_needed = 0;
+            radio_send_download(radio_download_id);
+        }
 
-            if (s_radio_interval) {
-                s_radio_interval = 0;
-                radio_interval();
-            }
+        if (rfm75_tx_avail() && s_need_progress_tx) {
+            s_need_progress_tx = 0;
+            radio_send_progress_frame(progress_tx_id);
+        }
+
+        if (rfm75_tx_avail() && s_radio_interval == 2) {
+            s_radio_interval = 1;
+            radio_event_beacon();
+        }
+
+        if (rfm75_tx_avail() && s_radio_interval == 1) {
+            s_radio_interval = 0;
+            radio_interval();
         }
 
         if (f_ipc_rx || f_rfm75_interrupt || f_time_loop)

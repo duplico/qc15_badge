@@ -88,6 +88,8 @@ typedef struct {
             handlers_uploaded_count;
     uint32_t last_clock;
     uint8_t active;
+    uint8_t event_beacon;
+    uint8_t event_id;
     //////// Above this line should EXACTLY MATCH qc15status. ////////////////
     uint8_t badges_seen[57];
     uint8_t badges_downloaded[57];
@@ -99,8 +101,6 @@ typedef struct {
     uint8_t freezer_done : 1;
     uint8_t countdown_over : 1;
     uint8_t freq_set : 1;
-    uint8_t event_beacon : 1;
-    uint8_t event_id;
     uint8_t freq_center;
     uint16_t crc16;
 } qc15conf;
@@ -122,6 +122,8 @@ typedef struct {
             handlers_uploaded_count;
     uint32_t last_clock;
     uint8_t active;
+    uint8_t event_beacon;
+    uint8_t event_id;
 } qc15status;
 
 typedef struct {
