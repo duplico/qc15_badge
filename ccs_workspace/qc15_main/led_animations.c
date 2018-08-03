@@ -526,7 +526,7 @@ const led_ring_animation_t all_animations[GAME_ANIMS_LEN] = {
       LED_ANIM_TYPE_FALL,
       "Frozen!"
     },
-    { // Tech support flag TODO
+    { // Tech support flag
       flag_techsupport_colors,
       17,
       DEFAULT_FLAG_ANIM_SPEED,

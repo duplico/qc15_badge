@@ -93,7 +93,7 @@
 #define QC_PARTY_TIME 8294400
 #define QC_CLOSING_TIME 10368000
 
-// TODO!!!!
+// !!!!!! SHOULD BE ZERO:::::::\/
 #define DEFAULT_CLOCK_TIME 0
 //#define DEFAULT_CLOCK_TIME (QC_START_TIME - 57600) // 30 minutes unless reset
 //#define DEFAULT_CLOCK_TIME (QC_START_TIME - 640)
