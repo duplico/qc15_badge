@@ -410,6 +410,12 @@ void handle_global_signals() {
             save_config(1);
         }
 
+        if (!flag_unlocked(FLAG_RAINBOW) && qc_clock.time > QC_PARTY_TIME) {
+            unlock_flag(FLAG_RAINBOW);
+            led_set_anim(all_animations[FLAG_RAINBOW],
+                         0, 0xff, 0);
+        }
+
     }
 
     if (f_ipc_rx) {
