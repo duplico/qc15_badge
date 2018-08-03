@@ -79,6 +79,7 @@ rfm75_rx_callback_fn radio_rx_done;
 rfm75_tx_callback_fn radio_tx_done;
 void radio_init(uint16_t addr);
 void radio_interval();
+void radio_event_beacon();
 void radio_set_connectable();
 void radio_send_download(uint16_t id);
 void radio_send_progress_frame(uint8_t frame_id);
