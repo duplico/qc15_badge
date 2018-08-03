@@ -248,14 +248,14 @@ uint8_t flag_unlocked(uint8_t flag_num) {
         return 0;
     }
 
-    return badge_conf.flag_unlocks & (0x00000001 << flag_num);
+    return check_id_buf(flag_num, (uint8_t *) &badge_conf.flag_unlocks);
 }
 
 void unlock_flag(uint8_t flag_num) {
     if (flag_num >= FLAG_COUNT || flag_unlocked(flag_num))
         return;
 
-    badge_conf.flag_unlocks |= (0x00000001 << flag_num);
+    set_id_buf(flag_num, (uint8_t *) &badge_conf.flag_unlocks);
     save_config(0);
 }
 
