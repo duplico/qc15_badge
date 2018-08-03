@@ -38,4 +38,8 @@ void ht16d_put_colors(uint8_t id_start, uint8_t id_len, rgbcolor16_t* colors);
 void ht16d_set_colors(uint8_t id_start, uint8_t id_end, rgbcolor16_t* colors);
 void ht16d_set_global_brightness(uint8_t brightness);
 
+void ht16d_standby();
+void ht16d_display_off();
+void ht16d_display_on();
+
 #endif /* HT16D35B_H_ */

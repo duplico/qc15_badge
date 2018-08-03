@@ -503,6 +503,7 @@ void qc15_set_mode(uint8_t mode) {
             led_set_anim(led_ring_anim_bg, led_anim_type_bg,
                          0xff, led_ring_anim_pad_loops_bg);
         }
+        ht16d_display_on();
     }
 
     switch(mode) {
@@ -511,6 +512,7 @@ void qc15_set_mode(uint8_t mode) {
         break;
     case QC15_MODE_SLEEP:
         led_set_anim_none();
+        ht16d_standby();
         ht16d_all_one_color(0, 0, 0);
         lcd111_clear(LCD_TOP);
         lcd111_clear(LCD_BTM);
