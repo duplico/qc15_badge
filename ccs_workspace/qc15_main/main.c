@@ -575,7 +575,9 @@ void badge_startup() {
     }
 
     if (game_curr_state_id == STATE_ID_FIRSTBOOTCONFUSED) {
-        // TODO: BG animation per Issue #194
+        unlock_flag(19);
+        led_set_anim(&all_animations[19], 0,
+                     0xFF, 0);
     }
 
     // Handle entering the proper state
