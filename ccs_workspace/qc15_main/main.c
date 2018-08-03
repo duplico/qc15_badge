@@ -686,7 +686,7 @@ void connect_handle_loop() {
             s_gd_success = 2;
         } else {
             // Old.
-            s_gd_success = 2;
+            s_gd_success = 1;
         }
 
         // We specifically do NOT clear these signals here.
