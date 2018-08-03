@@ -483,6 +483,9 @@ void led_line_timestep() {
 
 /// LED timestep function, which should be called 32x per second.
 void led_timestep() {
+    if (qc15_mode == QC15_MODE_SLEEP) {
+        return;
+    }
     led_ring_timestep();
     if (badge_conf.file_lights_on)
         led_line_timestep();

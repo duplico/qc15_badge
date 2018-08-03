@@ -393,6 +393,8 @@ void handle_global_signals() {
     if (s_turn_on_file_lights) {
         led_activate_file_lights();
         s_turn_on_file_lights = 0;
+        badge_conf.file_lights_on = 1;
+        save_config(0);
     }
 
     if (f_time_loop) {
@@ -494,7 +496,13 @@ void cleanup_global_signals() {
 
 void qc15_set_mode(uint8_t mode) {
     if (qc15_mode == QC15_MODE_SLEEP) {
-        // TODO: turn stuff on.
+        if (led_ring_anim_bg) {
+            // If we have a background animation stored, that this one
+            //  was briefly superseding, then go ahead and start it
+            //  up again.
+            led_set_anim(led_ring_anim_bg, led_anim_type_bg,
+                         0xff, led_ring_anim_pad_loops_bg);
+        }
     }
 
     switch(mode) {
@@ -502,7 +510,10 @@ void qc15_set_mode(uint8_t mode) {
         // This one is fine by itself.
         break;
     case QC15_MODE_SLEEP:
-        // TODO: turn everything off.
+        led_set_anim_none();
+        ht16d_all_one_color(0, 0, 0);
+        lcd111_clear(LCD_TOP);
+        lcd111_clear(LCD_BTM);
         break;
     case QC15_MODE_STATUS:
         enter_menu_status();
@@ -587,6 +598,8 @@ void badge_startup() {
         led_set_anim(&all_animations[19], 0,
                      0xFF, 0);
     }
+    // TODO!!!!!
+    s_turn_on_file_lights = 1;
 
     // Handle entering the proper state
     if (badge_conf.countdown_over) {
