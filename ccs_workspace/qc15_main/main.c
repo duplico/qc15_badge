@@ -270,6 +270,7 @@ void poll_buttons() {
 /// High-level message handler for IPC messages from the radio MCU.
 void handle_ipc_rx(uint8_t *rx) {
     uint16_t id;
+    qc_clock_t temp_clock;
 
     // Grab the payload, since rx[0] is an opcode.
     switch(rx[0] & 0xF0) {
@@ -330,10 +331,9 @@ void handle_ipc_rx(uint8_t *rx) {
             gd_curr_connectable = 0;
         break;
     case IPC_MSG_TIME_UPDATE:
-        __bic_SR_register(GIE);
-        // Suspend interrupts BRIEFLY during this copy:
-        memcpy((uint8_t *)&qc_clock, &rx[1], sizeof(qc_clock_t));
-        __bis_SR_register(GIE);
+        memcpy((uint8_t *)&temp_clock, &rx_buf[1], sizeof(qc_clock_t));
+        qc_clock.time = temp_clock.time;
+        qc_clock.authoritative = temp_clock.authoritative;
         break;
     case IPC_MSG_CALIBRATE_FREQ:
         badge_conf.freq_set = 1;
