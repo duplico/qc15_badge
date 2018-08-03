@@ -47,7 +47,7 @@
 #define MENU_STATUS_SEL_DOWNLOADED 10
 #define MENU_STATUS_SEL_UPLOADED 11
 #define MENU_STATUS_SEL_RADIOCAL 12
-#define MENU_STATUS_MAX 12
+#define MENU_STATUS_MAX 11
 
 #define MENU_CONTROL_SEL_EXIT 0
 #define MENU_CONTROL_SEL_EVENT_OFF 1
@@ -78,7 +78,7 @@ void status_render_choice() {
     switch(menu_sel) {
     case MENU_EXIT:
         // Return to the game.
-        sprintf(text, "%s Badge Status", badge_conf.badge_name);
+        sprintf(text, "%s's Status", badge_conf.badge_name);
         lcd111_set_text(LCD_TOP, text);
         draw_text(LCD_BTM, "Exit...", 1);
         return;
@@ -196,6 +196,16 @@ void status_handle_loop() {
             } while (!flag_unlocked(curr_flag));
             led_set_anim(&all_animations[curr_flag], 0, 0xff, 0);
             status_render_choice();
+        } else if (menu_sel == MENU_EXIT) {
+            char text[25] = {0,};
+            draw_text(LCD_BTM, "Exit...", 1);
+            if (badge_conf.freq_set) {
+                sprintf(text, "Radio Freq: %d",
+                        2400+badge_conf.freq_center);
+            } else {
+                sprintf(text, "RF not set!");
+            }
+            lcd111_set_text(LCD_TOP, text);
         }
     } else if (s_right) {
         // Select.
