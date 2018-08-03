@@ -304,19 +304,6 @@ void led_set_anim(const led_ring_animation_t *anim, uint8_t anim_type,
     ht16d_set_global_brightness(led_ring_anim_curr->brightness);
 }
 
-uint8_t sleep_anim_type;
-
-void led_off() {
-    ht16d_all_one_color(0,0,0); // Turn all LEDs off.
-    sleep_anim_type = led_anim_type;
-    led_anim_type = LED_ANIM_TYPE_NONE;
-}
-
-void led_on() {
-    if (sleep_anim_type)
-        led_anim_type = sleep_anim_type;
-}
-
 void led_ring_timestep() {
     if (!led_anim_type) {
         // LED_ANIM_TYPE_NONE
