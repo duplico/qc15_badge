@@ -193,24 +193,28 @@ void generate_config() {
     // The struct is no good. Zero it out.
     memset(&badge_conf, 0x00, sizeof(qc15conf));
 
+    uint16_t id;
+    uint16_t id_bak;
+
     // Handle global_flash_lockout.
     //       Hopefully this won't come up, since this SHOULD(tm) only be
     //        called the once.
 
     if(!(global_flash_lockout & FLASH_LOCKOUT_READ)) {
         // Load ID from flash:
-        s25fs_read_data((uint8_t *)(&(badge_conf.badge_id)), FLASH_ADDR_ID_MAIN, 2);
+        s25fs_read_data((uint8_t *)id, FLASH_ADDR_ID_MAIN, 2);
+        s25fs_read_data((uint8_t *)id_bak, FLASH_ADDR_ID_BACKUP, 2);
     }
 
-    if (badge_conf.badge_id >= QC15_BADGES_IN_SYSTEM) {
-        s25fs_read_data((uint8_t *)(&(badge_conf.badge_id)), FLASH_ADDR_ID_BACKUP, 2);
+
+    // If we got a bad ID from the flash, we can't trust ANYTHING.
+    if ((global_flash_lockout & FLASH_LOCKOUT_READ) ||
+            (id >= QC15_BADGES_IN_SYSTEM) || (id != id_bak)) {
+        lcd111_set_text(LCD_TOP, "ID corrupt. Reboot.");
+        while (1); // spin forever.
     }
 
-    // TODO: Delete and lockout reads.
-    // If we got a bad ID from the flash, correct to "sane" defaults:
-    if (badge_conf.badge_id >= QC15_BADGES_IN_SYSTEM) {
-        badge_conf.badge_id = 115;
-    }
+    badge_conf.badge_id = id;
 
     memcpy(badge_conf.badge_name, badge_names[badge_conf.badge_id],
            QC15_BADGE_NAME_LEN);
