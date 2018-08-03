@@ -13,6 +13,7 @@
 
 // Non-persistent:
 extern uint8_t unlock_radio_status;
+extern uint32_t disable_event_at;
 
 // Persistent values:
 extern qc15conf badge_conf;
