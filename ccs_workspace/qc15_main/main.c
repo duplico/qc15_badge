@@ -496,12 +496,10 @@ void cleanup_global_signals() {
 
 void qc15_set_mode(uint8_t mode) {
     if (qc15_mode == QC15_MODE_SLEEP) {
-        if (led_ring_anim_bg) {
-            // If we have a background animation stored, that this one
-            //  was briefly superseding, then go ahead and start it
-            //  up again.
-            led_set_anim(led_ring_anim_bg, led_anim_type_bg,
-                         0xff, led_ring_anim_pad_loops_bg);
+        // Handle our animations:
+        if (led_anim_type_bg != LED_ANIM_TYPE_NONE) {
+            led_set_anim(led_ring_anim_bg, LED_ANIM_TYPE_NONE,
+                         0xFF, led_ring_anim_pad_loops_bg);
         }
         ht16d_display_on();
         lcd111_wake(LCD_TOP);
@@ -513,7 +511,7 @@ void qc15_set_mode(uint8_t mode) {
         // This one is fine by itself.
         break;
     case QC15_MODE_SLEEP:
-        led_set_anim_none();
+        led_set_anim_none(0);
         ht16d_standby();
         ht16d_all_one_color(0, 0, 0);
         lcd111_clear(LCD_TOP);
@@ -767,7 +765,7 @@ void countdown_handle_loop() {
     if (qc_clock.time >= QC_START_TIME) {
         // QUEERCON TIME!!!!!!
         badge_conf.countdown_over = 1;
-        led_set_anim_none();
+        led_set_anim_none(1);
         led_set_anim(&anim_countdown_done, 0, 0, 0);
         save_config(0);
         qc15_set_mode(QC15_MODE_GAME);

@@ -177,14 +177,16 @@ void led_display_colors() {
     }
 }
 
-void led_set_anim_none() {
+void led_set_anim_none(uint8_t clear_bg) {
     led_anim_type = LED_ANIM_TYPE_NONE;
     led_ring_anim_loops = 0;
 
     ht16d_all_one_color_ring_only(0, 0, 0);
 
-    // Clear the background animation, too.
-    led_ring_anim_bg = 0;
+    if (clear_bg) {
+        // Clear the background animation, too.
+        led_ring_anim_bg = 0;
+    }
 }
 
 /// Set the current LED ring animation.
