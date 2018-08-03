@@ -23,8 +23,8 @@
 #define RADIO_CONNECT_FLAG_LISTENING 1
 #define RADIO_CONNECT_FLAG_DOWNLOAD 2
 
-#define FREQ_MIN 10
-#define FREQ_NUM 12
+#define FREQ_MIN 14
+#define FREQ_NUM 15
 
 typedef struct {
     uint8_t connect_intervals : 2;

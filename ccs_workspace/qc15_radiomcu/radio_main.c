@@ -369,8 +369,8 @@ void handle_global_signals(uint8_t block_radio) {
         poll_switch();
 
         if (!radio_frequency_done) {
-            if (qc_clock.time % 32 == 0) {
-                // 1 second per frequency.
+            if (qc_clock.time % 96 == 0) {
+                // 3 seconds per frequency.
                 radio_frequency++;
 
                 if (radio_frequency == FREQ_MIN+FREQ_NUM) {
