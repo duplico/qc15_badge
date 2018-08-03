@@ -301,6 +301,8 @@ void do_action(game_action_t *action) {
                 //  up again.
                 led_set_anim(led_ring_anim_bg, led_anim_type_bg,
                              0xff, led_ring_anim_pad_loops_bg);
+            } else {
+                led_set_anim_none();
             }
         } else {
             led_set_anim(&all_animations[action->detail], 0,
@@ -311,9 +313,10 @@ void do_action(game_action_t *action) {
         // Set a new background animation
         if (action->detail >= GAME_ANIMS_LEN || action->detail == GAME_NULL) {
             led_set_anim_none();
+        } else {
+            led_set_anim(&all_animations[action->detail], 0, 0xFF, 0);
+            unlock_flag(action->detail);
         }
-        led_set_anim(&all_animations[action->detail], 0, 0xFF, 0);
-        unlock_flag(action->detail);
         break;
     case GAME_ACTION_TYPE_STATE_TRANSITION:
         // Do a state transition
