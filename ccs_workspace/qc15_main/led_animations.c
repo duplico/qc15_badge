@@ -115,7 +115,6 @@ const rgbcolor_t flag_pink_colors[] = {
         {0xd5, 0x00, 0x69},
 };
 
-
 const rgbcolor_t flag_white_colors[] = {
         {255, 200, 196},
         {255, 200, 196},
@@ -150,6 +149,100 @@ const rgbcolor_t flag_freezer_colors[] = {
         {0, 0, 16},
         {0, 0, 16},
         {0, 0, 16},
+};
+
+const rgbcolor_t flag_techsupport_colors[] = {
+    {128, 0, 0}, // Red
+    {128, 16, 0}, // Red
+    {0,0,0},
+    {128, 0, 0}, // Red
+    {255, 24, 0x00}, // Orange
+    {0,0,0},
+    {255, 24, 0x00}, // Orange
+    {0,0,0},
+    {128, 30, 0x00}, // Yellow
+    {0,0,0},
+    {0,0,0},
+    {64, 20, 0x00}, // Yellow
+    {0,0,0},
+    {0,0,0},
+    {0,0,0},
+    {0,0,0},
+    {0,0,0},
+};
+
+const rgbcolor_t flag_newbie_colors[] = {
+    {255, 0, 0}, // Red
+    {255, 0, 0}, // Red
+    {128, 40, 0x00}, // Yellow
+    {128, 40, 0x00}, // Yellow
+    {0x00, 0xC0>>1, 0xFF>>1},
+    {0x00, 0xC0>>1, 0xFF>>1},
+    {0xff, 0x00, 0xb0},
+    {0xff, 0x00, 0xb0},
+};
+
+
+const rgbcolor_t flag_original_colors[] = {
+      {0, 0, 0},
+      {255>>2, 0, 0},  // Red
+      {255, 0, 0}, // Red
+      {255>>2, 0, 0},  // Red
+      {0, 0, 0},
+      {255>>2, 20>>1, 0}, // Orange
+      {255, 24, 0x00}, // Orange
+      {255>>2, 20>>1, 0}, // Orange
+      {0, 0, 0},
+      {255>>2, 60>>1, 0}, // Yellow
+      {128, 40, 0x00}, // Yellow
+      {255>>2, 60>>1, 0}, // Yellow
+      {0, 0, 0},
+      {0, 64>>2, 0},   // Green
+      {0, 64, 0}, // Green
+      {0, 64>>2, 0},   // Green
+      {0, 0, 0},
+      {0, 0, 144>>2},  // Blue
+      {0, 0, 196}, // Blue
+      {0, 0, 144>>2},  // Blue
+      {0, 0, 0},
+      {128>>2, 0, 96>>2}, // Purple
+      {128, 0, 128}, // Purple
+      {128>>2, 0, 96>>2}, // Purple
+      {0, 0, 0},
+      {0, 0, 0},
+      {0, 0, 0},
+};
+
+const rgbcolor_t flag_regular_colors[] = {
+      {0, 0, 0},
+      {128, 0, 128}, // Purple
+      {128>>2, 0, 96>>2}, // Purple
+      {0, 0, 0},
+      {0, 0, 0},
+      {0, 0, 196}, // Blue
+      {0, 0, 144>>2},  // Blue
+      {0, 0, 0},
+      {0, 0, 0},
+      {255, 24, 0x00}, // Orange
+      {255>>2, 20>>1, 0}, // Orange
+      {0, 0, 0},
+      {0, 0, 0},
+      {128, 40, 0x00}, // Yellow
+      {255>>2, 60>>1, 0}, // Yellow
+      {0, 0, 0},
+      {0, 0, 0},
+      {0, 64, 0}, // Green
+      {0, 64>>2, 0},   // Green
+      {0, 0, 0},
+      {0, 0, 0},
+      {0, 0, 196}, // Blue
+      {0, 0, 144>>2},  // Blue
+      {0, 0, 0},
+      {0, 0, 0},
+      {255, 24, 0x00}, // Orange
+      {255>>2, 20>>1, 0}, // Orange
+      {0, 0, 0},
+      {0, 0, 0},
 };
 
 
@@ -401,25 +494,25 @@ const led_ring_animation_t all_animations[GAME_ANIMS_LEN] = {
       LED_ANIM_TYPE_FALL,
       "White"
     },
-    { // Newbie flag TODO
-      &flag_white_colors[0],
-      12,
+    {
+      flag_newbie_colors,
+      8,
       DEFAULT_FLAG_ANIM_SPEED,
       HT16D_BRIGHTNESS_DEFAULT,
       LED_ANIM_TYPE_FALL,
       "QC Newbie"
     },
-    { // Original flag TODO
-      &flag_white_colors[0],
-      12,
+    {
+      flag_original_colors,
+      25,
       DEFAULT_FLAG_ANIM_SPEED,
       HT16D_BRIGHTNESS_DEFAULT,
       LED_ANIM_TYPE_FALL,
       "QC Original"
     },
-    { // Regular flag TODO
-      &flag_white_colors[0],
-      12,
+    {
+      flag_regular_colors,
+      29,
       DEFAULT_FLAG_ANIM_SPEED,
       HT16D_BRIGHTNESS_DEFAULT,
       LED_ANIM_TYPE_FALL,
@@ -434,8 +527,8 @@ const led_ring_animation_t all_animations[GAME_ANIMS_LEN] = {
       "Frozen!"
     },
     { // Tech support flag TODO
-      &flag_white_colors[0],
-      12,
+      flag_techsupport_colors,
+      17,
       DEFAULT_FLAG_ANIM_SPEED,
       HT16D_BRIGHTNESS_DEFAULT,
       LED_ANIM_TYPE_FALL,
