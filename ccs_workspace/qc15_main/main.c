@@ -433,7 +433,7 @@ void handle_global_signals() {
             qc15_set_mode(QC15_MODE_COUNTDOWN);
         if (up_status && (
                 is_handler(badge_conf.badge_id) ||
-                badge_conf.badge_id <= 1)) { // && badge_conf.badge_id == 1) // TODO
+                badge_conf.badge_id <= 1)) {
             qc15_set_mode(QC15_MODE_CONTROLLER);
         } else if (up_status) {
             // non-special people, it goes to the status menu.
