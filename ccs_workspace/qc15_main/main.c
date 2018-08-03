@@ -743,7 +743,7 @@ void countdown_handle_loop() {
     }
 
     countdown = QC_START_TIME - qc_clock.time;
-    sprintf(text, "          %x%x", (uint16_t)((0xffff0000 & countdown) >> 16),
+    sprintf(text, "       0x0%x.%x", (uint16_t)((0xffff0000 & countdown) >> 16),
                           (uint16_t)(0x0000ffff & countdown));
     lcd111_set_text(LCD_TOP, text);
     lcd111_set_text(LCD_BTM, text);
