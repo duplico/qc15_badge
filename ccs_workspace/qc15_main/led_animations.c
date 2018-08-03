@@ -545,14 +545,6 @@ const led_ring_animation_t all_animations[GAME_ANIMS_LEN] = {
       LED_ANIM_TYPE_SPIN,
       "firstLights"
     },
-//    { // The calmer version of the first lights.
-//     &lwf_colors[0], // TODO TODO TODO TODO
-//     8,
-//     16,
-//     HT16D_BRIGHTNESS_DEFAULT,
-//     LED_ANIM_TYPE_FALL,
-//     "whitefade"
-//    },
     { // ATTN ATTN ATTN!!!
      &whitediscovery_colors[0],
      3,
