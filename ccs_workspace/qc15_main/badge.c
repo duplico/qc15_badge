@@ -223,11 +223,6 @@ void generate_config() {
     memcpy(badge_conf.badge_name, badge_names[badge_conf.badge_id],
            QC15_BADGE_NAME_LEN);
 
-    // TODO: REMOVE!!!
-    uint8_t initial_person_name[] = "AB";
-    strcpy((char *) &(badge_conf.person_name[0]), (char *)initial_person_name);
-    ///////////////////
-
     badge_conf.last_clock = DEFAULT_CLOCK_TIME;
     qc_clock.time = badge_conf.last_clock;
 
