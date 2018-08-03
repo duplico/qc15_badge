@@ -243,7 +243,12 @@ void control_render_choice() {
         draw_text(LCD_BTM, "Exit...", 1);
         return;
     case MENU_CONTROL_SEL_EVENT_OFF:
-        lcd111_set_text(LCD_TOP, "CONTROLLER");
+        if (!badge_conf.event_beacon) {
+            lcd111_set_text(LCD_TOP, "Beacon currently OFF");
+        } else {
+            sprintf(text, "Beaconing! Event ID %d", badge_conf.event_id);
+            lcd111_set_text(LCD_TOP, text);
+        }
         draw_text(LCD_BTM, "Turn OFF event beacon", 1);
         return;
     case MENU_CONTROL_SEL_EVENT_FRIMIX:
@@ -326,6 +331,7 @@ void controller_handle_loop() {
         case MENU_CONTROL_SEL_EVENT_OFF:
             badge_conf.event_beacon = 0;
             save_config(1);
+            control_render_choice();
             return;
         case MENU_CONTROL_SEL_EVENT_FRIMIX:
         case MENU_CONTROL_SEL_EVENT_BADGETALK:
@@ -338,6 +344,7 @@ void controller_handle_loop() {
             badge_conf.event_id = menu_sel - MENU_CONTROL_SEL_EVENT_FRIMIX;
             disable_event_at = qc_clock.time + 345600; // 3 hours.
             save_config(1);
+            control_render_choice();
             break;
         case MENU_CONTROL_SEL_ZEROCLOCK:
             // Zero our clock:
