@@ -162,9 +162,9 @@ void led_load_colors() {
 void led_display_colors() {
     switch(led_anim_type) {
     case LED_ANIM_TYPE_SAME:
-        ht16d_all_one_color_ring_only(led_ring_curr[0].r >> 7,
-                                    led_ring_curr[0].g >> 7,
-                                    led_ring_curr[0].b >> 7);
+        ht16d_all_one_color_ring_only(led_ring_curr[0].r >> 8,
+                                    led_ring_curr[0].g >> 8,
+                                    led_ring_curr[0].b >> 8);
         break;
     case LED_ANIM_TYPE_FALL:
         for (uint8_t i=0; i<9; i++) {
