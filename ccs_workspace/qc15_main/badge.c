@@ -26,6 +26,7 @@
 #include "flash_layout.h"
 #include "ipc.h"
 #include "s25fs.h"
+#include "lcd111.h"
 #include "codes.h"
 #include "leds.h"
 #include "led_animations.h"
@@ -193,8 +194,8 @@ void generate_config() {
     // The struct is no good. Zero it out.
     memset(&badge_conf, 0x00, sizeof(qc15conf));
 
-    uint16_t id;
-    uint16_t id_bak;
+    uint16_t id=0;
+    uint16_t id_bak=0;
 
     // Handle global_flash_lockout.
     //       Hopefully this won't come up, since this SHOULD(tm) only be
@@ -202,8 +203,8 @@ void generate_config() {
 
     if(!(global_flash_lockout & FLASH_LOCKOUT_READ)) {
         // Load ID from flash:
-        s25fs_read_data((uint8_t *)id, FLASH_ADDR_ID_MAIN, 2);
-        s25fs_read_data((uint8_t *)id_bak, FLASH_ADDR_ID_BACKUP, 2);
+        s25fs_read_data((uint8_t *)&id, FLASH_ADDR_ID_MAIN, 2);
+        s25fs_read_data((uint8_t *)&id_bak, FLASH_ADDR_ID_BACKUP, 2);
     }
 
 
