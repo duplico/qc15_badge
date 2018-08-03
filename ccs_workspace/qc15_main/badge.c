@@ -196,6 +196,7 @@ void generate_config() {
 
     uint16_t id=0xffff;
     uint16_t id_bak=0xffff;
+    uint8_t sentinel = 0xff;
 
     // Handle global_flash_lockout.
     //       Hopefully this won't come up, since this SHOULD(tm) only be
@@ -205,12 +206,14 @@ void generate_config() {
         // Load ID from flash:
         s25fs_read_data((uint8_t *)&id, FLASH_ADDR_ID_MAIN, 2);
         s25fs_read_data((uint8_t *)&id_bak, FLASH_ADDR_ID_BACKUP, 2);
+        s25fs_read_data(&sentinel, FLASH_ADDR_sentinel, 1);
     }
 
 
     // If we got a bad ID from the flash, we can't trust ANYTHING.
     if ((global_flash_lockout & FLASH_LOCKOUT_READ) ||
-            (id >= QC15_BADGES_IN_SYSTEM) || (id != id_bak)) {
+            (id >= QC15_BADGES_IN_SYSTEM) || (id != id_bak) ||
+            (sentinel != FLASH_sentinel_BYTE)) {
         lcd111_set_text(LCD_TOP, "ID corrupt. Reboot.");
         while (1); // spin forever.
     }
