@@ -20,4 +20,6 @@ void controller_handle_loop();
 void status_render_choice();
 void control_render_choice();
 
+extern uint8_t menu_suppress_click;
+
 #endif /* MENU_H_ */

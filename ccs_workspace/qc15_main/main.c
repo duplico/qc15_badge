@@ -440,9 +440,11 @@ void handle_global_signals() {
         if (up_status && (
                 is_handler(badge_conf.badge_id) ||
                 badge_conf.badge_id <= 1)) {
+            menu_suppress_click = 1;
             qc15_set_mode(QC15_MODE_CONTROLLER);
         } else if (up_status) {
             // non-special people, it goes to the status menu.
+            menu_suppress_click = 1;
             qc15_set_mode(QC15_MODE_STATUS);
         }
     }
