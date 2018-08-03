@@ -16,6 +16,8 @@
 #include "qc15.h"
 #include "util.h"
 #include "codes.h"
+#include "leds.h"
+#include "led_animations.h"
 
 #include "badge.h"
 
@@ -99,10 +101,6 @@ void decode_random_chars(uint8_t part_id, uint8_t chars_to_decode) {
         chars_to_decode--;
     }
 
-    if (is_solved(part_id)) {
-        s_part_solved = 0x80 | part_id;
-    }
-
     save_config(1);
 }
 
@@ -124,19 +122,33 @@ void decode_download(uint16_t downloaded_id) {
         chars_to_decode = 3;
 
     decode_random_chars(part_id, chars_to_decode);
+
+    // We ONLY emit s_part_solved on a download, because that's the only time
+    //  the game is ready to consume it.
+    if (is_solved(part_id)) {
+        s_part_solved = 0x80 | part_id;
+        led_set_anim(&anim_dl_done, 0, 7, 0);
+    }
 }
 
 void decode_upload() {
     // This is PART 3!
+    if (is_solved(3)) {
+        return;
+    }
     decode_random_chars(3, 3);
     // This wasn't a game action, so there's no reason to tell our state
     //  machine about it. It would just cause spurious notifications.
-    // TODO: unless we do an animation or something.
-    s_part_solved = 0;
+    if (is_solved(3)) {
+        led_set_anim(&anim_dl_done, 0, 7, 0);
+    }
 }
 
 void decode_event(uint8_t event_id) {
     // This is PART 2!
+    if (is_solved(2)) {
+        return;
+    }
     //  It's more of a special case. There are 7 events, each of which
     //  unlocks CODE_SEGMENT_REP_LEN (10) characters,
     //  except for the freezer, which unlocks 20.
@@ -147,11 +159,9 @@ void decode_event(uint8_t event_id) {
         }
     }
     if (is_solved(2)) {
-        s_part_solved = 0x80 | 2;
+        led_set_anim(&anim_dl_done, 0, 7, 0);
     }
     // This wasn't a game action, so there's no reason to tell our state
     //  machine about it. It would just cause spurious notifications.
-    // TODO: unless we do an animation or something.
-    s_part_solved = 0;
     save_config(1);
 }

@@ -392,6 +392,8 @@ void do_action(game_action_t *action) {
             save_config(0);
         } else if (action->detail == OTHER_ACTION_STATUS_MENU) {
             qc15_set_mode(QC15_MODE_STATUS);
+        } else if (action->detail == OTHER_ACTION_SOLVED_A_PART) {
+            // Nothing to do - all handled in codes.c
         }
         break;
     }

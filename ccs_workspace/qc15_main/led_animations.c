@@ -677,3 +677,49 @@ const led_ring_animation_t anim_countdown_done = (led_ring_animation_t) {
   .type = LED_ANIM_TYPE_SAME,
   "Countdown2"
 };
+
+
+const rgbcolor_t dl_colors[] = {
+      {255, 0, 0}, // Red
+      {255, 24, 0x00}, // Orange
+      {128, 40, 0x00}, // Yellow
+      {0, 64, 0}, // Green
+      {0, 0, 196}, // Blue
+      {128, 0, 128}, // Purple
+      {255, 200, 196},
+      {255, 0, 0}, // Red
+      {255, 24, 0x00}, // Orange
+      {128, 40, 0x00}, // Yellow
+      {0, 64, 0}, // Green
+      {0, 0, 196}, // Blue
+      {128, 0, 128}, // Purple
+      {255, 200, 196},
+      {255, 200, 196},
+};
+
+const led_ring_animation_t anim_dl = (led_ring_animation_t) {
+  .colors = flag_white_colors,
+  .len = 1,
+  .speed = 12,
+  .brightness = HT16D_BRIGHTNESS_DEFAULT,
+  .type = LED_ANIM_TYPE_SAME,
+  "Download"
+};
+
+const led_ring_animation_t anim_dl_done = (led_ring_animation_t) {
+  .colors = dl_colors,
+  .len = 15,
+  .speed = 1,
+  .brightness = HT16D_BRIGHTNESS_DEFAULT,
+  .type = LED_ANIM_TYPE_SPIN,
+  "DL Done"
+};
+
+const led_ring_animation_t anim_ul = (led_ring_animation_t) {
+  .colors = flag_green_colors,
+  .len = 1,
+  .speed = 12,
+  .brightness = HT16D_BRIGHTNESS_DEFAULT,
+  .type = LED_ANIM_TYPE_SAME,
+  "Upload"
+};
