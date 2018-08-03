@@ -300,7 +300,12 @@ void radio_interval() {
     curr_packet_tx.badge_id = badge_status.badge_id;
     curr_packet_tx.msg_type = RADIO_MSG_TYPE_BEACON;
     curr_packet_tx.proto_version = RADIO_PROTO_VER;
-    memcpy(&payload->time, (uint8_t *)&qc_clock, sizeof(qc_clock_t));
+
+    qc_clock_t temp_clock;
+    temp_clock.time = qc_clock.time;
+    temp_clock.authoritative = qc_clock.authoritative;
+    temp_clock.fault = qc_clock.fault;
+    memcpy(&payload->time, (uint8_t *)&temp_clock, sizeof(qc_clock_t));
 
     memcpy(payload->name, badge_status.person_name, QC15_PERSON_NAME_LEN);
     crc16_append_buffer((uint8_t *)&curr_packet_tx, sizeof(radio_proto)-2);
@@ -319,7 +324,12 @@ void radio_event_beacon() {
     curr_packet_tx.badge_id = QC15_EVENT_ID_START + badge_status.event_id;
     curr_packet_tx.msg_type = RADIO_MSG_TYPE_BEACON;
     curr_packet_tx.proto_version = RADIO_PROTO_VER;
-    memcpy(&payload->time, (uint8_t *)&qc_clock, sizeof(qc_clock_t));
+
+    qc_clock_t temp_clock;
+    temp_clock.time = qc_clock.time;
+    temp_clock.authoritative = qc_clock.authoritative;
+    temp_clock.fault = qc_clock.fault;
+    memcpy(&payload->time, (uint8_t *)&temp_clock, sizeof(qc_clock_t));
 
     memcpy(payload->name, badge_status.person_name, QC15_PERSON_NAME_LEN);
     crc16_append_buffer((uint8_t *)&curr_packet_tx, sizeof(radio_proto)-2);
