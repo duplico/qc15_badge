@@ -604,8 +604,6 @@ void badge_startup() {
         led_set_anim(&all_animations[19], 0,
                      0xFF, 0);
     }
-    // TODO!!!!!
-    s_turn_on_file_lights = 1;
 
     // Handle entering the proper state
     if (badge_conf.countdown_over) {
