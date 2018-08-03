@@ -393,7 +393,7 @@ extern uint8_t text_entry_in_progress;
 void enter_menu() {
     // Tricky edge case: Don't reset our menu selection if we're coming
     //  from the name setting.
-    if (text_entry_in_progress)
+    if (!text_entry_in_progress)
         menu_sel = 0;
     saved_mode = qc15_mode;
 }
