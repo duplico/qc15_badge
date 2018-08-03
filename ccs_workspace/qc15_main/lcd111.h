@@ -22,6 +22,8 @@
 
 void lcd111_init_io();
 void lcd111_init();
+void lcd111_standby(uint8_t lcd_id);
+void lcd111_wake(uint8_t lcd_id);
 void lcd111_cursor_type(uint8_t lcd_id, uint8_t cursor_type);
 void lcd111_cursor_pos(uint8_t lcd_id, uint8_t pos);
 void lcd111_clear(uint8_t lcd_id);

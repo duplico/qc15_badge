@@ -124,6 +124,16 @@ void lcd111_command(uint8_t lcd_id, uint8_t command) {
     }
 }
 
+void lcd111_standby(uint8_t lcd_id) {
+    // power off, sleep on
+    lcd111_command(lcd_id, 0b00011010);
+}
+
+void lcd111_wake(uint8_t lcd_id) {
+    // power control: ON
+    lcd111_command(lcd_id, 0b00011100);
+}
+
 void lcd111_data(uint8_t lcd_id, uint8_t data) {
     lcd111_wr(lcd_id, data, 1);
     // All data operations take only 10 cycles (of the LCD's onboard clock)
