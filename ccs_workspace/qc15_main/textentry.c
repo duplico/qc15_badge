@@ -34,8 +34,8 @@ uint8_t text_entry_in_progress = 0;
 /// The len here does NOT include a null terminator.
 void textentry_begin(char *destination, uint8_t len, uint8_t start_populated,
                      uint8_t show_instructions) {
-    if (text_entry_in_progress || !len) {
-        return; // SUPER DUPER INVALID INVOCATION OF THIS FUNCTION
+    if (!len) {
+        return; // INVALID INVOCATION OF THIS FUNCTION
     }
     textentry_dest = destination;
     textentry_len = len;
