@@ -34,6 +34,7 @@
 
 // NOT persistent:
 uint8_t unlock_radio_status = 0;
+uint32_t disable_event_at = 0;
 
 // PERSISTENT won't let these persist between badge flashings. However, we're
 //  not putting them in a consistent place this time, so we can't guarantee

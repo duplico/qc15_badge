@@ -404,6 +404,12 @@ void handle_global_signals() {
         poll_buttons();
         if (!badge_conf.freezer_done && !(qc_clock.time & 0xFF))
             poll_temp(); // every 8 seconds, poll the temp.
+
+        if (badge_conf.event_beacon && qc_clock.time > disable_event_at) {
+            badge_conf.event_beacon = 0;
+            save_config(1);
+        }
+
     }
 
     if (f_ipc_rx) {
@@ -554,6 +560,7 @@ void badge_startup() {
 
     badge_conf.active = 1;
     unlock_radio_status = 1;
+    badge_conf.event_beacon = 0;
     save_config(1); // Recompute CRC for active=1, and tell the radio.
                    // This is the VERY FIRST MESSAGE we will send the radio.
 

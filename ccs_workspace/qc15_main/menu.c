@@ -336,6 +336,7 @@ void controller_handle_loop() {
             badge_conf.event_beacon = 1;
             // [0 .. 5]
             badge_conf.event_id = menu_sel - MENU_CONTROL_SEL_EVENT_FRIMIX;
+            disable_event_at = qc_clock.time + 345600; // 3 hours.
             save_config(1);
             break;
         case MENU_CONTROL_SEL_ZEROCLOCK:
