@@ -514,6 +514,8 @@ void qc15_set_mode(uint8_t mode) {
         ht16d_all_one_color(0, 0, 0);
         lcd111_clear(LCD_TOP);
         lcd111_clear(LCD_BTM);
+        lcd111_cursor_type(LCD_TOP, LCD111_CURSOR_NONE);
+        lcd111_cursor_type(LCD_BTM, LCD111_CURSOR_NONE);
         break;
     case QC15_MODE_STATUS:
         enter_menu_status();
