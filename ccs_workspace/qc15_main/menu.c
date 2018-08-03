@@ -386,7 +386,7 @@ void leave_menu() {
 
 void enter_menu_status() {
     for (uint8_t i=0; i<FLAG_COUNT; i++) {
-        if (&all_animations[i] == led_ring_anim_bg) {
+        if (&(all_animations[i]) == led_ring_anim_bg) {
             curr_flag = i;
             break;
         }
