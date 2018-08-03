@@ -236,6 +236,7 @@ void led_set_anim(const led_ring_animation_t *anim, uint8_t anim_type,
         led_ring_anim_pad_loops_bg = led_ring_anim_pad_loops;
         led_anim_type_bg = led_anim_type;
     }
+
     led_ring_anim_curr = anim;
     led_anim_type = anim_type? anim_type : led_ring_anim_curr->type;
     led_ring_anim_step = 0;
@@ -283,6 +284,13 @@ void led_set_anim(const led_ring_animation_t *anim, uint8_t anim_type,
     //  led_stage_color().
     for (uint8_t led=0; led<led_ring_anim_num_leds; led++) {
         led_stage_color(&led_ring_curr[led], led_ring_anim_index, led);
+    }
+
+    // Immediately save infinitely-looping animations to the background.
+    if (loops == 0xFF) {
+        led_ring_anim_bg = led_ring_anim_curr;
+        led_ring_anim_pad_loops_bg = led_ring_anim_pad_loops;
+        led_anim_type_bg = led_anim_type;
     }
 
     // Set the destination and steps for each of the LEDs in play:

@@ -240,19 +240,19 @@ uint8_t config_is_valid() {
     return 1;
 }
 
-uint8_t flag_unlocked(uint16_t flag_num) {
+uint8_t flag_unlocked(uint8_t flag_num) {
     if (flag_num >= FLAG_COUNT) {
         return 0;
     }
 
-    return badge_conf.flag_unlocks & (0x0001 << flag_num);
+    return badge_conf.flag_unlocks & (0x00000001 << flag_num);
 }
 
-void unlock_flag(uint16_t flag_num) {
+void unlock_flag(uint8_t flag_num) {
     if (flag_num >= FLAG_COUNT || flag_unlocked(flag_num))
         return;
 
-    badge_conf.flag_unlocks |= (0x0001 << flag_num);
+    badge_conf.flag_unlocks |= (0x00000001 << flag_num);
     save_config(0);
 }
 
