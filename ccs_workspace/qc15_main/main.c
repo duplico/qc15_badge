@@ -320,6 +320,7 @@ void handle_ipc_rx(uint8_t *rx) {
     case IPC_MSG_GD_UL:
         // Someone downloaded from us.
         set_badge_uploaded((uint16_t)rx[1] + ((uint16_t)rx[2] << 8));
+        led_set_anim(&anim_ul, 0, 0, 0);
         break;
     case IPC_MSG_ID_INC:
         // We got the ID we asked for.
