@@ -343,6 +343,7 @@ void handle_ipc_rx(uint8_t *rx_buf) {
         radio_frequency = FREQ_MIN;
         memset(rx_cnt, 0x00, sizeof(rx_cnt));
         rfm75_write_reg(0x05, radio_frequency);
+        break;
     case IPC_MSG_TIME_UPDATE:
         memcpy((uint8_t *)&temp_clock, &rx_buf[1], sizeof(qc_clock_t));
         qc_clock.time = temp_clock.time;
