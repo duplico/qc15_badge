@@ -228,7 +228,7 @@ void generate_config() {
 
     // Determine which segment we have (and therefore which parts)
     badge_conf.code_starting_part = (badge_conf.badge_id % 16) * 6;
-    set_badge_seen(badge_conf.badge_id, initial_person_name);
+    set_badge_seen(badge_conf.badge_id, "");
     set_badge_uploaded(badge_conf.badge_id);
     set_badge_downloaded(badge_conf.badge_id);
 }
