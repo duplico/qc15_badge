@@ -69,10 +69,32 @@
 #define QC15_MODE_GAME_CHECKNAME 65
 #define QC15_MODE_GAME_CONNECT 66
 
+/// The time after 8pm Wednesday that the badge wakes up.
+/**
+ ** According to our badges, queercon begins at 8pm Wednesday night. The clock
+ ** counts in 1/32 of seconds. So, here's a quick translation:
+ **
+ **    ticks      unit
+ **    -----      ----
+ **       32       1 second
+ **     1920       1 minute
+ **   115200       1 hour
+ **   172800       1.5 hours
+ **  2764800       1 day (8pm Thursday)
+ **  5529600       2 days (8pm Friday, pool party)
+ **  8294400       3 days (8pm Saturday, karaoke/dance party)
+ ** 10368000       CLOSING CEREMONIES
+ ** 11059200       4 days (8pm Sunday, end secret party)
+ **536870912       6 months (failsafe wrap)
+ **
+ */
 #define QC_START_TIME 172800
+#define QC_PARTY_TIME 8294400
+#define QC_CLOSING_TIME 10368000
 
 // TODO!!!!
-#define DEFAULT_CLOCK_TIME (QC_START_TIME - 28800)
+#define DEFAULT_CLOCK_TIME 0
+//#define DEFAULT_CLOCK_TIME (QC_START_TIME - 57600) // 30 minutes unless reset
 //#define DEFAULT_CLOCK_TIME (QC_START_TIME - 640)
 
 /// The main config struct, which will go in both the SPI flash and in FRAM.
