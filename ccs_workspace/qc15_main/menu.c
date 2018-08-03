@@ -281,7 +281,7 @@ void control_render_choice() {
         draw_text(LCD_BTM, "Turn ON event ^ beacon", 1);
         break;
     case MENU_CONTROL_SEL_ZEROCLOCK:
-        sprintf(text, "curr:   0x%x%x",
+        sprintf(text, "curr:   0x%x:%x",
                 (uint16_t)((0xffff0000 & qc_clock.time) >> 16),
                 (uint16_t)(0x0000ffff & qc_clock.time));
         if (qc_clock.authoritative) {
@@ -291,7 +291,7 @@ void control_render_choice() {
         draw_text(LCD_BTM, "ZERO CLOCK.", 1);
         break;
     case MENU_CONTROL_SEL_AUTHORITY:
-        sprintf(text, "curr:   0x%x%x",
+        sprintf(text, "curr:   0x%x:%x",
                 (uint16_t)((0xffff0000 & qc_clock.time) >> 16),
                 (uint16_t)(0x0000ffff & qc_clock.time));
         if (qc_clock.authoritative) {
@@ -375,6 +375,16 @@ void controller_handle_loop() {
         default:
             break;
         }
+    } else if (s_clock_tick && (menu_sel == MENU_CONTROL_SEL_ZEROCLOCK ||
+                                menu_sel == MENU_CONTROL_SEL_AUTHORITY)) {
+        char text[25] = {0,};
+        sprintf(text, "curr:   0x%x:%x",
+                (uint16_t)((0xffff0000 & qc_clock.time) >> 16),
+                (uint16_t)(0x0000ffff & qc_clock.time));
+        if (qc_clock.authoritative) {
+            text[6] = 'A';
+        }
+        lcd111_set_text(LCD_TOP, text);
     }
 }
 
