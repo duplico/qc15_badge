@@ -66,6 +66,8 @@ uint8_t saved_mode;
 
 uint8_t curr_flag = 0;
 
+uint8_t menu_suppress_click = 0;
+
 void leave_menu();
 
 void status_render_choice() {
@@ -163,6 +165,11 @@ void status_render_choice() {
 
 void status_handle_loop() {
     if (s_up) {
+        if (menu_suppress_click) {
+            menu_suppress_click = 0;
+            s_up = 0;
+            return;
+        }
         if (menu_sel == MENU_STATUS_MAX)
             menu_sel = 0;
         else
@@ -302,6 +309,11 @@ void control_render_choice() {
 
 void controller_handle_loop() {
     if (s_up) {
+        if (menu_suppress_click) {
+            menu_suppress_click = 0;
+            s_up = 0;
+            return;
+        }
         if ((badge_conf.badge_id <= 1 && menu_sel == MENU_CONTROL_SEL_AUTHORITY) ||
             (badge_conf.badge_id > 1 && menu_sel >= MENU_CONTROL_SEL_EVENT_CLOSING))
         {
@@ -379,9 +391,11 @@ void enter_menu() {
 }
 
 void leave_menu() {
+    menu_suppress_click = 0;
     qc15_mode = saved_mode;
-    lcd111_clear_nodelay(LCD_TOP);
+    lcd111_clear(LCD_TOP);
     lcd111_clear(LCD_BTM);
+    qc15_set_mode(saved_mode);
 }
 
 void enter_menu_status() {
