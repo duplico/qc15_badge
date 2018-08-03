@@ -369,7 +369,7 @@ void do_action(game_action_t *action) {
     case GAME_ACTION_TYPE_OTHER:
         if (action->detail == OTHER_ACTION_CUSTOMSTATEUSERNAME) {
             badge_conf.person_name[QC15_PERSON_NAME_LEN-1] = 0x00; // term
-            textentry_begin(badge_conf.person_name, 10, 1, 1);
+            textentry_begin(badge_conf.person_name, 10, 0, 1);
         } else if (action->detail == OTHER_ACTION_NAMESEARCH) {
             gd_starting_id = GAME_NULL;
             gd_curr_id = GAME_NULL;
