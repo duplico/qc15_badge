@@ -209,11 +209,10 @@ void generate_config() {
         s25fs_read_data(&sentinel, FLASH_ADDR_sentinel, 1);
     }
 
-
     // If we got a bad ID from the flash, we can't trust ANYTHING.
     if ((global_flash_lockout & FLASH_LOCKOUT_READ) ||
             (id >= QC15_BADGES_IN_SYSTEM) || (id != id_bak) ||
-            (sentinel != FLASH_sentinel_BYTE)) {
+            (sentinel != FLASH_sentinel_BYTE) || (!id)) {
         lcd111_set_text(LCD_TOP, "ID corrupt. Reboot.");
         while (1); // spin forever.
     }
