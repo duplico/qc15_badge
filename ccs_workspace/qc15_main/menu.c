@@ -78,7 +78,7 @@ void status_render_choice() {
     switch(menu_sel) {
     case MENU_EXIT:
         // Return to the game.
-        sprintf(text, "%s's Status", badge_conf.badge_name);
+        sprintf(text, "%d %s's Status", badge_conf.badge_id, badge_conf.badge_name);
         lcd111_set_text(LCD_TOP, text);
         draw_text(LCD_BTM, "Exit...", 1);
         return;
@@ -253,7 +253,7 @@ void control_render_choice() {
     switch(menu_sel) {
     case MENU_EXIT:
         // Return to the game.
-        sprintf(text, "CONTROLLER");
+        sprintf(text, "CONTROLLER %d", badge_conf.badge_id);
         lcd111_set_text(LCD_TOP, text);
         draw_text(LCD_BTM, "Exit...", 1);
         return;

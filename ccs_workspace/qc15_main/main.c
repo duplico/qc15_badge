@@ -559,11 +559,21 @@ void qc15_set_mode(uint8_t mode) {
 /// Initialize the badge's running state to a known good one.
 void badge_startup() {
     if (global_flash_lockout & FLASH_LOCKOUT_READ) {
+        lcd111_set_text(LCD_TOP, "ID corrupt. Failsafe...");
+        delay_millis(5000);
         qc15_set_mode(QC15_MODE_FLASH_BROKEN);
         return;
     }
+
     // Handle our main config
     init_config();
+
+    if (global_flash_lockout & FLASH_LOCKOUT_READ || badge_conf.badge_id == 0) {
+        lcd111_set_text(LCD_TOP, "ID corrupt. Failsafe...");
+        delay_millis(5000);
+        qc15_set_mode(QC15_MODE_FLASH_BROKEN);
+        return;
+    }
 
     // Setup our initial time.
     qc_clock.time = badge_conf.last_clock;
