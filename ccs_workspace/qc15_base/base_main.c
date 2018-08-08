@@ -20,7 +20,7 @@
 
 #define RADIO_STATS_MSG_LEN 35
 #define RADIO_PROGRESS_MSG_LEN 30
-#define BASE_BEACON_INTERVAL_CENT_SEC 500
+#define BASE_BEACON_INTERVAL_CENT_SEC 1600
 
 volatile uint8_t f_time_loop;
 
@@ -201,13 +201,13 @@ void send_stats_payload(uint16_t badge_id, radio_stats_payload *payload) {
     sprintf(message, "4,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
             badge_id,
             payload->badges_seen_count,
-            payload->badges_connected_count,
+            payload->badges_downloaded_count,
             payload->badges_uploaded_count,
             payload->ubers_seen_count,
-            payload->ubers_connected_count,
+            payload->ubers_downloaded_count,
             payload->ubers_uploaded_count,
-            payload->handlers_seen,
-            payload->handlers_connected,
+            payload->handlers_seen_count,
+            payload->handlers_downloaded_count,
             payload->handlers_uploaded_count);
     send_string(message, RADIO_STATS_MSG_LEN);
     // CRLF
@@ -252,13 +252,13 @@ void main (void) {
 
     radio_stats_payload stats = {0};
     stats.badges_seen_count = 0x00AA;
-    stats.badges_connected_count = 0x00BB;
+    stats.badges_downloaded_count = 0x00BB;
     stats.badges_uploaded_count = 0x00CC;
     stats.ubers_seen_count = 0x0D;
-    stats.ubers_connected_count = 0x0E;
+    stats.ubers_downloaded_count = 0x0E;
     stats.ubers_uploaded_count = 0x01;
-    stats.handlers_seen = 0x02;
-    stats.handlers_connected = 0x03;
+    stats.handlers_seen_count = 0x02;
+    stats.handlers_downloaded_count = 0x03;
     stats.handlers_uploaded_count = 0x04;
 
     radio_progress_payload progress = {0};
